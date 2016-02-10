@@ -1,6 +1,9 @@
 # cedarFunctions.R
 # cedar project development functions
 
+library(locfit)
+data("chemdiab")
+
 discoverLinks <- function(x){
   # given x = list of subsets of a data source
   #  [ 1 = (3,4,5),2 =  (4,5,6,7), 3= (1,2,3), 4=(5,4,2)]
