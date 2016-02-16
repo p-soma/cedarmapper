@@ -5,6 +5,7 @@
 # http://shiny.rstudio.com
 #
 
+library(cedarwidgets)
 library(shiny)
 library(datasets)
 library(networkD3)
@@ -22,8 +23,8 @@ shinyServer(function(input, output) {
            "perm" = "perm" )
   })
   
-  output$force <- renderForceNetwork({
-        forceNetwork(Links = MisLinks, Nodes = MisNodes, Source = "source",
+  output$graph <- rendercedargraph({
+        cedargraph(Links = MisLinks, Nodes = MisNodes, Source = "source",
                      Target = "target", Value = "value", NodeID = "name",
                      Group = "group", opacity = input$opacity)
   })

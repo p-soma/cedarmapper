@@ -28,7 +28,7 @@ shinyUI(fluidPage(
     # Show a plot of the generated distribution
     mainPanel(
       h3(textOutput("caption", container = span)),
-      forceNetworkOutput("force"),
+      cedargraphOutput("graph"),
       plotOutput("distPlot"),
       plotOutput("clustPlot")
  
