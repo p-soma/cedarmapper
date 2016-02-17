@@ -6,7 +6,7 @@
 #
 
 library(htmlwidgets)
-library(cedarwidgets)
+library(cedargraph)
 library(shiny)
 library(datasets)
 library(networkD3)
