@@ -5,13 +5,14 @@
 # http://shiny.rstudio.com
 #
 
+library(htmlwidgets)
 library(cedarwidgets)
 library(shiny)
 library(datasets)
 library(networkD3)
 data(MisLinks)
 data(MisNodes)
-
+MisNodesPlus = data.frame(MisNodes,nodedata =  rnorm(nrow(MisNodes)))
 
 shinyServer(function(input, output) {
   # Return the requested dataset
@@ -24,7 +25,7 @@ shinyServer(function(input, output) {
   })
   
   output$graph <- rendercedargraph({
-        cedargraph(Links = MisLinks, Nodes = MisNodes, Source = "source",
+        cedargraph(Links = MisLinks, Nodes = MisNodesPlus, Source = "source",
                      Target = "target", Value = "value", NodeID = "name",
                      Group = "group", opacity = input$opacity)
   })
