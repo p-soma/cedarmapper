@@ -1,10 +1,16 @@
 # cedarFunctions.R
 # cedar project development functions
 
+library(cluster)
+library(NbClust)
+library(igraph)
+
+# for gap and colored dendograms, optional
+library(factoextra)
+# to install the above requires 'Hmisc' which requires binary install on Mac
+
 # generate a set of points on circle
 # example c = randCircle(); plot(c)
-library(cluster)
-library(igraph)
 
 main <- function(make_plots=TRUE) {
   
