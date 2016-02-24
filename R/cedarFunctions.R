@@ -6,10 +6,10 @@
 library(cluster)
 library(igraph)
 
-main <- function(make_plots=FALSE) {
+main <- function(make_plots=TRUE) {
   
         # d is for data
-  d = circle.data(r=1,n=60)
+  d = circle.data(r=1,n=60, randomize=TRUE)
         # lense partitions
   d.partitions = circle.partition(d, l = 4)
         # list of clusters using euclidean distance, single linkage, and  gap clustering detection, 
@@ -20,25 +20,27 @@ main <- function(make_plots=FALSE) {
   adjacency_matrix = circle.adj(d.nodes)
         # create an edge list
   d.graph = circle.graph(adjacency_matrix) 
-  plot(d.graph)
-        # visualize
-  # htmlwidget goes here, converting edge list to JSON format
- 
+  
   if(make_plots) {
-    # circle
-    plot(d$X, d$Y)
     
-    # plot just the partitions
-    o_par = par()  # par == R's plot parameter structure, save original
-    par(mfrow=c(2,2)) # set for 2X2 plot
-    for(i in 1:4){ with(d.partitions[[i]], plot(X,Y)) }
-    par(mfrow=c(1,1))
-    # dendograms and optimal cluster K
-    circle_cluster_gap_viz(d,d.partitions)
+  par(mfrow=c(2,2))
     
-    plot(graph.adjacency(adjacency_matrix, mode ="undirected",weighted=TRUE))
-
-  } 
+  plot(d$X, d$Y, main="Unit Circle")
+  par(mfrow=c(2,2)) # set for 2X2 plot
+  for(i in 1:4){ with(d.partitions[[i]], plot(X,Y)) }
+  par(mfrow=c(1,1))
+  
+  par(mfrow=c(2,2))
+  for(i in 1:4){ 
+    d.subset = d.partitions[[i]][,-3]  # remove the ID column,TODO remove hard coded col num
+    print( eclust(d.subset, FUNcluster="hclust", k.max = 5, stand =TRUE, B = 500, hc_metric="euclidean", hc_method="single"))
+    }
+  
+  par(mfrow=c(1,1))
+  plot(d.graph, main="resulting graph")
+  }
+  # circle_cluster_gap_viz(d,d.partitions)
+  
   
   return(edgelist)
   
@@ -93,18 +95,6 @@ circle.partition <- function(d, l = 4) {
   return(partitions)
 } 
 
-# single linkage clustering but no cluster identification method here, see gaps method below
-# this function is getting obsolete
-circle.old.clusters <- function(d, partitions){
-  l = length(partitions)
-  clusters = list()
-  for ( i in 1:l) {
-      d.subset = d[d$ID==partitions[[i]]$ID,-3]
-      d.dist = dist(d.subset, method="euclidean")
-      clusters[[i]] = hclust(d.dist, method = "single")
-  }  
-  return(clusters) 
-}
 
 circle_cluster_gap_viz <- function(d,partitions){
   l = length(partitions)
@@ -147,12 +137,20 @@ circle.nodes<- function(d,clusters){
   nodes = list()
   node_counter = 0
   
-  cuts = clusters[[i]]
+  # for each partition clustering
   for ( i in 1:l) {
+    
+    # shorten the name the item from the clusters list
+    cuts = clusters[[i]] 
+    
+    # cuts are a list of data points with associated cluster numbers, 1,1,2,2,...,k
+    # convert this repeating list of cluster numbers to just the numbers 1,2,..k
     for(j in unique(cuts)){
-      node_ids = d[names(cuts[cuts == j]), ]
+      # advance the node counter TODO: vectorize this loop
       node_counter = node_counter + 1
-      nodes[[node_counter]] = d[names(cuts[cuts == j]), ]
+      data_subset_for_this_cluster = d[names(cuts[cuts == j]), ]  
+      # store these data inside this node
+      nodes[[node_counter]] = data_subset_for_this_cluster
     }
   }
   return(nodes)
