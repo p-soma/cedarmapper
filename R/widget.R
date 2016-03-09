@@ -1,8 +1,15 @@
 # graph widget demonstration and support functions
 
-# source("R/cedarFunctions.R")
+source("R/cedarFunctions.R")
 
 library(htmlwidgets)
+
+graphPrep <- function(nodes){
+  adjmatrix = cedar.adj(nodes)
+  # create an edge list
+  return(cedar.graph(adjmatrix))
+}
+
 
 nodePrep = function(nodes){
   ## get node data ready for js widget
@@ -11,6 +18,7 @@ nodePrep = function(nodes){
   # TO DO: introspect columns in nodes and add means for all columns
   
   meanx <- function(litem) { mean(litem$X)}
+  g = graphPrep(nodes)
   nodes = data.frame("name"  = as.vector((V(g))), 
                      "values"= unlist(lapply(nodes,meanx)))
   return(nodes)
