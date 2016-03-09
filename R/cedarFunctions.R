@@ -8,47 +8,55 @@ library(igraph)
 # for gap and colored dendograms, optional
 library(factoextra)
 # to install the above requires 'Hmisc' which requires binary install on Mac
+# see https://cran.r-project.org/web/packages/Hmisc/index.html 
 
 # generate a set of points on circle
 # example c = randCircle(); plot(c)
 
-main <- function(make_plots=TRUE) {
+main <- function(npoints = 100,make_plots=FALSE) {
   
-        # d is for data
-  d = circle.data(r=1,n=60, randomize=TRUE)
-        # lense partitions
-  d.partitions = circle.partition(d, l = 4)
-        # list of clusters using euclidean distance, single linkage, and  gap clustering detection, 
-  d.clusters = circle.clusters(d, d.partitions)
-        # from clusters create nodes of sets of d
-  d.nodes  = circle.nodes(d,d.clusters)
-        # look for links and build adjacency_matrix
-  adjacency_matrix = circle.adj(d.nodes)
-        # create an edge list
-  d.graph = circle.graph(adjacency_matrix) 
+  # d is for data
+  d = circle.data(r=1,n=npoints, randomize=FALSE)
+  
+  # lense partitions
+  d.partitions= cedar.partition(d, l = 4)
+  
+  # list of clusters using euclidean distance, single linkage, and  gap clustering detection, 
+  d.clusters  = cedar.clusters(d, d.partitions)
+  
+  # from clusters create nodes of sets of d
+  d.nodes     = cedar.nodes(d,d.clusters)
+  
+  # look for links and build adjacency_matrix
+  d.adjmatrix = cedar.adj(d.nodes)
+  
+  # create an edge list
+  d.graph     = cedar.graph(d.adjmatrix) 
   
   if(make_plots) {
     
-  par(mfrow=c(2,2))
+    par(mfrow=c(2,2))
     
-  plot(d$X, d$Y, main="Unit Circle")
-  par(mfrow=c(2,2)) # set for 2X2 plot
-  for(i in 1:4){ with(d.partitions[[i]], plot(X,Y)) }
-  par(mfrow=c(1,1))
-  
-  par(mfrow=c(2,2))
-  for(i in 1:4){ 
-    d.subset = d.partitions[[i]][,-3]  # remove the ID column,TODO remove hard coded col num
-    print( eclust(d.subset, FUNcluster="hclust", k.max = 5, stand =TRUE, B = 500, hc_metric="euclidean", hc_method="single"))
+    plot(d$X, d$Y, main="Unit Circle")
+    par(mfrow=c(2,2)) # set for 2X2 plot
+    for(i in 1:4){ with(d.partitions[[i]], plot(X,Y)) }
+    par(mfrow=c(1,1))
+    
+    par(mfrow=c(2,2))
+    for(i in 1:4){ 
+      d.subset = d.partitions[[i]][,-3]  # remove the ID column,TODO remove hard coded col num
+      print( eclust(d.subset, FUNcluster="hclust", k.max = 5, stand =TRUE, B = 500, hc_metric="euclidean", hc_method="single"))
     }
+    
+    par(mfrow=c(1,1))
+    plot(d.graph, main="resulting graph")
+    
   
-  par(mfrow=c(1,1))
-  plot(d.graph, main="resulting graph")
   }
+  
   # circle_cluster_gap_viz(d,d.partitions)
   
-  
-  return(edgelist)
+  return(d.nodes)
   
 }
 
@@ -71,7 +79,7 @@ circle.data <- function(r=1, n=60, randomize=FALSE) {
 
 # partitioning using the Y column only, 4 groups essentially built in, 
 # even though there is a parameter here it's not really used. 
-circle.partition <- function(d, l = 4) {
+cedar.partition <- function(d, l = 4) {
   
   # our simple lense function
   circle.lense = function(d) {
@@ -124,7 +132,7 @@ circle_cluster_gap_viz <- function(d,partitions){
 }
 # cluster detection using NbClust; 
 # the clustering built in so works on partitions
-circle.clusters<- function(d,partitions) {
+cedar.clusters<- function(d,partitions) {
   l = length(partitions)
   nbClusts = list()
   
@@ -138,7 +146,7 @@ circle.clusters<- function(d,partitions) {
 }
 
 
-circle.nodes<- function(d,clusters){
+cedar.nodes<- function(d,clusters){
   l = length(clusters)
   nodes = list()
   node_counter = 0
@@ -163,7 +171,7 @@ circle.nodes<- function(d,clusters){
 }
 
 
-circle.adj<- function(nodes) {
+cedar.adj<- function(nodes) {
   # function that tells if there is overlapping rows of data
   detect_overlap <- function(a,b) { length(intersect(a$ID,b$ID)) }
   
@@ -179,11 +187,12 @@ circle.adj<- function(nodes) {
   return(adjmat)
 }
 
-circle.graph<- function(adjmatrix){
+
+cedar.graph<- function(adjmatrix){
   # need to use just upper half of matrix
   adjmatrix[lower.tri(adjmatrix)] <- 0
   
-  g  <- graph.adjacency(adjmatrix, mode ="undirected",weighted=TRUE)
+  g  <- graph_from_adjacency_matrix(adjmatrix, mode ="undirected",weighted="weight", diag=FALSE)
 
   return(g)
 }
