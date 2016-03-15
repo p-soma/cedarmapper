@@ -24,8 +24,8 @@ shinyServer(function(input, output) {
            "perm" = "perm" )
   })
   
-  output$graph <- rendercedargraph({
-        cedargraph(Links = MisLinks, Nodes = MisNodesPlus, Source = "source",
+  output$graph <- rendersimpleGraph({
+        simpleGraph(Links = MisLinks, Nodes = MisNodesPlus, Source = "source",
                      Target = "target", Value = "value", NodeID = "name",
                      Group = "group", opacity = input$opacity)
   })
