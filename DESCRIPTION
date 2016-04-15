@@ -2,11 +2,10 @@ Package: cedar
 Type: Package
 Title: Topographical data analytics
 Version: 0.1.0
-Author: Jose Perea / Patrick Bills
-Maintainer: Who to complain to <yourfault@somewhere.net>
-Description: More about what it does (maybe more than one line)
+Date: 2016-04-27
+Authors@R: person("P", "Bills", email = "billspat@msu.edu", role = c("aut", "cre"))
+Description: visualization of topo data analysis
 License: GPL > 3
-LazyData: TRUE
 Depends:
     R (>= 2.15),
     cedargraph (>= 0.0.2),
@@ -20,3 +19,6 @@ Suggests:
     devtools,
     roxygen2,
     testthat
+LazyData: False
+RoxygenNote: 5.0.1
+DisplayMode: Showcase
