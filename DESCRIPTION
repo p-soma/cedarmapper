@@ -7,3 +7,16 @@ Maintainer: Who to complain to <yourfault@somewhere.net>
 Description: More about what it does (maybe more than one line)
 License: GPL > 3
 LazyData: TRUE
+Depends:
+    R (>= 2.15),
+    cedargraph (>= 0.0.2),
+    cluster (>= 2.0.0),
+    NbClust (>= 3.0),
+    shiny (>= 0.13)
+Imports:
+  igraph
+Suggests:
+    knitr,
+    devtools,
+    roxygen2,
+    testthat

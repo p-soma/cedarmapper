@@ -1,6 +1,8 @@
 # cedarFunctions.R
 # cedar project development functions
-
+#' @import cluster
+#' @import NbClust
+#' @import igraph
 library(cluster)
 library(NbClust)
 library(igraph)
@@ -12,6 +14,26 @@ library(factoextra)
 
 # generate a set of points on circle
 # example c = randCircle(); plot(c)
+
+#' @export
+circle.nodes <- function(npoints = 100, randomize=FALSE) {
+  # d is for data
+  d = circle.data(r=1,n=npoints, randomize)
+  # lense partitions
+  d.partitions= cedar.partition(d, l = 4)
+  # list of clusters using euclidean distance, single linkage, and  gap clustering detection, 
+  d.clusters  = cedar.clusters(d, d.partitions)
+  # from clusters create nodes of sets of d
+  d.nodes     = cedar.nodes(d,d.clusters)
+  # look for links and build adjacency_matrix
+  # d.adjmatrix = cedar.adj(d.nodes)
+  
+  # create an edge list
+  # d.graph     = cedar.graph(d.adjmatrix) 
+
+  return(d.nodes)
+}
+
 
 main <- function(npoints = 100,make_plots=FALSE) {
   
@@ -50,18 +72,15 @@ main <- function(npoints = 100,make_plots=FALSE) {
     
     par(mfrow=c(1,1))
     plot(d.graph, main="resulting graph")
-    
-  
   }
   
   # circle_cluster_gap_viz(d,d.partitions)
-  
   return(d.nodes)
-  
 }
 
 
 ######DATA
+#' @export
 circle.data <- function(r=1, n=60, randomize=FALSE) {
   if (randomize){
     angles = (runif(n, -1*r, 1*r)) * pi
@@ -79,6 +98,7 @@ circle.data <- function(r=1, n=60, randomize=FALSE) {
 
 # partitioning using the Y column only, 4 groups essentially built in, 
 # even though there is a parameter here it's not really used. 
+#' @export
 cedar.partition <- function(d, l = 4) {
   
   # our simple lense function
@@ -109,7 +129,7 @@ cedar.partition <- function(d, l = 4) {
   return(partitions)
 } 
 
-
+#' @export
 circle_cluster_gap_viz <- function(d,partitions){
   l = length(partitions)
   o_par = par()
@@ -132,6 +152,7 @@ circle_cluster_gap_viz <- function(d,partitions){
 }
 # cluster detection using NbClust; 
 # the clustering built in so works on partitions
+#' @export
 cedar.clusters<- function(d,partitions) {
   l = length(partitions)
   nbClusts = list()
@@ -145,7 +166,7 @@ cedar.clusters<- function(d,partitions) {
   return(nbClusts)
 }
 
-
+#' @export
 cedar.nodes<- function(d,clusters){
   l = length(clusters)
   nodes = list()
@@ -170,7 +191,7 @@ cedar.nodes<- function(d,clusters){
   return(nodes)
 }
 
-
+#' @export
 cedar.adj<- function(nodes) {
   # function that tells if there is overlapping rows of data
   detect_overlap <- function(a,b) { length(intersect(a$ID,b$ID)) }
@@ -187,7 +208,7 @@ cedar.adj<- function(nodes) {
   return(adjmat)
 }
 
-
+#' @export
 cedar.graph<- function(adjmatrix){
   # need to use just upper half of matrix
   adjmatrix[lower.tri(adjmatrix)] <- 0

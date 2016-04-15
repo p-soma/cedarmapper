@@ -16,21 +16,20 @@ shinyUI(fluidPage(
   sidebarLayout(
     sidebarPanel(
       selectInput("column", "Choose a column:", 
-                  choices = c( "area",  "peri",  "shape", "perm")),
+                  choices = c("X",  "Y")),
       
       sliderInput("bins",
                   "Number of bins:",
                   min = 1,
-                  max = 50,
-                  value = 30)
+                  max = 30,
+                  value = 10)
     ),
 
     # Show a plot of the generated distribution
     mainPanel(
       h3(textOutput("caption", container = span)),
       cedarGraphOutput("graph"),
-      plotOutput("distPlot"),
-      plotOutput("clustPlot")
+      plotOutput("distPlot")
  
     )
   )

@@ -16,12 +16,12 @@ nodePrep = function(nodes){
   
   #### prep nodes -- currently this only works with circle data
   # TO DO: introspect columns in nodes and add means for all columns
-  
+    
   meanx <- function(litem) { mean(litem$X)}
   g = graphPrep(nodes)
-  nodes = data.frame("name"  = as.vector((V(g))), 
+  nodes.prepped = data.frame("name"  = as.vector((V(g))), 
                      "values"= unlist(lapply(nodes,meanx)))
-  return(nodes)
+  return(nodes.prepped)
 }
 
 
@@ -48,5 +48,5 @@ saveNodes <- function(nodes, filename="cedarcircle.rda"){
 
 # note this doesn't seem to work unless run from console
 nodes = main(100)
-simpleGraph(linkPrep(nodes), nodePrep(nodes))
+cedarGraph(linkPrep(nodes), nodePrep(nodes))
 
