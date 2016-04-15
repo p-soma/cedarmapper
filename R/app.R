@@ -16,14 +16,18 @@ d.nodes     = cedar.nodes(d,d.clusters)
 # nodedata = 
 ui <- 
   fluidPage(
-    h3("Circle Data"),
+    h3("CedarProject: Circle Data"),
     fluidRow(
-      column(6, wellPanel(
-            
+      column(6, 
+             wellPanel(
+               selectInput("variableselect", label = h3("Select box"), 
+                           choices = list("X" = 'X', "Y" = 'Y'), 
+                           selected = 1),
             cedarGraphOutput("cedargraph")
               )
       ),
       column(6, wellPanel(
+        textOutput("selectedVariable"),
         uiOutput("nodeListInput"),
         uiOutput("nodeValuesInput"),
         conditionalPanel(
@@ -41,6 +45,8 @@ ui <-
 
 
 server <- function(input, output, session) {
+  
+  output$selectedVariable <- renderText({ input$variableselect })
   
   observe({
     
@@ -81,7 +87,8 @@ server <- function(input, output, session) {
    
     n = d.nodes[as.numeric(unlist(node_ids))]
     datarows = ldply(n, data.frame)
-    return(datarows$X)
+    selectedVariable = input$variableselect 
+    return(get(selectedVariable,datarows))
   })
   
   output$cedargraph <- renderCedarGraph({
@@ -91,8 +98,13 @@ server <- function(input, output, session) {
   })
   
   output$nodePlot = renderPlot({
-    hist(getValues())
-    # barplot(height=as.vector(getValues()), names.arg = getNodeList())
+    v = getValues()
+    qplot(v,
+          main = "Histogram of Selected Variable", 
+          xlab = "Data Values",
+          fill=I("blue"), 
+          col=I("black"), 
+          alpha=I(.2))
   })
   
   output$nodeListInput <- renderUI({
@@ -111,7 +123,7 @@ server <- function(input, output, session) {
       message = links)
   })
   
-  
+  # output$table = renderDataTable(getValues)
   
   
   #output$nodeCountText <- renderText({
