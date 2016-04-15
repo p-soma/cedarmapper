@@ -4,6 +4,8 @@ source("R/cedarFunctions.R")
 
 library(htmlwidgets)
 
+selectedrows <- function(nodelist) {ldply(nodes[nodelist], data.frame)}
+
 graphPrep <- function(nodes){
   adjmatrix = cedar.adj(nodes)
   # create an edge list

@@ -1,8 +1,6 @@
 # cedarFunctions.R
 # cedar project development functions
-#' @import cluster
-#' @import NbClust
-#' @import igraph
+
 library(cluster)
 library(NbClust)
 library(igraph)
@@ -16,21 +14,27 @@ library(factoextra)
 # example c = randCircle(); plot(c)
 
 #' @export
-circle.nodes <- function(npoints = 100, randomize=FALSE) {
+circlenodes<- function(npoints = 100) {
+  
   # d is for data
-  d = circle.data(r=1,n=npoints, randomize)
+  d = circle.data(r=1,n=npoints, randomize=FALSE)
+  
   # lense partitions
   d.partitions= cedar.partition(d, l = 4)
+  
   # list of clusters using euclidean distance, single linkage, and  gap clustering detection, 
   d.clusters  = cedar.clusters(d, d.partitions)
+  
   # from clusters create nodes of sets of d
   d.nodes     = cedar.nodes(d,d.clusters)
+  
   # look for links and build adjacency_matrix
   # d.adjmatrix = cedar.adj(d.nodes)
   
   # create an edge list
   # d.graph     = cedar.graph(d.adjmatrix) 
-
+ 
+  # circle_cluster_gap_viz(d,d.partitions)
   return(d.nodes)
 }
 

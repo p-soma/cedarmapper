@@ -3,27 +3,41 @@
 
 library(htmlwidgets)
 library(cedargraph)
+# library(cedar)
 library(shiny)
 data("cedarcircle")
+source("cedarFunctions.R")
 
-ui <- basicPage(
-  
-  h3("Circle Data"),
-  cedarGraphOutput("cedargraph"),
-  
-  # sliderInput("nodecount","Number of nodes:",min = 1,max = 50,value = 20),
-  # p("node count"),
-  #  textOutput("nodeCountText"),
-  
-  uiOutput("nodeListInput"),
-  uiOutput("nodeValuesInput"),
-  conditionalPanel(
-    condition="(input.nl)",
-    plotOutput("nodePlot")
+d = circle.data(r=1,n=100, randomize=FALSE)
+d.partitions= cedar.partition(d, l = 4)
+d.clusters  = cedar.clusters(d, d.partitions)
+d.nodes     = cedar.nodes(d,d.clusters)
+
+# nodedata = 
+ui <- 
+  fluidPage(
+    h3("Circle Data"),
+    fluidRow(
+      column(6, wellPanel(
+            
+            cedarGraphOutput("cedargraph")
+              )
+      ),
+      column(6, wellPanel(
+        uiOutput("nodeListInput"),
+        uiOutput("nodeValuesInput"),
+        conditionalPanel(
+          condition="(input.nl)",
+          plotOutput("nodePlot")
+        )
+      )
+      
+    )
   )
-  
-  # cedarGraphOutput("randomgraph")
 )
+
+
+
 
 
 server <- function(input, output, session) {
@@ -53,16 +67,21 @@ server <- function(input, output, session) {
     nodes <- NULL
     if( ! is.null(ns)) {
       nodes <- circle.nodes[circle.nodes$name %in% ns,]}
-    return(nodes)
+    n = as.vector(nodes["name"])
+    print(n)
+    return(n)
   })
   
   getValues <- reactive({
     # TODO: create input$varname, e.g. from dropdown
-    nodes = getNodes()
-    if( is.null(nodes) || nrow(nodes)==0 ){
+    node_ids = getNodes()
+    if( is.null(node_ids) || nrow(node_ids)==0 ){
       return(NULL)
     }
-    return(nodes$values)
+   
+    n = d.nodes[as.numeric(unlist(node_ids))]
+    datarows = ldply(n, data.frame)
+    return(datarows$X)
   })
   
   output$cedargraph <- renderCedarGraph({
@@ -72,7 +91,8 @@ server <- function(input, output, session) {
   })
   
   output$nodePlot = renderPlot({
-    barplot(height=as.vector(getValues()), names.arg = getNodeList())
+    hist(getValues())
+    # barplot(height=as.vector(getValues()), names.arg = getNodeList())
   })
   
   output$nodeListInput <- renderUI({
