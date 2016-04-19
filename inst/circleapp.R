@@ -13,19 +13,24 @@
 # library(shiny)
 # library(plyr)
 
-data("cedarcircle")
+# TODO: REPLACE THIS WITH DATA PREPARATION
+# data("cedarcircle")
+
 # source("cedarFunctions.R")
 # source("cedarFunctions.R")
 
-d = circle.data(r=1,n=100, randomize=FALSE)
+d = circle.data(r=1,n=1000, randomize=TRUE)
+
 d.partitions= cedar.partition(d, l = 4)
 d.clusters  = cedar.clusters(d, d.partitions)
 d.nodes     = cedar.nodes(d,d.clusters)
+graph_nodes = nodePrep(d.nodes)
+graph_links = linkPrep(d.nodes)
 
 # nodedata = 
 ui <- 
   fluidPage(
-    h3("CedarProject: Circle Data"),
+    h3("CedarProject: Node Data"),
     fluidRow(
       column(6, 
              wellPanel(
@@ -86,11 +91,11 @@ server <- function(input, output, session) {
   
   getNodes <- reactive({
     ns <- getNodeList()
-    nodes <- NULL
+    selected_nodes <- NULL
     if( ! is.null(ns)) {
-      nodes <- circle.nodes[circle.nodes$name %in% ns,]}
-    n = as.vector(nodes["name"])
-    print(n)
+      selected_nodes <- graph_nodes[graph_nodes$name %in% ns,]}
+    n = as.vector(selected_nodes["name"])   #  "name" is 'nodeid' as used in the node prep script
+    # print(n)  # debug
     return(n)
   })
   
@@ -108,8 +113,8 @@ server <- function(input, output, session) {
   })
   
   output$cedargraph <- renderCedarGraph({
-    # graph.data= randGraphData(n=20)
-    cedarGraph(circle.links, circle.nodes,250,250)
+    # TODO: replace with node data here
+    cedarGraph(graph_links, graph_nodes,250,250)
   })
   
   output$nodePlot = renderPlot({
