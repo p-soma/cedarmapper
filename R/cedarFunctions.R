@@ -18,13 +18,13 @@ circleapp <- function(){
 }
 
 #' @export
-circlenodes<- function(npoints = 100) {
+circlenodes<- function(npoints = 100, lense_count = 4, lense_function=simple_lense, coordinate="Y") {
   
   # d is for data
-  d = circle.data(r=1,n=npoints, randomize=FALSE)
+  d = circle.data(r=1,n=npoints, randomize=FALSE)  # data frame with X & Y values
   
   # lense partitions
-  d.partitions= cedar.partition(d, l = 4)
+  d.partitions= cedar.partition(d, lense_count, lense_function, coordinate)
   
   # list of clusters using euclidean distance, single linkage, and  gap clustering detection, 
   d.clusters  = cedar.clusters(d, d.partitions)
@@ -106,18 +106,35 @@ circle.data <- function(r=1, n=60, randomize=FALSE) {
 
 # partitioning using the Y column only, 4 groups essentially built in, 
 # even though there is a parameter here it's not really used. 
+
 #' @export
-cedar.partition <- function(d, l = 4) {
+simple_lense = function(d,varname=NULL ){
+  # simple lense function that returns a single variable
+  # d = data as a data frame, varname  = name of variable as a string
   
-  # our simple lense function
-  circle.lense = function(d) {
-    lense_data = data.frame(L=d$Y, ID=seq.int(nrow(d)))
-    return(lense_data)
-  }
+  # if no variable name passed, use the first name
+  # requires data d to have named columns
+  if (is.null(varname)) { varname = names(d)[1] }
   
+  # prep data frame for partitioning function with L column 
+  lense_data = data.frame(L=get(varname, d), ID=seq.int(nrow(d)))
+  return(lense_data)
+  
+}
+
+# our simple lense function
+#' @export
+circle.lense = function(d) {
+  lense_data = data.frame(L=d$Y, ID=seq.int(nrow(d)))
+  return(lense_data)
+}
+
+#' @export
+cedar.partition <- function(d, l = 4, lensefun = simple_lense, lenseparam="Y" ) {
+
   # lense function here returns data frame with column L
   # could be a simple array or vector at this point with named rows
-  lense.df = circle.lense(d) 
+  lense.df = lensefun(d, lenseparam) 
   
   # simple partitioning paritions with 50% overlap; 
   partition_size = 2 * ( max(lense.df$L) - min(lense.df$L))/(l+1)  # l = num of partitions

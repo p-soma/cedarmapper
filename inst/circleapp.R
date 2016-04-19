@@ -19,15 +19,21 @@
 # source("cedarFunctions.R")
 # source("cedarFunctions.R")
 
-d = circle.data(r=1,n=1000, randomize=TRUE)
+# variables to go in to application
 
-d.partitions= cedar.partition(d, l = 4)
+randomcircle= FALSE
+selected_coordinate = "Y"
+selected_lense_funcion = simple_lense  
+selected_partition_count = 4
+
+d = circle.data(r=1,n=1000, randomize=randomcircle)
+d.partitions= cedar.partition(d, l = selected_partition_count, lensefun = selected_lense_funcion, lenseparam=selected_coordinate )
 d.clusters  = cedar.clusters(d, d.partitions)
 d.nodes     = cedar.nodes(d,d.clusters)
 graph_nodes = nodePrep(d.nodes)
 graph_links = linkPrep(d.nodes)
 
-# nodedata = 
+
 ui <- 
   fluidPage(
     h3("CedarProject: Node Data"),
