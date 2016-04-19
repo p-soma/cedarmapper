@@ -1,9 +1,8 @@
 # cedarFunctions.R
 # cedar project development functions
-
-library(cluster)
-library(NbClust)
-library(igraph)
+#'@import cluster
+#'@import NbClust
+#'@import igraph
 
 # for gap and colored dendograms, optional
 library(factoextra)
@@ -12,6 +11,11 @@ library(factoextra)
 
 # generate a set of points on circle
 # example c = randCircle(); plot(c)
+
+#' @export
+circleapp <- function(){
+  shiny::runApp(system.file('circleapp.R', package='cedar'))
+}
 
 #' @export
 circlenodes<- function(npoints = 100) {

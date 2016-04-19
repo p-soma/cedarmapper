@@ -11,9 +11,10 @@ Depends:
     cedargraph (>= 0.0.2),
     cluster (>= 2.0.0),
     NbClust (>= 3.0),
-    shiny (>= 0.13)
-Imports:
-  igraph
+    shiny (>= 0.13),
+    htmlwidgets(>= 0.6), 
+    igraph(>= 1.0),
+    ggplot2(>= 2.0)
 Suggests:
     knitr,
     devtools,

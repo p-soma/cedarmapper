@@ -1,24 +1,28 @@
 # graph widget demonstration and support functions
 
 source("R/cedarFunctions.R")
-
-library(htmlwidgets)
+#'@import cluster
+#'@import NbClust
+#'@import igraph
+#'@import htmlwidgets
 
 selectedrows <- function(nodelist) {ldply(nodes[nodelist], data.frame)}
 
+
+#' @export
 graphPrep <- function(nodes){
   adjmatrix = cedar.adj(nodes)
   # create an edge list
   return(cedar.graph(adjmatrix))
 }
 
-
+#'@export
 nodePrep = function(nodes){
   ## get node data ready for js widget
   
   #### prep nodes -- currently this only works with circle data
   # TO DO: introspect columns in nodes and add means for all columns
-    
+  selectedVariable = "X"
   meanx <- function(litem) { mean(litem$X)}
   g = graphPrep(nodes)
   nodes.prepped = data.frame("name"  = as.vector((V(g))), 

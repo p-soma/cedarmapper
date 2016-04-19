@@ -1,12 +1,21 @@
 # example_app.R
 # very basic example of using this widget in an RStudio Shiny app
 
-library(htmlwidgets)
-library(cedargraph)
+#' @import htmlwidgets
+#' @import cedargraph
+#' @import shiny
+#' @import plyr
+#' @import ggplot2
+
+# library(htmlwidgets)
+# library(cedargraph)
 # library(cedar)
-library(shiny)
+# library(shiny)
+# library(plyr)
+
 data("cedarcircle")
-source("cedarFunctions.R")
+# source("cedarFunctions.R")
+# source("cedarFunctions.R")
 
 d = circle.data(r=1,n=100, randomize=FALSE)
 d.partitions= cedar.partition(d, l = 4)
@@ -27,12 +36,13 @@ ui <-
               )
       ),
       column(6, wellPanel(
-        textOutput("selectedVariable"),
+        uiOutput("selectedVariable"),
+        p("variance:", uiOutput("variance")),
         uiOutput("nodeListInput"),
         uiOutput("nodeValuesInput"),
         conditionalPanel(
           condition="(input.nl)",
-          plotOutput("nodePlot")
+            plotOutput("nodePlot")
         )
       )
       
@@ -46,7 +56,13 @@ ui <-
 
 server <- function(input, output, session) {
   
-  output$selectedVariable <- renderText({ input$variableselect })
+  selectedVar = reactive({ 
+    v = input$variableselect
+    return(v)})
+  
+  output$selectedVariable <- renderText({selectedVar()})
+                                        
+  output$variance <- renderUI({p(var(getValues()))})
   
   observe({
     
@@ -82,7 +98,7 @@ server <- function(input, output, session) {
     # TODO: create input$varname, e.g. from dropdown
     node_ids = getNodes()
     if( is.null(node_ids) || nrow(node_ids)==0 ){
-      return(NULL)
+      return(0)
     }
    
     n = d.nodes[as.numeric(unlist(node_ids))]
@@ -93,7 +109,6 @@ server <- function(input, output, session) {
   
   output$cedargraph <- renderCedarGraph({
     # graph.data= randGraphData(n=20)
-    #cedarGraph(graph.data$links, graph.data$nodes,250,250)
     cedarGraph(circle.links, circle.nodes,250,250)
   })
   
@@ -114,6 +129,7 @@ server <- function(input, output, session) {
   output$nodeValuesInput <- renderUI({
     textInput("vl","selected values", paste(getValues(), sep=",", collapse = ","))
   })
+  
   output$randomgraph <- renderCedarGraph({
     graph.data= randGraphData(n=input$nodecount)
     links = graph.data$links
