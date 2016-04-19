@@ -22,16 +22,19 @@
 # variables to go in to application
 
 randomcircle= FALSE
+rowcount = 500
 selected_coordinate = "Y"
 selected_lense_funcion = simple_lense  
 selected_partition_count = 4
 
-d = circle.data(r=1,n=1000, randomize=randomcircle)
+d = circle.data(r=1,n=rowcount, randomize=randomcircle)
 d.partitions= cedar.partition(d, l = selected_partition_count, lensefun = selected_lense_funcion, lenseparam=selected_coordinate )
 d.clusters  = cedar.clusters(d, d.partitions)
 d.nodes     = cedar.nodes(d,d.clusters)
 graph_nodes = nodePrep(d.nodes)
 graph_links = linkPrep(d.nodes)
+
+varchoices = names(d)
 
 
 ui <- 
@@ -41,10 +44,14 @@ ui <-
       column(6, 
              wellPanel(
                selectInput("variableselect", label = h3("Select box"), 
-                           choices = list("X" = 'X', "Y" = 'Y'), 
+                           choices = varchoices, 
                            selected = 1),
-            cedarGraphOutput("cedargraph")
+               actionButton("grp1set", "Set Group 1"),
+               actionButton("grp2set", "Set Group 2"),
+               actionButton("runTest", "Compare Groups"),
+               cedarGraphOutput("cedargraph")
               )
+            
       ),
       column(6, wellPanel(
         uiOutput("selectedVariable"),
@@ -54,7 +61,10 @@ ui <-
         conditionalPanel(
           condition="(input.nl)",
             plotOutput("nodePlot")
-        )
+        ),
+        div("Group 1:", textOutput("group1list")),
+        div("Group 2:", textOutput("group2list")), 
+        p("KS Test here:", textOutput("ksTest"))
       )
       
     )
@@ -85,6 +95,28 @@ server <- function(input, output, session) {
     }
     
   })
+  
+  group1 <- eventReactive(input$grp1set, {
+    paste(getNodeList(), sep=",", collapse = ",")
+  })
+  
+  output$group1list <- renderText({group1()})
+  
+  group2 <- eventReactive(input$grp2set, {
+    paste(getNodeList(), sep=",", collapse = ",")
+  })
+  
+  output$group2list <- renderText({group2()})
+  
+  
+  groupSets <- eventReactive(input$runTest, {
+    # run the KS test here on the two groups
+    # test that the groups are set...
+    x= list( group1(), group2())
+    return(x)
+  })
+  
+  output$ksTest <- renderText({groupSets()})
   
   getNodeList <- reactive({
     nl <- NULL
