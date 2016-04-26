@@ -14,7 +14,9 @@ Depends:
     shiny (>= 0.13),
     htmlwidgets(>= 0.6), 
     igraph(>= 1.0),
-    ggplot2(>= 2.0)
+    ggplot2(>= 2.0),
+    shinyjs(>= 0.5),
+    V8(>= 1.0)
 Suggests:
     knitr,
     devtools,
