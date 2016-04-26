@@ -4,6 +4,10 @@
 #' @import NbClust
 #' @import igraph
 
+library(igraph)
+library(NbClust)
+library(cluster)
+
 # for gap and colored dendograms, optional
 library(factoextra)
 # to install the above requires 'Hmisc' which requires binary install on Mac
@@ -105,17 +109,16 @@ nodes.graphmapper <- function(gm){
   # for each partition
   for ( i in 1:l) {
     
-    # shorten the name the item from the clusters list
-    cuts = clusters[[i]] 
+    # shortened name for the cluster list
+    cuts = gm$clusters[[i]] 
     
     # cuts are a list of data points with associated cluster numbers, 1,1,2,2,...,k
     # convert this repeating list of cluster numbers to just the numbers 1,2,..k
     for(j in unique(cuts)){
       # advance the node counter TODO: vectorize this loop
       node_counter = node_counter + 1
-      data_subset_for_this_cluster = d[names(cuts[cuts == j]), ]  
-      # store these data inside this node
-      nodes[[node_counter]] = data_subset_for_this_cluster
+      nodes[[node_counter]] = names(cuts[cuts == j])
+      
     }
   }
   return(nodes)
@@ -123,9 +126,10 @@ nodes.graphmapper <- function(gm){
 
 #' @export
 cedar.adj<- function(gm) {
+  # shorten the name
   nodes = gm$nodes
   # function that tells if there is overlapping rows of data
-  detect_overlap <- function(a,b) { length(intersect(a$ID,b$ID)) }
+  detect_overlap <- function(a,b) { length(intersect(a,b)) }
   
   adjmat <- matrix(0, ncol = length(nodes), nrow = length(nodes))
   colnames(adjmat) <- rownames(adjmat) <- names(nodes)
@@ -142,6 +146,7 @@ cedar.adj<- function(gm) {
 #' @export
 graph.graphmapper<- function(gm){
   # need to use just upper half of matrix
+  adjmatrix = cedar.adj(gm)
   adjmatrix[lower.tri(adjmatrix)] <- 0
   g  <- graph_from_adjacency_matrix(adjmatrix, mode ="undirected",weighted="weight", diag=FALSE)
   return(g)
@@ -173,7 +178,12 @@ cedar.graphprep = function(gm, varName="X"){
   
 }
 
-
+cedar.graph= function(gm){
+  adjmatrix = cedar.adj(gm)
+  adjmatrix[lower.tri(adjmatrix)] <- 0
+  g  <- graph_from_adjacency_matrix(adjmatrix, mode ="undirected",weighted="weight", diag=FALSE)
+  return(g)
+}
 
 ####### LENSES
 #' @export
@@ -202,19 +212,17 @@ y_lense <- function(d){
   simple_lense(d, "X")
 }
 
-
+#######################
 ### plotting 
 
 plot.graphmapper <- function(gm){
   # create an edge list
   adjmatrix = cedar.adj(gm)
-  d.graph   = cedar.graph(adjmatrix) 
+  cedar.graph(adjmatrix) 
 }
 
-plot_partitions <- function(partitions, xvar="X", yvar="Y")  {
-  par(mfrow=c(2,2))
-  
-  plot(d$X, d$Y, main="Unit Circle")
+plot_partitions <- function(gm, xvar="X", yvar="Y")  {
+  partitions = gm$partitions
   par(mfrow=c(2,2)) # set for 2X2 plot
   for(i in 1:length(partitions)){ with(partitions[[i]], plot(X,Y)) }
   par(mfrow=c(1,1))
@@ -222,13 +230,13 @@ plot_partitions <- function(partitions, xvar="X", yvar="Y")  {
   par(mfrow=c(2,2))
   for(p in partitions){ 
     # remove the ID column,TODO remove hard coded col num
-    d.subset = p[,-3]  
-    print( eclust(d.subset, FUNcluster="hclust", k.max = 5, stand =TRUE, B = 500, hc_metric="euclidean", hc_method="single"))
+     
+    print( eclust(gm$d[p,], FUNcluster="hclust", k.max = 5, stand =TRUE, B = 500, hc_metric="euclidean", hc_method="single"))
   }
 }    
 
 plot_cluster = function(gm, cnumber){
-  cldata = cbind(d.partitions[[cnumber]],d.clusters[[cnumber]])
+  cldata = cbind(d.partitions[[cnumber]],gm$clusters[[cnumber]])
   plot(cldata$X, cldata$Y, col = c("red", "green", "blue")[cldata$`d.clusters[[cnumber]]`])
   # d[d$ID %in% names(cl[[1]]),]
 }
