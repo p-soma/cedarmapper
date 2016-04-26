@@ -16,9 +16,9 @@ circle_data <- function(r=1, n=60, randomize=FALSE) {
   }
   
   d = data.frame(X=cos(angles)*r, Y=sin(angles)*r)
-  # add an ID number
-  d = data.frame(d,ID=seq.int(n))
-  rownames(d) = d$ID
+  # add an ID number - obsoleted; use rownames instead
+  #d = data.frame(d,ID=seq.int(n))
+  rownames(d) = 1:nrow(d)
   return(d)
 }
 
