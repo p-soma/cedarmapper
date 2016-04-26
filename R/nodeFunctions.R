@@ -15,7 +15,7 @@ library(factoextra)
 #' @export
 makegraphmapper <- function(x, lensefun, partition_count=4, overlap = 0.5, partition_method="single", index_method="gap"){
   gm = structure(list(d = x, 
-                      "lense_count"=lense_count, 
+                      "partition_count"=partition_count, 
                       "overlap" = overlap,   # percent, o <= 1
                       "lensefun"=lensefun, 
                       "partition_method"=partition_method, 
@@ -23,7 +23,7 @@ makegraphmapper <- function(x, lensefun, partition_count=4, overlap = 0.5, parti
                  class="graphmapper")
   
   
-  partition.graphmapper(gm)
+  gm$partitions = partition.graphmapper(gm)
   
   # list of clusters using euclidean distance, single linkage, and  gap clustering detection, 
   gm[["clusters"]]   = cedar.clusters(gm)
@@ -37,14 +37,16 @@ makegraphmapper <- function(x, lensefun, partition_count=4, overlap = 0.5, parti
 }
 
 #' @export
-partition <- function(d, lensefun, l, o){
+partition <- function(d, lensefun, l=4, o=0.5){
  
   # calculate lense values for all rows
   lense.df = lensefun(d)  # for now, don't allow extra parameters, but require them to be built into lense function 
   # returns data frame with value L and rowid ID
   
   # partition length = linear distance
-  pl = ( max(lense.df$L) - min(lense.df$L))/(l) *  (1+o) 
+  # for l=4, o = 0, partition length  = 40% of total length
+  total_length = max(lense.df$L) - min(lense.df$L)
+  pl = total_length * 0.4
   p0 = min(lense.df$L)
   
   partitions = list()
@@ -77,14 +79,14 @@ clusters.graphmapper<- function(gm) {
   index_method=gm$index_method
   gmClusts = list()
   distance_calc = "euclidean"
-  
+  nbClusts = list()
   # TODO: use ldapply instead of for loop
   for ( i in 1:length(gm$partitions)) {
     # if (debug) print(i)
     # subset of data for this partition, which contains row names...
     # this is not necessary here, and adds to R memory burden for large partitions
     # but adds to code readability
-    d.subset = gm$d[partitions[[i]],]
+    d.subset = gm$d[gm$partitions[[i]],]
     nb = NbClust(as.matrix(d.subset), distance = distance_calc, method="single",
             min.nc = 1, max.nc = 5,index =  index_method )
     nbClusts[[i]] = nb$Best.partition
