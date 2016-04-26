@@ -164,11 +164,7 @@ circle_cluster_gap_viz <- function(d,partitions){
     # print dendograms with colored clusters
     
     d.subset = partitions[[i]][,-3]  # remove the ID column,TODO remove hard coded col num
-    eClusts = eclust(d.subset, FUNcluster="hclust", k.max = 5, stand =TRUE, B = 500, hc_metric="euclidean", hc_method="single")
-    # don't keep the value, just plot
-  }
-  
-  for ( i in 1:l) {
+    # eClusts = eclust(d.subset, FUNcluster="hclust", k.max = 5, stand =TRUE, B = 500, hc_metric="euclidean", hc_method="single")
     cGaps <- clusGap(as.matrix(d.subset), FUN = hcut, K.max = 5, B = 200, hc_metric="euclidean", hc_method="single")
     print(fviz_gap_stat(cGaps ))
   }
