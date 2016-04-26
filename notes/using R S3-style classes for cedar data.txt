@@ -1,0 +1,56 @@
+Using objects and classes in R 
+=====
+
+Using R S3 class summary
+--------
+0) there are several styles of objects/classes in R, but the most common is S3.  S3 is not like OO as most programmers know it, but very informal, so your program must check and that things are as they should be (e.g. classes have all the elements they need, and those elements are the correct class).   
+
+1) Because S3 classes are flexible and ad-hoc, it's important to define, in prose, the elements of the class and co-opted so-called "generic" methods.   There may be a way to do this with ROxygen style comments ( #' @ )
+
+2) create a factory function that creates this class and default values for its elements.  This could be the first data processing function, whose return value could be a class
+  - a common structure to use for classes is the R list, which is very flexible
+  - list elements should have names
+  - in addition to named 
+
+3) support functions should expect input parameters to be your class and class structure; there are no checks so your code must either requires the class attribute is set, or just crash. 
+
+4) when updating named elements of list, there is no rquirement to update dependent structures
+therefor, should only update object elements via functions that know context of elements. 
+
+5) standard/common R functions that are "generic" (an R property) can be used with your class by creating new functions by combining the generic function name with the class name 
+summary.graphmapper <-function(gm){ # create and print summaries of gm elements }
+print.graphmapper <- function(gm) { etc}
+plot.graphmapper  <- function(gm) { etc}
+
+6) new custom functions that are not generics shouldn't use the dot notation, or are discourage from using that.   But it's really convenient to use that notation to ensure the functions are uniquely named e.g. partition.graphmapper()
+
+
+Example R Class (s3 style)
+----
+
+
+# 'factory' method to create the class
+#  akin to r method lmobject <- lm(model, params)
+makemapper<- function(d, lensefun, y ){
+# class name = graphmapper
+    gm = structure(list(data = d,paramx=x, paramy=y), class="graphmapper" )
+    rownames(gm$d) = (1:nrow(gm$d))  # assign permanent ID base on current row number
+            # this will be 
+    
+    if(class(lensefun) != "function") stop("2nd argumment must be a valid function")
+    gm[["lensefun"]] <- lensefun
+    
+    gm[["partitions"]] = partition(d, params,params)  # list of partitions
+    
+    
+}
+
+
+# define a summary function just for this class
+summary.graphmapper <- function(gm) { summary(gm$df)}
+
+
+
+
+
+
