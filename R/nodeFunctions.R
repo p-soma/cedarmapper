@@ -30,12 +30,12 @@ makegraphmapper <- function(x, lensefun, partition_count=4, overlap = 0.5, parti
   gm$partitions = partition.graphmapper(gm)
   
   # list of clusters using euclidean distance, single linkage, and  gap clustering detection, 
-  gm[["clusters"]]   = cedar.clusters(gm)
+  gm[["clusters"]]   = clusters.graphmapper(gm)
   
   # from clusters create nodes of sets of d
-  gm[["nodes"]]     = cedar.nodes(gm)
+  gm[["nodes"]]     = nodes.graphmapper(gm)
   
-  gm[["adjmatrix"]] = cedar.adj(d.nodes) 
+  gm[["adjmatrix"]] = adjacency.graphmapper(gm) 
   return(gm)
   
 }
@@ -79,24 +79,41 @@ partition.graphmapper <- function(gm) {
 # cluster detection using NbClust; 
 # the clustering built in so works on partitions
 #' @export
-clusters.graphmapper<- function(gm) {
-  index_method=gm$index_method
+clusters.graphmapper<- function(gm,iterations=500) {
+  distance_method = "euclidean"
+  index_method    = "single"
+  distanceFunction <- function(x) dist(x, method=distance_method)
+  
+  clusterFunction  <- function(x, k) list(cluster=cutree(hclust(dist(x), method = "single"),k=k))
+  gapFunction      <- function(rowids){ clusGap(x=gm$d[rowids,], FUNcluster = clusterFunction, K.max = length(rowids)/10, B = iterations)}
+ 
+
   gmClusts = list()
-  distance_calc = "euclidean"
-  nbClusts = list()
   # TODO: use ldapply instead of for loop
   for ( i in 1:length(gm$partitions)) {
     # if (debug) print(i)
     # subset of data for this partition, which contains row names...
     # this is not necessary here, and adds to R memory burden for large partitions
     # but adds to code readability
-    d.subset = gm$d[gm$partitions[[i]],]
-    nb = NbClust(as.matrix(d.subset), distance = distance_calc, method="single",
-            min.nc = 1, max.nc = 5,index =  index_method )
-    nbClusts[[i]] = nb$Best.partition
+    # gf = gapFunction(p)
+    # numclusters = with(gf,maxSE(Tab[,"gap"],Tab[,"SE.sim"]))
+    print("analyzing partition")
+    x = as.matrix(gm$d[gm$partitions[[i]],])
+    nb = NbClust( x, 
+                 distance = "euclidean", 
+                 method=    "single",
+                 min.nc = 1, max.nc =    20,    # length(p)/2,
+                 index = "gap"  )  # gm$index_method
+    # R idiom for add to end of a list
+    gmClusts[[i]] =  nb$Best.partition
+    
+    # gmClusts = list(gmClusts, list( nb$Best.partition ))
   }
-  return(nbClusts)
+  
+  return(gmClusts)
 }
+
+
 
 # given a graph mapper object, create the nodes using the current clustered partitions
 # nodes are subsets of IDs (rownames) based on optimal partitions
@@ -125,7 +142,7 @@ nodes.graphmapper <- function(gm){
 }
 
 #' @export
-cedar.adj<- function(gm) {
+adjacency.graphmapper<- function(gm) {
   # shorten the name
   nodes = gm$nodes
   # function that tells if there is overlapping rows of data
@@ -178,8 +195,8 @@ cedar.graphprep = function(gm, varName="X"){
   
 }
 
-cedar.graph= function(gm){
-  adjmatrix = cedar.adj(gm)
+graph.graphmapper = function(gm){
+  adjmatrix = gm$a
   adjmatrix[lower.tri(adjmatrix)] <- 0
   g  <- graph_from_adjacency_matrix(adjmatrix, mode ="undirected",weighted="weight", diag=FALSE)
   return(g)

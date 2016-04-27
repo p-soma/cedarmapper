@@ -1,6 +1,6 @@
 
 # functions to work with simply circle data
-test<- function(npoints=100) {
+gmtest<- function(npoints=100) {
   
   makegraphmapper(circle_data(1, npoints), circle_lense, partition_count=4, overlap = 0.5, partition_method="single", index_method="gap")
   
