@@ -40,6 +40,7 @@ getSelectedValues = function(gm, node_id_list_str, varName){
   return(get(varName,datarows))
 }
 
+
 varchoices = names(gm$d)
 clusterIndexChoices = c( "gap", "all", "alllong", "kl", "ch", "hartigan", "ccc", "scott", "marriot", "trcovw", "tracew","friedman", "rubin", "cindex", "db", "silhouette", "duda", "pseudot2",  "beale", "ratkowsky", "ball", "ptbiserial", "frey", "mcclain", "gamma", "gplus", "tau", "dunn", "hubert", "sdindex", "dindex", "sdbw")
 
@@ -64,6 +65,8 @@ ui <-
                
                selectInput("clusterIndex", label = "Cluster Index",
                             choices = clusterIndexChoices, selected = 1),
+               
+               selectInput("selectedVar", label = "Variable", choices = varchoices, selected = 1),
 
                actionButton("redraw", "Redraw"),
                
@@ -83,6 +86,7 @@ ui <-
         uiOutput("nodeValuesInput"),
         conditionalPanel(
           condition="(input.nl)",
+          
           tabsetPanel(
             tabPanel("X", plotOutput("nodePlotX")),
             tabPanel("Y", plotOutput("nodePlotY"))
@@ -118,7 +122,7 @@ server <- function(input, output, session) {
     v = input$variableselect
     return(v)})
   
- # output$selectedVariable <- renderText({selectedVar()})
+  output$selectedVariable <- renderText({selectedVar()})
 
   ### debugging only
   observe({
@@ -159,7 +163,7 @@ server <- function(input, output, session) {
  
 
  # make a plot output for all variables 
- for (vname in c("X", "Y")) {
+ for (vname in varchoices) {
    local({
      local_vname <- vname
      
@@ -197,19 +201,19 @@ server <- function(input, output, session) {
   output$nodeTable = renderDataTable(data.frame(getValues()))
   
   ### run hypothesis test
+  # get data from two inputs containing the groups
+  # depends on global var 'gm' 
   output$hypTest <- renderText({
     
-    getNodeRows <- function(gm, node_id_list){
+    getNodeRows <- function(node_id_list){
       node_ids = str2vec(node_id_list)
-      # n = nodes[node_ids]
-      # collapse list of nodes (data frames) into single data frame
-      return(nodelistdata(node_ids))
+      return(gm$d[unlist(gm$nodes[node_ids]),])
     }
 
-    nodes1 = getNodeRows(gm, groupSets()[[1]])
-    nodes2 = getNodeRows(gm, groupSets()[[2]])
-    n1 = get(selectedVar(),nodes1)
-    n2 = get(selectedVar(),nodes2)
+    nodes1 = getNodeRows(groupSets()[[1]])
+    nodes2 = getNodeRows(groupSets()[[2]])
+    n1 = get(getSelectedVar(),nodes1)
+    n2 = get(getSelectedVar(),nodes2)
     print(n1)
     print(n2)
     x = ks.test(n1,n2)
@@ -218,6 +222,10 @@ server <- function(input, output, session) {
   
   
   # NODE FUNCTIONS
+  
+  getSelectedVar <- reactive({
+    return(input$selectedVar)  
+  })
   
   getNodeList <- reactive({
     thisnodelist <- NULL
