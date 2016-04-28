@@ -57,9 +57,12 @@ ui <-
     #            c("white", "light green", "red", " light blue", "purple")),
     
     fluidRow(
-      column(6, 
+      column(10,
              wellPanel(
-               
+               h4("Mapper Output"), cedarGraphOutput("cedargraph")
+             )),
+      column(2, 
+             wellPanel(
                selectInput("randomizeSelect", label="Data Type", 
                            choices= list("uniform", "random"),
                            selected = 1),
@@ -71,16 +74,19 @@ ui <-
 
                actionButton("redraw", "Redraw"),
                
-               wellPanel(h4("Mapper Output"), cedarGraphOutput("cedargraph")),
+            
                div("Group 1:", textOutput("group1list")),
-               div("Group 2:", textOutput("group2list"))
-               
+               div("Group 2:", textOutput("group2list")),
+               h4("Compare Groups:"), 
+               p(textOutput("hypTest"))
+
               ),
              actionButton("grp1set", "Set Group 1"),
              actionButton("grp2set", "Set Group 2"),
              actionButton("runTest", "Compare Groups")
             
       ),
+    fluidRow(
       column(6, wellPanel(
         uiOutput("selectedVariable"),
         uiOutput("nodeListInput"),
@@ -93,13 +99,11 @@ ui <-
             tabPanel("fpg", plotOutput("nodePlotfpg"))
             # tabPanel("Table", tableOutput("nodeTable"))
           )
-        ),
-        p("Compare Groups:"), 
-        textOutput("hypTest")
+        )
       )
       
     )
-  )
+  ))
 )
 
 
