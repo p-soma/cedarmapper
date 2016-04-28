@@ -156,27 +156,34 @@ server <- function(input, output, session) {
   output$cedargraph <- renderCedarGraph({
     cedarGraph(graph_links, graph_nodes,"500","100%")
   })
-  
-  output$nodePlotX = renderPlot({
-    v =  getValues()["X"]
-    qplot(v,
-          main = "Histogram of X", 
-          xlab = "Data Values",
-          fill=I("blue"), 
-          col=I("black"), 
-          alpha=I(.2))
-  })
-  
-  output$nodePlotY = renderPlot({
-      # v = get("Y", getValues()) # ?
-      v = getValues()["Y"]
-      qplot(v,
-            main = "Histogram of Y", 
+ 
+
+ # make a plot output for all variables 
+ for (vname in c("X", "Y")) {
+   local({
+     local_vname <- vname
+     
+     output[[paste0("nodePlot", local_vname)]] = renderPlot({
+          v =  getValues()[local_vname]
+          qplot(v,
+            main = paste0("Histogram of ", local_vname), 
             xlab = "Data Values",
             fill=I("blue"), 
             col=I("black"), 
             alpha=I(.2))
-    })
+         })
+  })
+
+}
+#  output$nodePlotY = renderPlot({
+#      v = getValues()["Y"]
+#      qplot(v,
+#            main = "Histogram of Y", 
+#            xlab = "Data Values",
+#            fill=I("blue"), 
+#            col=I("black"), 
+#            alpha=I(.2))
+#    })
   
   output$nodeListInput <- renderUI({
     textInput("nl","selected nodes", paste(getNodeList(), sep=",", collapse = ","))
