@@ -41,22 +41,27 @@ makegraphmapper <- function(x, lensefun, partition_count=4, overlap = 0.5, parti
 }
 
 #' @export
-partition <- function(d, lensefun, l=4, o=0.5){
+partition <- function(d, lensefun, n=4, o=0.5, lenseparam=NULL){
  
-  # calculate lense values for all rows
-  lense.df = lensefun(d)  # for now, don't allow extra parameters, but require them to be built into lense function 
+  # calculate lense values for all rows in d, use optional parameter
+  if(is.null(lenseparam)) {
+    lense.df = lensefun(d)  
+  } else {
+    lense.df = lensefun(d,lenseparam)
+  }
+  
   # returns data frame with value L and rowid ID
   
   # partition length = linear distance
-  # for l=4, o = 0, partition length  = 40% of total length
+
   total_length = max(lense.df$L) - min(lense.df$L)
-  pl = total_length * 0.4
+  pl = total_length/(n - ((n-1)*o))
   p0 = min(lense.df$L)
   
   partitions = list()
   
   # TODO: rewrite to use 'ldapply'  instead of forloop for when n > 10^6
-  for (i in 1:l) {
+  for (i in 1:n) {
     partition_start = p0 + pl * (i - 1) * (1-o)  # offset== starting value is 1/2 partition size X parttion number
     partition_end   = partition_start + pl
     partitions[[i]] = with(lense.df, lense.df[L >=  partition_start & L <= partition_end, "ID"])
@@ -244,3 +249,4 @@ plot_cluster = function(gm, cnumber){
   plot(cldata$X, cldata$Y, col = c("red", "green", "blue")[cldata$`d.clusters[[cnumber]]`])
   # d[d$ID %in% names(cl[[1]]),]
 }
+
