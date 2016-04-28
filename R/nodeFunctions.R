@@ -17,25 +17,27 @@ library(factoextra)
 # graphmapper class factory
 # this prepares the data structure, then runs each mapper step
 #' @export
-makegraphmapper <- function(x, lensefun, partition_count=4, overlap = 0.5, partition_method="single", index_method="gap"){
+makegraphmapper <- function(x, lensefun, partition_count=4, overlap = 0.5, partition_method="single", index_method="gap", lenseparam = NULL){
   gm = structure(list(d = x, 
                       "partition_count"=partition_count, 
                       "overlap" = overlap,   # percent, o <= 1
                       "lensefun"=lensefun, 
                       "partition_method"=partition_method, 
                       "index_method"=index_method), 
+                      "lenseparam" = lenseparam,
                  class="graphmapper")
   
   
   gm$partitions = partition.graphmapper(gm)
   
   # list of clusters using euclidean distance, single linkage, and  gap clustering detection, 
-  gm[["clusters"]]   = clusters.graphmapper(gm)
+  gm[["clusters"]]   = clusters.graphmapper(gm,200)
   
   # from clusters create nodes of sets of d
   gm[["nodes"]]     = nodes.graphmapper(gm)
   
   gm[["adjmatrix"]] = adjacency.graphmapper(gm) 
+
   return(gm)
   
 }
@@ -77,7 +79,7 @@ partition <- function(d, lensefun, n=4, o=0.5, lenseparam=NULL){
 #' @export
 partition.graphmapper <- function(gm) {
   if (class(gm) != "graphmapper") stop("partition: requires input of class graphmapper class")
-  gm[["partitions"]]  = partition(gm$d, gm$lensefun, gm$partition_count,  gm$overlap)
+  gm[["partitions"]]  = partition(gm$d, gm$lensefun, gm$partition_count,  gm$overlap, gm[["lenseparam"]])
 } 
 
 
@@ -88,10 +90,15 @@ clusters.graphmapper<- function(gm,iterations=500) {
   distance_method = "euclidean"
   index_method    = "single"
   distanceFunction <- function(x) dist(x, method=distance_method)
-  
   clusterFunction  <- function(x, k) list(cluster=cutree(hclust(dist(x), method = "single"),k=k))
-  gapFunction      <- function(rowids){ clusGap(x=gm$d[rowids,], FUNcluster = clusterFunction, K.max = length(rowids)/10, B = iterations)}
- 
+  gapFunction      <- function(x){ 
+    maxClusters = sqrt(nrow(x))*2
+    gf =clusGap(x, FUNcluster = clusterFunction, K.max = maxClusters, B = iterations)
+    kvalue = with(gf,maxSE(Tab[,"gap"],Tab[,"SE.sim"]))
+    return(clusterFunction(x,kvalue)$cluster)
+    }   
+  
+  clusterResult <- function(x, k) list(cluster=cutree(hclust(mydist(x), method = "average"),k=k))
 
   gmClusts = list()
   # TODO: use ldapply instead of for loop
@@ -101,18 +108,15 @@ clusters.graphmapper<- function(gm,iterations=500) {
     # this is not necessary here, and adds to R memory burden for large partitions
     # but adds to code readability
     # gf = gapFunction(p)
-    # numclusters = with(gf,maxSE(Tab[,"gap"],Tab[,"SE.sim"]))
     print("analyzing partition")
     x = as.matrix(gm$d[gm$partitions[[i]],])
-    nb = NbClust( x, 
-                 distance = "euclidean", 
-                 method=    "single",
-                 min.nc = 1, max.nc = nrow(x)/2,
-                 index = "gap"  )  # gm$index_method
-    # R idiom for add to end of a list
-    gmClusts[[i]] =  nb$Best.partition
-    
-    # gmClusts = list(gmClusts, list( nb$Best.partition ))
+    #nb = NbClust( x, 
+    #             distance = "euclidean", 
+    #             method=    "single",
+    #             min.nc = 1, max.nc = sqrt(nrow(x))*2,              #TO DO  nrow(x)/2,
+    #             index = "gap"  )  # gm$index_method
+    #gmClusts[[i]] =  nb$Best.partition
+    gmClusts[[i]] = gapFunction(x)
   }
   
   return(gmClusts)
