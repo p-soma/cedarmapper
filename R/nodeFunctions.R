@@ -102,7 +102,7 @@ clusters.graphmapper<- function(gm,iterations=500) {
     nb = NbClust( x, 
                  distance = "euclidean", 
                  method=    "single",
-                 min.nc = 1, max.nc =    20,    # length(p)/2,
+                 min.nc = 1, max.nc = nrow(x)/2,
                  index = "gap"  )  # gm$index_method
     # R idiom for add to end of a list
     gmClusts[[i]] =  nb$Best.partition
@@ -138,6 +138,7 @@ nodes.graphmapper <- function(gm){
       
     }
   }
+  names(nodes)<- 1:length(nodes)
   return(nodes)
 }
 
@@ -147,7 +148,7 @@ adjacency.graphmapper<- function(gm) {
   # shorten the name
   nodes = gm$nodes
   # function that tells if there is overlapping rows of data
-  detect_overlap <- function(a,b) { length(intersect(a,b)) }
+  detect_overlap <- function(a,b) { length(intersect(nodes[[a]], nodes[[b]])) }
   
   adjmat <- matrix(0, ncol = length(nodes), nrow = length(nodes))
   colnames(adjmat) <- rownames(adjmat) <- names(nodes)
@@ -155,60 +156,38 @@ adjacency.graphmapper<- function(gm) {
     for(j in 1:ncol(adjmat)) {
       if (i == j) {
         adjmat[i,j] = 0
-      } else {adjmat[i,j] <- detect_overlap(nodes[[i]], nodes[[j]])}
+      } else {adjmat[i,j] <- detect_overlap(i,j)}
     }
   }
+  
+  # return only upper matrix (undirected graph)
+  adjmat[lower.tri(adjmat)] <- 0
   return(adjmat)
 }
 
+#  uses igraph 
 #' @export
 graph.graphmapper<- function(gm){
+  # if no adj matrix, get one
+  if (is.null(gm[["adjmatrix"]])) gm[["adjmatrix"]] = adjacency.graphmapper(gm)
   # need to use just upper half of matrix
-  adjmatrix = cedar.adj(gm)
-  adjmatrix[lower.tri(adjmatrix)] <- 0
-  g  <- graph_from_adjacency_matrix(adjmatrix, mode ="undirected",weighted="weight", diag=FALSE)
-  return(g)
-}
-
-# TODO: rename this function to reflect it's data prep
-#' @export
-cedar.graphprep = function(gm, varName="X"){
-  # converts an gm objects into structures with nodes and links
-  
-  # check that variable is in nodes
-  nodes = gm$nodes
-  # TODO: detect if adjmatrix is present, and if not, recreate
-  adjmatrix = gm$adjmatrix # cedar.adj(nodes)
-  
-
-  meanVariable <- function(litem) { mean(get(varName,litem))}
-  
-  # currently convert to lists to graph and then graph to lists
-  # TODO: cut out the middleman and prep from adjmatrix directly! 
-  g = cedar.graph(adjmatrix)
-  nodes_prepped = data.frame("name"  = as.vector((V(g))), 
-                             "values"= unlist(lapply(nodes,meanVariable)))
-  
-  links = get.data.frame(g)
-  links_prepped = data.frame(source=links$from - 1, target = links$to - 1 , weight = links$weight)
-  
-  return( list(graph_nodes = nodes_prepped, graph_links = links_prepped) )
-  
-}
-
-graph.graphmapper = function(gm){
-  adjmatrix = gm$a
-  adjmatrix[lower.tri(adjmatrix)] <- 0
-  g  <- graph_from_adjacency_matrix(adjmatrix, mode ="undirected",weighted="weight", diag=FALSE)
+  g  <- graph_from_adjacency_matrix(gm$adjmatrix, mode ="undirected",weighted="weight", diag=FALSE)
   return(g)
 }
 
 
 ####### helpers
+#' @export
 nodedata <- function(nodeid, gm){
   # ensure gm is a graphmapper
   # ensure gm has 
   return(gm$d[gm$nodes[[nodeid]],])
+}
+
+#' @export
+nodelistdata <- function(node_ids, gm){
+  # nodelist is a vector of nod
+  gm$d[unlist(gm$nodes[node_ids]),]
 }
 
 ####### LENSES
@@ -238,10 +217,7 @@ y_lense <- function(d){
   simple_lense(d, "X")
 }
 
-
-
-#######################
-### plotting 
+# plotting 
 
 plot.graphmapper <- function(gm){
   # create an edge list

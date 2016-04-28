@@ -7,48 +7,50 @@
 #' @import plyr
 #' @import ggplot2
 #' @import shinyjs
-#' @import NbClust
 
-library(plyr)
 library(htmlwidgets)
 library(cedargraph)
-# library(cedar)
+library(cedar)
 library(shiny)
 library(plyr)
+library(shinyjs)
 
-# TODO: REPLACE THIS WITH DATA PREPARATION
-# data("cedarcircle")
-# source("cedarFunctions.R")
+source("R/nodeFunctions.R")
+source("R/circleFunctions.R")
+source("R/widget.R")
 
-d = function(r=1, n=60, randomize=FALSE)
+gm =   makegraphmapper(circle_data(1, 60), circle_lense, partition_count=4, overlap = 0.5, partition_method="single", index_method="gap")
+graph_nodes = nodePrep(gm)
+graph_links = linkPrep(gm)
 
-nodes = cedar::circlenodes(npoints = 500, lense_count = 4, lense_function=simple_lense, coordinate="Y")
-gl= cedar::graphList(nodes)
-graph_nodes = gl[[1]]
-graph_links = gl[[2]]
+# this handy function converts a string list "1,2,4" to a vector c(1,2,4)
+#'@export
+str2vec <- function(list_str, sep = ","){
+  as.numeric(unlist(strsplit(list_str,sep)))
+}
 
-getSelectedValues = function(nodes, node_id_list, varName)
-{
-  node_ids = strsplit(node_id_list,",")
-  n = nodes[as.numeric(unlist(node_ids))]
+#'@export
+getSelectedValues = function(gm, node_id_list_str, varName){
+  # TODO: check that varName is column in gm$d data
+  node_ids = str2vec(node_id_list_str)
+  nodes = gm$nodes[node_ids]
   # collapse list of nodes (data frames) into single data frame
   datarows = ldply(n, data.frame)
   # return one column from above
   return(get(varName,datarows))
 }
 
-varchoices = names(d)
+varchoices = names(gm$d)
 clusterIndexChoices = c( "gap", "all", "alllong", "kl", "ch", "hartigan", "ccc", "scott", "marriot", "trcovw", "tracew","friedman", "rubin", "cindex", "db", "silhouette", "duda", "pseudot2",  "beale", "ratkowsky", "ball", "ptbiserial", "frey", "mcclain", "gamma", "gplus", "tau", "dunn", "hubert", "sdindex", "dindex", "sdbw")
 
 # jsCode <- "shinyjs.pageCol = function(params){$('body').css('background', params);}"
 
 ui <- 
   fluidPage(
-    
-    
+
     h3("CedarProject: Node Data"),
     shinyjs::useShinyjs(),
-    extendShinyjs(text = jsCode),
+    # extendShinyjs(text = jsCode),
     # selectInput("col", "Colour:",
     #            c("white", "light green", "red", " light blue", "purple")),
     
@@ -117,21 +119,7 @@ server <- function(input, output, session) {
     return(v)})
   
  # output$selectedVariable <- renderText({selectedVar()})
-                                        
-  
-  
-  ## get node values from the getNodes()
-  getValues <- reactive({
-    node_ids = getNodes()
-    if( is.null(node_ids) || nrow(node_ids)==0 ){
-      return(0) }
-    n = d.nodes[as.numeric(unlist(node_ids))]
-    datarows = ldply(n, data.frame)
-    # return all the rows now, 
-    # get(selectedVar(),datarows)
-    return(datarows)
-  })
-  
+
   ### debugging only
   observe({
     print(cat(as.numeric(input$nodelist)))
@@ -151,42 +139,20 @@ server <- function(input, output, session) {
     paste(getNodeList(), sep=",", collapse = ",")
   })
 
-  # display the group members  
+  # display the group node lists, if they are set
   output$group1list <- renderText({group1()})
   output$group2list <- renderText({group2()})
   
   # collect the two groups on button click
   groupSets <- eventReactive(input$runTest, {
-    # test that the groups are set...
+    # TODO: add a test that the groups are set...
     list( group1(), group2())
   })
   
-  
-
-
-    
-  getNodeList <- reactive({
-    nl <- NULL
-    if (!is.null(input$nodelist)) {
-      print(input$nodelist)
-      nl <- as.numeric(input$nodelist)
-      
-    }
-    return(nl)
-    
-  })
-  
-  getNodes <- reactive({
-    ns <- getNodeList()
-    selected_nodes <- NULL
-    if( ! is.null(ns)) {
-      selected_nodes <- graph_nodes[graph_nodes$name %in% ns,]}
-    n = as.vector(selected_nodes["name"])   #  "name" is 'nodeid' as used in the node prep script
-    # print(n)  # debug
-    return(n)
-  })
-  
-
+  # GRAPH WIDGET
+  # graph_links and graph_nodes are prepped from a graphmapper object
+  # created from input data
+  # at top of this application
   output$cedargraph <- renderCedarGraph({
     cedarGraph(graph_links, graph_nodes,"500","100%")
   })
@@ -202,6 +168,7 @@ server <- function(input, output, session) {
   })
   
   output$nodePlotY = renderPlot({
+      # v = get("Y", getValues()) # ?
       v = getValues()["Y"]
       qplot(v,
             main = "Histogram of Y", 
@@ -225,15 +192,15 @@ server <- function(input, output, session) {
   ### run hypothesis test
   output$hypTest <- renderText({
     
-    getNodeRows <- function(nodes, node_id_list){
-      node_ids = strsplit(node_id_list,",")
-      n = nodes[as.numeric(unlist(node_ids))]
+    getNodeRows <- function(gm, node_id_list){
+      node_ids = str2vec(node_id_list)
+      # n = nodes[node_ids]
       # collapse list of nodes (data frames) into single data frame
-      return(ldply(n, data.frame))
+      return(nodelistdata(node_ids))
     }
-    
-    nodes1 = getNodeRows(d.nodes, groupSets()[[1]])
-    nodes2= getNodeRows(d.nodes, groupSets()[[2]])
+
+    nodes1 = getNodeRows(gm, groupSets()[[1]])
+    nodes2 = getNodeRows(gm, groupSets()[[2]])
     n1 = get(selectedVar(),nodes1)
     n2 = get(selectedVar(),nodes2)
     print(n1)
@@ -241,6 +208,48 @@ server <- function(input, output, session) {
     x = ks.test(n1,n2)
     paste0("Statistic: ", x$statistic, " P-value: ", x$p.value)
   })
+  
+  
+  # NODE FUNCTIONS
+  
+  getNodeList <- reactive({
+    thisnodelist <- NULL
+    if (!is.null(input$nodelist)) {
+      print(input$nodelist)
+      thisnodelist <- as.numeric(input$nodelist)
+      print(thisnodelist)
+    }
+    print("getNodeList")
+    
+    return(thisnodelist)
+  })
+  
+  # get nodes from the graph_nodes data structure
+  # not from the gm graphmapper object
+  getNodes <- reactive({
+    ns <- getNodeList()
+    selected_nodes <- NULL
+    if( ! is.null(ns)) {
+      selected_nodes <- graph_nodes[graph_nodes$name %in% ns,]}
+    n = as.vector(selected_nodes["name"])   #  "name" is 'nodeid' as used in the node prep script
+    # print(n)  # debug
+    return(n)
+  })
+  
+  ## get node values from the getNodes()
+  getValues <- reactive({
+    node_ids = getNodes()
+    
+    if( is.null(node_ids) || nrow(node_ids)==0 ){
+      return(0) }
+    datarows = nodelistdata(as.numeric(unlist(node_ids)),gm) 
+    # n = gm$nodes[as.numeric(unlist(node_ids))]
+    # datarows = ldply(n, data.frame)
+    # return all the rows now for this one variable 
+    # get(selectedVar(),datarows)
+    return(datarows)
+  })
+  
   
 }
 
