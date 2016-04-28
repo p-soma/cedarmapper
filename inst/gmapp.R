@@ -55,13 +55,13 @@ ui <-
     # extendShinyjs(text = jsCode),
     # selectInput("col", "Colour:",
     #            c("white", "light green", "red", " light blue", "purple")),
-    
-    fluidRow(
+    tabsetPanel(
+    tabPanel("Graph",
+      fluidRow(
       column(10,
-             wellPanel(
-               h4("Mapper Output"), cedarGraphOutput("cedargraph")
-             )),
-      column(2, 
+               h4("Mapper Output"), cedarGraphOutput("cedargraph", 600,600)
+             ),
+       column(2, 
              wellPanel(
                selectInput("randomizeSelect", label="Data Type", 
                            choices= list("uniform", "random"),
@@ -85,26 +85,23 @@ ui <-
              actionButton("grp2set", "Set Group 2"),
              actionButton("runTest", "Compare Groups")
             
-      ),
+      ))),
+    tabPanel("histograms",
     fluidRow(
-      column(6, wellPanel(
+      wellPanel(
         uiOutput("selectedVariable"),
         uiOutput("nodeListInput"),
         uiOutput("nodeValuesInput"),
         conditionalPanel(
           condition="(input.nl)",
-          
-          tabsetPanel(
-            tabPanel("rw", plotOutput("nodePlotrw")),
-            tabPanel("fpg", plotOutput("nodePlotfpg"))
-            # tabPanel("Table", tableOutput("nodeTable"))
-          )
+          plotOutput("nodePlotrw")
         )
       )
-      
-    )
-  ))
+  )
+  )
+  )
 )
+
 
 
 
