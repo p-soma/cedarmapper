@@ -17,7 +17,7 @@ source("R/nodeFunctions.R")
 # creates data frame of graph nodes suitable for conversion to JSON for cedargraph HTML widget
 # includes internal functions for creating the 'value' of each node
 #'@export
-nodePrep = function(gm, selectedVariable="Y"){
+nodePrep = function(gm, selectedVariable="rw"){
   ## get node data ready for js widget
   #### prep nodes -- currently this only works with data with X variable
   # TO DO: introspect columns in nodes and add means for all columns

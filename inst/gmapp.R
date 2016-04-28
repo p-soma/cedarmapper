@@ -18,9 +18,13 @@ library(shinyjs)
 source("R/nodeFunctions.R")
 source("R/circleFunctions.R")
 source("R/widget.R")
-
-gm =   makegraphmapper(chemdiab.ccremoved, simple_lense, partition_count=4, overlap = 0.5, partition_method="single", index_method="gap", "rw")
+data(chemdiab)
+chemdiab  = subset(chemdiab, select = -c(cc))
+circle = circle_data(r=1, n=100)
+randomcircle = circle_data(r=1, n=100, randomize = TRUE)
+gm =   makegraphmapper(x = chemdiab, simple_lense, partition_count=4, overlap = 0.5, partition_method="single", index_method="gap", "rw")
 # gm =   makegraphmapper(circle_data(1, 60), circle_lense, partition_count=4, overlap = 0.5, partition_method="single", index_method="gap")
+
 graph_nodes = nodePrep(gm)
 graph_links = linkPrep(gm)
 
@@ -58,34 +62,34 @@ ui <-
     tabsetPanel(
     tabPanel("Graph",
       fluidRow(
+        column(2, 
+               wellPanel(
+                 # selectInput("randomizeSelect", label="Data Type", 
+                 #             choices= list("uniform", "random"),
+                 #               selected = 1),
+                 
+                 selectInput("clusterIndex", label = "Cluster Index",
+                             choices = clusterIndexChoices, selected = 1),
+                 
+                 selectInput("selectedVar", label = "Variable", choices = varchoices, selected = 1),
+                 
+                 actionButton("redraw", "Redraw"),
+                 
+                 actionButton("grp1set", "Set Group 1"),
+                 div("Group 1:", p(textOutput("group1list"))),
+                 actionButton("grp2set", "Set Group 2"),
+                 div("Group 2:", p(textOutput("group2list"))),
+                 actionButton("runTest", "Compare Groups"),
+                 h4("Compare Groups:"), 
+                 p(textOutput("hypTest"))
+                 
+               )
+        ),
+        
       column(10,
                h4("Mapper Output"), cedarGraphOutput("cedargraph", 600,600)
-             ),
-       column(2, 
-             wellPanel(
-               selectInput("randomizeSelect", label="Data Type", 
-                           choices= list("uniform", "random"),
-                           selected = 1),
-               
-               selectInput("clusterIndex", label = "Cluster Index",
-                            choices = clusterIndexChoices, selected = 1),
-               
-               selectInput("selectedVar", label = "Variable", choices = varchoices, selected = 1),
-
-               actionButton("redraw", "Redraw"),
-               
-            
-               div("Group 1:", textOutput("group1list")),
-               div("Group 2:", textOutput("group2list")),
-               h4("Compare Groups:"), 
-               p(textOutput("hypTest"))
-
-              ),
-             actionButton("grp1set", "Set Group 1"),
-             actionButton("grp2set", "Set Group 2"),
-             actionButton("runTest", "Compare Groups")
-            
-      ))),
+             )
+      )),
     tabPanel("histograms",
     fluidRow(
       wellPanel(
