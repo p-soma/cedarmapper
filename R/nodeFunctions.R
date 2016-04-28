@@ -141,6 +141,7 @@ nodes.graphmapper <- function(gm){
   return(nodes)
 }
 
+
 #' @export
 adjacency.graphmapper<- function(gm) {
   # shorten the name
@@ -202,6 +203,14 @@ graph.graphmapper = function(gm){
   return(g)
 }
 
+
+####### helpers
+nodedata <- function(nodeid, gm){
+  # ensure gm is a graphmapper
+  # ensure gm has 
+  return(gm$d[gm$nodes[[nodeid]],])
+}
+
 ####### LENSES
 #' @export
 simple_lense = function(d,varname=NULL ){
@@ -228,6 +237,8 @@ x_lense <- function(d){
 y_lense <- function(d){
   simple_lense(d, "X")
 }
+
+
 
 #######################
 ### plotting 

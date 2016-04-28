@@ -1,70 +1,94 @@
 # example_app.R
-# very basic example of using this widget in an RStudio Shiny app
+# very basic example of using this widgnbcet in an RStudio Shiny app
 
 #' @import htmlwidgets
 #' @import cedargraph
 #' @import shiny
 #' @import plyr
 #' @import ggplot2
+#' @import shinyjs
+#' @import NbClust
 
-# library(htmlwidgets)
-# library(cedargraph)
+library(plyr)
+library(htmlwidgets)
+library(cedargraph)
 # library(cedar)
-# library(shiny)
-# library(plyr)
+library(shiny)
+library(plyr)
 
 # TODO: REPLACE THIS WITH DATA PREPARATION
 # data("cedarcircle")
-
-# source("cedarFunctions.R")
 # source("cedarFunctions.R")
 
-# variables to go in to application
+d = function(r=1, n=60, randomize=FALSE)
 
-randomcircle= FALSE
-rowcount = 500
-selected_coordinate = "Y"
-selected_lense_funcion = simple_lense  
-selected_partition_count = 4
+nodes = cedar::circlenodes(npoints = 500, lense_count = 4, lense_function=simple_lense, coordinate="Y")
+gl= cedar::graphList(nodes)
+graph_nodes = gl[[1]]
+graph_links = gl[[2]]
 
-d = circle.data(r=1,n=rowcount, randomize=randomcircle)
-d.partitions= cedar.partition(d, l = selected_partition_count, lensefun = selected_lense_funcion, lenseparam=selected_coordinate )
-d.clusters  = cedar.clusters(d, d.partitions)
-d.nodes     = cedar.nodes(d,d.clusters)
-graph_nodes = nodePrep(d.nodes)
-graph_links = linkPrep(d.nodes)
+getSelectedValues = function(nodes, node_id_list, varName)
+{
+  node_ids = strsplit(node_id_list,",")
+  n = nodes[as.numeric(unlist(node_ids))]
+  # collapse list of nodes (data frames) into single data frame
+  datarows = ldply(n, data.frame)
+  # return one column from above
+  return(get(varName,datarows))
+}
 
 varchoices = names(d)
+clusterIndexChoices = c( "gap", "all", "alllong", "kl", "ch", "hartigan", "ccc", "scott", "marriot", "trcovw", "tracew","friedman", "rubin", "cindex", "db", "silhouette", "duda", "pseudot2",  "beale", "ratkowsky", "ball", "ptbiserial", "frey", "mcclain", "gamma", "gplus", "tau", "dunn", "hubert", "sdindex", "dindex", "sdbw")
 
+# jsCode <- "shinyjs.pageCol = function(params){$('body').css('background', params);}"
 
 ui <- 
   fluidPage(
+    
+    
     h3("CedarProject: Node Data"),
+    shinyjs::useShinyjs(),
+    extendShinyjs(text = jsCode),
+    # selectInput("col", "Colour:",
+    #            c("white", "light green", "red", " light blue", "purple")),
+    
     fluidRow(
       column(6, 
              wellPanel(
-               selectInput("variableselect", label = h3("Select box"), 
-                           choices = varchoices, 
+               
+               selectInput("randomizeSelect", label="Data Type", 
+                           choices= list("uniform", "random"),
                            selected = 1),
-               actionButton("grp1set", "Set Group 1"),
-               actionButton("grp2set", "Set Group 2"),
-               actionButton("runTest", "Compare Groups"),
-               cedarGraphOutput("cedargraph")
-              )
+               
+               selectInput("clusterIndex", label = "Cluster Index",
+                            choices = clusterIndexChoices, selected = 1),
+
+               actionButton("redraw", "Redraw"),
+               
+               wellPanel(h4("Mapper Output"), cedarGraphOutput("cedargraph")),
+               div("Group 1:", textOutput("group1list")),
+               div("Group 2:", textOutput("group2list"))
+               
+              ),
+             actionButton("grp1set", "Set Group 1"),
+             actionButton("grp2set", "Set Group 2"),
+             actionButton("runTest", "Compare Groups")
             
       ),
       column(6, wellPanel(
         uiOutput("selectedVariable"),
-        p("variance:", uiOutput("variance")),
         uiOutput("nodeListInput"),
         uiOutput("nodeValuesInput"),
         conditionalPanel(
           condition="(input.nl)",
-            plotOutput("nodePlot")
+          tabsetPanel(
+            tabPanel("X", plotOutput("nodePlotX")),
+            tabPanel("Y", plotOutput("nodePlotY"))
+            # tabPanel("Table", tableOutput("nodeTable"))
+          )
         ),
-        div("Group 1:", textOutput("group1list")),
-        div("Group 2:", textOutput("group2list")), 
-        p("KS Test here:", textOutput("ksTest"))
+        p("Compare Groups:"), 
+        textOutput("hypTest")
       )
       
     )
@@ -73,55 +97,80 @@ ui <-
 
 
 
-
-
+########
 server <- function(input, output, session) {
+  
+  output$varianceX <- renderUI({p(var(getValues()["X"]))})
+  output$varianceY <- renderUI({p(var(getValues()["Y"]))})
+
+  #observeEvent(input$redraw,
+  #  session$sendCustomMessage(type = 'rerender',message = 0),
+  #  cedarGraph(graph_links, graph_nodes,"500","100%")
+  # )
+  
+  # observeEvent(input$col, {
+  #  js$pageCol(input$col)
+  # })
   
   selectedVar = reactive({ 
     v = input$variableselect
     return(v)})
   
-  output$selectedVariable <- renderText({selectedVar()})
+ # output$selectedVariable <- renderText({selectedVar()})
                                         
-  output$variance <- renderUI({p(var(getValues()))})
   
+  
+  ## get node values from the getNodes()
+  getValues <- reactive({
+    node_ids = getNodes()
+    if( is.null(node_ids) || nrow(node_ids)==0 ){
+      return(0) }
+    n = d.nodes[as.numeric(unlist(node_ids))]
+    datarows = ldply(n, data.frame)
+    # return all the rows now, 
+    # get(selectedVar(),datarows)
+    return(datarows)
+  })
+  
+  ### debugging only
   observe({
-    
     print(cat(as.numeric(input$nodelist)))
     if (!is.null(input$nodelist)) {
       print("class:")
       print(class(getNodeList()))
       print(1 %in% getNodeList())
     }
-    
   })
   
+  ### collect nodes when buttons are clicked
   group1 <- eventReactive(input$grp1set, {
     paste(getNodeList(), sep=",", collapse = ",")
   })
   
-  output$group1list <- renderText({group1()})
-  
   group2 <- eventReactive(input$grp2set, {
     paste(getNodeList(), sep=",", collapse = ",")
   })
-  
+
+  # display the group members  
+  output$group1list <- renderText({group1()})
   output$group2list <- renderText({group2()})
   
-  
+  # collect the two groups on button click
   groupSets <- eventReactive(input$runTest, {
-    # run the KS test here on the two groups
     # test that the groups are set...
-    x= list( group1(), group2())
-    return(x)
+    list( group1(), group2())
   })
   
-  output$ksTest <- renderText({groupSets()})
   
+
+
+    
   getNodeList <- reactive({
     nl <- NULL
     if (!is.null(input$nodelist)) {
+      print(input$nodelist)
       nl <- as.numeric(input$nodelist)
+      
     }
     return(nl)
     
@@ -137,57 +186,61 @@ server <- function(input, output, session) {
     return(n)
   })
   
-  getValues <- reactive({
-    # TODO: create input$varname, e.g. from dropdown
-    node_ids = getNodes()
-    if( is.null(node_ids) || nrow(node_ids)==0 ){
-      return(0)
-    }
-   
-    n = d.nodes[as.numeric(unlist(node_ids))]
-    datarows = ldply(n, data.frame)
-    selectedVariable = input$variableselect 
-    return(get(selectedVariable,datarows))
-  })
-  
+
   output$cedargraph <- renderCedarGraph({
-    # TODO: replace with node data here
-    cedarGraph(graph_links, graph_nodes,250,250)
+    cedarGraph(graph_links, graph_nodes,"500","100%")
   })
   
-  output$nodePlot = renderPlot({
-    v = getValues()
+  output$nodePlotX = renderPlot({
+    v =  getValues()["X"]
     qplot(v,
-          main = "Histogram of Selected Variable", 
+          main = "Histogram of X", 
           xlab = "Data Values",
           fill=I("blue"), 
           col=I("black"), 
           alpha=I(.2))
   })
   
+  output$nodePlotY = renderPlot({
+      v = getValues()["Y"]
+      qplot(v,
+            main = "Histogram of Y", 
+            xlab = "Data Values",
+            fill=I("blue"), 
+            col=I("black"), 
+            alpha=I(.2))
+    })
+  
   output$nodeListInput <- renderUI({
     textInput("nl","selected nodes", paste(getNodeList(), sep=",", collapse = ","))
   })
   
-  output$nodeValuesInput <- renderUI({
-    textInput("vl","selected values", paste(getValues(), sep=",", collapse = ","))
+ # output$nodeValuesInput <- renderUI({
+ #    textInput("vl","selected values", paste(getValues(), sep=",", collapse = ","))
+ #  })
+  
+  
+  output$nodeTable = renderDataTable(data.frame(getValues()))
+  
+  ### run hypothesis test
+  output$hypTest <- renderText({
+    
+    getNodeRows <- function(nodes, node_id_list){
+      node_ids = strsplit(node_id_list,",")
+      n = nodes[as.numeric(unlist(node_ids))]
+      # collapse list of nodes (data frames) into single data frame
+      return(ldply(n, data.frame))
+    }
+    
+    nodes1 = getNodeRows(d.nodes, groupSets()[[1]])
+    nodes2= getNodeRows(d.nodes, groupSets()[[2]])
+    n1 = get(selectedVar(),nodes1)
+    n2 = get(selectedVar(),nodes2)
+    print(n1)
+    print(n2)
+    x = ks.test(n1,n2)
+    paste0("Statistic: ", x$statistic, " P-value: ", x$p.value)
   })
-  
-  output$randomgraph <- renderCedarGraph({
-    graph.data= randGraphData(n=input$nodecount)
-    links = graph.data$links
-    cedarGraph(LinksDF =links, NodesDF = graph.data$nodes,250,250)
-    session$sendCustomMessage(
-      type = 'graphdata',
-      message = links)
-  })
-  
-  # output$table = renderDataTable(getValues)
-  
-  
-  #output$nodeCountText <- renderText({
-  #  paste("You have selected ", input$nodecount)
-  # })
   
 }
 
