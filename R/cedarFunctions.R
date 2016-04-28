@@ -181,7 +181,7 @@ cedar.clusters<- function(d,partitions) {
   for ( i in 1:l) {
     d.subset = partitions[[i]][,-3]  # remove the ID column,TODO remove hard coded col num
     nb = NbClust(as.matrix(d.subset), distance = "euclidean", method="single",
-            min.nc = 1, max.nc = 5,index = "gap")
+            min.nc = 1, max.nc = nrow(d.subset),index = "gap")
     nbClusts[[i]] = nb$Best.partition
   }
   return(nbClusts)
