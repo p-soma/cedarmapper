@@ -251,7 +251,7 @@ ui <-
                           selectInput("clusterIndex", label = "Cluster Index",
                                       choices = clusterIndexChoices, selected = 1),
                           selectInput("partitionCount", label = "Number of Partitions", 
-                                      choices = c(2:15), selected = 4),
+                                      choices = c(2:15), selected = 3),   #TODO: abstract to list of choices
                           selectInput("percentOverlap", label = "Partition Overlap (percent)", 
                                         choices = c(0:13) * 5  + 10, selected = 50),
                           actionButton("runMapper", "Calculate Mapper"),
