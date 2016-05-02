@@ -242,37 +242,33 @@ ui <-
     #            c("white", "light green", "red", " light blue", "purple")),
     tabsetPanel(
       tabPanel("Graph",
+               
                fluidRow(
                  column(2, 
                         wellPanel(
-                          # selectInput("randomizeSelect", label="Data Type", 
-                          #             choices= list("uniform", "random"),
-                          #               selected = 1),
                           selectInput("dataSet", label = "Data", 
-                                      choices = "Diabetes", "Fixed Circle","Random Circle"),
-                                      selected = 1),
-                        
+                                      choices = c("Diabetes", "Fixed Circle","Random Circle"), selected = 1),
                           selectInput("clusterIndex", label = "Cluster Index",
                                       choices = clusterIndexChoices, selected = 1),
-                        
-                          selectInput("partitionCount", label = "Number of Partitions", choices = c(2:15), selected = 4),
-                        
-                          selectedInput("percentOverlap", label = "Partition Overlap (percent)", choices = c(0:13) * 5  + 10), selected = 50),
+                          selectInput("partitionCount", label = "Number of Partitions", 
+                                      choices = c(2:15), selected = 4),
+                          selectInput("percentOverlap", label = "Partition Overlap (percent)", 
+                                        choices = c(0:13) * 5  + 10, selected = 50),
                           actionButton("runMapper", "Calculate Mapper"),
                           hr(),
                           selectInput("selectedVar", label = "Variable", choices = varchoices, selected = 1),
                           actionButton("redraw", "Redraw"),
                           hr(),
                           actionButton("grp1set", "Set Group 1"),
-                          div("Group 1:", p(textOutput("group1list"))),
+                          p("Group 1:", p(textOutput("group1list"))),
                           actionButton("grp2set", "Set Group 2"),
-                          div("Group 2:", p(textOutput("group2list"))),
+                          p("Group 2:", p(textOutput("group2list"))),
                           actionButton("runTest", "Compare Groups"),
                           h4("Compare Groups:"), 
                           p(textOutput("hypTest"))
-                          
+                 
                         )
-                 ),
+                    ),  # end sidebar
                 
                  column(10,
                         h4("Mapper Output"), 
@@ -280,7 +276,7 @@ ui <-
                         # cedarGraphOutput("cedargraph",1000,500),
                         cedarGraphOutput("otherCrap","100%",500)
                  )
-               ),
+               )),
       tabPanel("histograms",
                fluidRow(
                  wellPanel(
@@ -293,7 +289,7 @@ ui <-
                    )
                  )
                )
-      )
+       ) # end table panel
     )
   )
 
