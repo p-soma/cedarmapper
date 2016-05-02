@@ -31,7 +31,7 @@ makegraphmapper <- function(x, lensefun, partition_count=4, overlap = 0.5, parti
   gm$partitions = partition.graphmapper(gm)
   
   # list of clusters using euclidean distance, single linkage, and  gap clustering detection, 
-  gm[["clusters"]]   = clusters.graphmapper(gm,200)
+  gm[["clusters"]]   = clusters.graphmapper(gm,50)
   
   # from clusters create nodes of sets of d
   gm[["nodes"]]     = nodes.graphmapper(gm)

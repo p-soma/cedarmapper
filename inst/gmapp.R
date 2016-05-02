@@ -18,15 +18,20 @@ library(shinyjs)
 source("R/nodeFunctions.R")
 source("R/circleFunctions.R")
 source("R/widget.R")
+
+### DATA
 data(chemdiab)
 chemdiab  = subset(chemdiab, select = -c(cc))
 circle = circle_data(r=1, n=100)
 randomcircle = circle_data(r=1, n=100, randomize = TRUE)
+
+### OBJECT
 gm =   makegraphmapper(x = chemdiab, simple_lense, partition_count=4, overlap = 0.5, partition_method="single", index_method="gap", "rw")
 # gm =   makegraphmapper(circle_data(1, 60), circle_lense, partition_count=4, overlap = 0.5, partition_method="single", index_method="gap")
 
-graph_nodes = nodePrep(gm)
-graph_links = linkPrep(gm)
+### 
+#graph_nodes = nodePrep(gm, "rw")
+#graph_links = linkPrep(gm)
 
 # this handy function converts a string list "1,2,4" to a vector c(1,2,4)
 #'@export
@@ -45,67 +50,10 @@ getSelectedValues = function(gm, node_id_list_str, varName){
   return(get(varName,datarows))
 }
 
-
+####### starting values
 varchoices = names(gm$d)
 clusterIndexChoices = c( "gap", "all", "alllong", "kl", "ch", "hartigan", "ccc", "scott", "marriot", "trcovw", "tracew","friedman", "rubin", "cindex", "db", "silhouette", "duda", "pseudot2",  "beale", "ratkowsky", "ball", "ptbiserial", "frey", "mcclain", "gamma", "gplus", "tau", "dunn", "hubert", "sdindex", "dindex", "sdbw")
-
-# jsCode <- "shinyjs.pageCol = function(params){$('body').css('background', params);}"
-
-ui <- 
-  fluidPage(
-
-    h3("CedarProject: Node Data"),
-    shinyjs::useShinyjs(),
-    # extendShinyjs(text = jsCode),
-    # selectInput("col", "Colour:",
-    #            c("white", "light green", "red", " light blue", "purple")),
-    tabsetPanel(
-    tabPanel("Graph",
-      fluidRow(
-        column(2, 
-               wellPanel(
-                 # selectInput("randomizeSelect", label="Data Type", 
-                 #             choices= list("uniform", "random"),
-                 #               selected = 1),
-                 
-                 selectInput("clusterIndex", label = "Cluster Index",
-                             choices = clusterIndexChoices, selected = 1),
-                 
-                 selectInput("selectedVar", label = "Variable", choices = varchoices, selected = 1),
-                 
-                 actionButton("redraw", "Redraw"),
-                 
-                 actionButton("grp1set", "Set Group 1"),
-                 div("Group 1:", p(textOutput("group1list"))),
-                 actionButton("grp2set", "Set Group 2"),
-                 div("Group 2:", p(textOutput("group2list"))),
-                 actionButton("runTest", "Compare Groups"),
-                 h4("Compare Groups:"), 
-                 p(textOutput("hypTest"))
-                 
-               )
-        ),
-        
-      column(10,
-               h4("Mapper Output"), cedarGraphOutput("cedargraph", 600,600)
-             )
-      )),
-    tabPanel("histograms",
-    fluidRow(
-      wellPanel(
-        uiOutput("selectedVariable"),
-        uiOutput("nodeListInput"),
-        uiOutput("nodeValuesInput"),
-        conditionalPanel(
-          condition="(input.nl)",
-          plotOutput("nodePlotrw")
-        )
-      )
-  )
-  )
-  )
-)
-
+partitionCountChoices = c(3:10)
 
 
 
@@ -159,20 +107,28 @@ server <- function(input, output, session) {
     list( group1(), group2())
   })
   
-  # GRAPH WIDGET
-  # graph_links and graph_nodes are prepped from a graphmapper object
-  # created from input data
-  # at top of this application
-  output$cedargraph <- renderCedarGraph({
-    cedarGraph(graph_links, graph_nodes,"500","100%")
+  
+ output$cedarGraph <- renderCedarGraph({
+    graph_nodes = nodePrep(gm,input$selectedVar)
+    graph_links = linkPrep(gm)
+    print(graph_nodes)
+    print(graph_links)
+    cedarGraph(graph_links, graph_nodes,"500","500")
   })
  
+ cggg= eventReactive(
+   input$redraw,
+   {
+    cedarGraph(linkPrep(gm),nodePrep(gm, input$selectedVar))
+   }
+   )
+
+output$otherCrap <- renderCedarGraph(cggg())
 
  # make a plot output for all variables 
  for (vname in varchoices) {
    local({
      local_vname <- vname
-     
      output[[paste0("nodePlot", local_vname)]] = renderPlot({
           v =  getValues()[local_vname]
           qplot(v,
@@ -199,9 +155,9 @@ server <- function(input, output, session) {
     textInput("nl","selected nodes", paste(getNodeList(), sep=",", collapse = ","))
   })
   
- # output$nodeValuesInput <- renderUI({
- #    textInput("vl","selected values", paste(getValues(), sep=",", collapse = ","))
- #  })
+ output$nodeValuesInput <- renderUI({
+     textInput("vl","selected values", paste(getValues(), sep=",", collapse = ","))
+   })
   
   
   output$nodeTable = renderDataTable(data.frame(getValues()))
@@ -273,5 +229,83 @@ server <- function(input, output, session) {
   
   
 }
+
+###############################
+# jsCode <- "shinyjs.pageCol = function(params){$('body').css('background', params);}"
+
+ui <- 
+  fluidPage(
+    h3("CedarProject: Node Data"),
+    shinyjs::useShinyjs(),
+    # extendShinyjs(text = jsCode),
+    # selectInput("col", "Colour:",
+    #            c("white", "light green", "red", " light blue", "purple")),
+    tabsetPanel(
+      tabPanel("Graph",
+               fluidRow(
+                 column(2, 
+                        wellPanel(
+                          # selectInput("randomizeSelect", label="Data Type", 
+                          #             choices= list("uniform", "random"),
+                          #               selected = 1),
+                          selectInput("dataSet", label = "Data", 
+                                      choices = "Diabetes", "Fixed Circle","Random Circle"),
+                                      selected = 1),
+                        
+                          selectInput("clusterIndex", label = "Cluster Index",
+                                      choices = clusterIndexChoices, selected = 1),
+                        
+                          selectInput("partitionCount", label = "Number of Partitions", choices = c(2:15), selected = 4),
+                        
+                          selectedInput("percentOverlap", label = "Partition Overlap (percent)", choices = c(0:13) * 5  + 10), selected = 50),
+                          actionButton("runMapper", "Calculate Mapper"),
+                          hr(),
+                          selectInput("selectedVar", label = "Variable", choices = varchoices, selected = 1),
+                          actionButton("redraw", "Redraw"),
+                          hr(),
+                          actionButton("grp1set", "Set Group 1"),
+                          div("Group 1:", p(textOutput("group1list"))),
+                          actionButton("grp2set", "Set Group 2"),
+                          div("Group 2:", p(textOutput("group2list"))),
+                          actionButton("runTest", "Compare Groups"),
+                          h4("Compare Groups:"), 
+                          p(textOutput("hypTest"))
+                          
+                        )
+                 ),
+                
+                 column(10,
+                        h4("Mapper Output"), 
+                        # uiOutput("cedarGraphUI")
+                        # cedarGraphOutput("cedargraph",1000,500),
+                        cedarGraphOutput("otherCrap","100%",500)
+                 )
+               ),
+      tabPanel("histograms",
+               fluidRow(
+                 wellPanel(
+                   uiOutput("selectedVariable"),
+                   uiOutput("nodeListInput"),
+                   uiOutput("nodeValuesInput"),
+                   conditionalPanel(
+                     condition="(input.nl)",
+                     plotOutput("nodePlotrw")
+                   )
+                 )
+               )
+      )
+    )
+  )
+
+
+
+
+
+
+
+
+
+
+
 
 shinyApp(ui, server)

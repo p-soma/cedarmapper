@@ -20,7 +20,7 @@ source("R/circleFunctions.R")
 source("R/widget.R")
 
 gm =   makegraphmapper(circle_data(1, 60), circle_lense, partition_count=4, overlap = 0.5, partition_method="single", index_method="gap")
-graph_nodes = nodePrep(gm)
+graph_nodes = nodePrep(gm,"Y")
 graph_links = linkPrep(gm)
 
 # this handy function converts a string list "1,2,4" to a vector c(1,2,4)
