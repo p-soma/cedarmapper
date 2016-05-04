@@ -42,6 +42,7 @@ makegraphmapper <- function(x, lensefun, partition_count=4, overlap = 0.5, parti
   
 }
 
+# TODO add parameter for name of column to use for lense
 #' @export
 partition <- function(d, lensefun, n=4, o=0.5, lenseparam=NULL){
  
@@ -202,9 +203,12 @@ nodelistdata <- function(node_ids, gm){
 ####### LENSES
 #' @export
 simple_lense = function(d,varname=NULL ){
+  # single column lense
+  
   # simple lense function that returns a single variable
   # d = data as a data frame, varname  = name of variable as a string
   
+  # TO DO: always use the first column and let the caller send the column of interest
   # if no variable name passed, use the first name
   # requires data d to have named columns
   if (is.null(varname)) { varname = names(d)[1] }
@@ -226,7 +230,30 @@ y_lense <- function(d){
   simple_lense(d, "X")
 }
 
-# plotting 
+
+lense.density <- function(d){
+  # single column lense; only first column is used
+  
+  # kernel density using params from params object
+  # params object ignored for now using standard values
+  # if (typeof(params) != "list")  params = list()
+  # if(is.null(params$bw)) params$bw= "nrd"
+  # if(is.null(params$kernal))params$kernel = "gaussian"
+  
+}
+
+lense.pca <- function(d) {
+  # multiple column lense
+  d.pca = prcomp(gm$d, retx=TRUE, center=TRUE, scale. = TRUE)
+  data.frame(L=Ld.pca$x[,"PC1"], ID=rownames(d), stringsAsFactors = FALSE) 
+}
+
+lense.distance <- function(d,varname=NULL) {
+  # multi-column lense
+  data.frame(L=mahalanobis(scale(d, center=TRUE,scale=TRUE ), center=colMeans(d), cov=cov(d)), stringsAsFactors = FALSE)
+}
+
+########## plotting 
 
 plot.graphmapper <- function(gm){
   # create an edge list
