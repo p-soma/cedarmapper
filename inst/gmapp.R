@@ -33,6 +33,18 @@ gm =   makegraphmapper(x = chemdiab, simple_lense, partition_count=4, overlap = 
 #graph_nodes = nodePrep(gm, "rw")
 #graph_links = linkPrep(gm)
 
+####### useful functions
+
+#'@export
+varname2data <- function(nameOfVariable){
+  # given the name of data set in a variable
+  # nameOfVariable = "chemdiab"
+  # this returns the actual data in the variable chemdiab
+  # useful for selecting a data set from a drop down which returns a string
+  # and copying into an object or known variable
+  return(eval(parse(text=nameOfVariable)))
+}
+
 # this handy function converts a string list "1,2,4" to a vector c(1,2,4)
 #'@export
 str2vec <- function(list_str, sep = ","){
@@ -59,6 +71,10 @@ partitionCountChoices = c(3:10)
 
 ########
 server <- function(input, output, session) {
+
+    output$dataSpecs  <- renderText({
+    paste0(input$dataSelection, " with ", nrow(gm$d), " rows and ", ncol(gm$d), " columns; ", "using variable ", input$selectedVar)
+  })
   
   output$varianceX <- renderUI({p(var(getValues()["rw"]))})
   output$varianceY <- renderUI({p(var(getValues()["fpg"]))})
@@ -107,24 +123,22 @@ server <- function(input, output, session) {
     list( group1(), group2())
   })
   
-  
- output$cedarGraph <- renderCedarGraph({
-    graph_nodes = nodePrep(gm,input$selectedVar)
-    graph_links = linkPrep(gm)
-    print(graph_nodes)
-    print(graph_links)
-    cedarGraph(graph_links, graph_nodes,"500","500")
+##########
+
+ output$cgplot <- renderCedarGraph({
+   
+    input$redraw
+    graphdata <- isolate(
+      list(graph_nodes = nodePrep(gm,input$selectedVar), graph_links = linkPrep(gm))
+    )
+
+    cedarGraph(graphdata$graph_links, graphdata$graph_nodes,"500","500")
   })
  
- cggg= eventReactive(
-   input$redraw,
-   {
-    cedarGraph(linkPrep(gm),nodePrep(gm, input$selectedVar))
-   }
-   )
-
-output$otherCrap <- renderCedarGraph(cggg())
-
+ output$selectedHist = renderPlot(
+   {hist(d, main=NULL, xlab=NULL, ylab=NULL,axes=FALSE,labels=TRUE,col="gray")}, 
+   width=200, height=50)
+ 
  # make a plot output for all variables 
  for (vname in varchoices) {
    local({
@@ -137,7 +151,7 @@ output$otherCrap <- renderCedarGraph(cggg())
             fill=I("blue"), 
             col=I("black"), 
             alpha=I(.2))
-         })
+         },height = 75, width=200)
   })
 
 }
@@ -207,6 +221,7 @@ output$otherCrap <- renderCedarGraph(cggg())
     ns <- getNodeList()
     selected_nodes <- NULL
     if( ! is.null(ns)) {
+      gm$nodes
       selected_nodes <- graph_nodes[graph_nodes$name %in% ns,]}
     n = as.vector(selected_nodes["name"])   #  "name" is 'nodeid' as used in the node prep script
     # print(n)  # debug
@@ -215,11 +230,13 @@ output$otherCrap <- renderCedarGraph(cggg())
   
   ## get node values from the getNodes()
   getValues <- reactive({
-    node_ids = getNodes()
+    node_ids = getNodeList() # getNodes()
     
     if( is.null(node_ids) || nrow(node_ids)==0 ){
       return(0) }
-    datarows = nodelistdata(as.numeric(unlist(node_ids)),gm) 
+    datarows = gm$d[unique(unlist(gm$nodes[names(gm$nodes) %in% ns])), ]
+    
+    # previous method that called intermediate function # datarows = nodelistdata(as.numeric(unlist(node_ids)),gm) 
     # n = gm$nodes[as.numeric(unlist(node_ids))]
     # datarows = ldply(n, data.frame)
     # return all the rows now for this one variable 
@@ -246,18 +263,20 @@ ui <-
                fluidRow(
                  column(2, 
                         wellPanel(
-                          selectInput("dataSet", label = "Data", 
-                                      choices = c("Diabetes", "Fixed Circle","Random Circle"), selected = 1),
-                          selectInput("clusterIndex", label = "Cluster Index",
-                                      choices = clusterIndexChoices, selected = 1),
-                          selectInput("partitionCount", label = "Number of Partitions", 
-                                      choices = c(2:15), selected = 3),   #TODO: abstract to list of choices
-                          selectInput("percentOverlap", label = "Partition Overlap (percent)", 
-                                        choices = c(0:13) * 5  + 10, selected = 50),
-                          actionButton("runMapper", "Calculate Mapper"),
-                          hr(),
-                          selectInput("selectedVar", label = "Variable", choices = varchoices, selected = 1),
-                          actionButton("redraw", "Redraw"),
+                            selectInput("dataSelection", label = "Data", 
+                                        choices = c("Diabetes", "Fixed Circle","Random Circle"), selected = 1),
+                            selectInput("filterFunctionSelection", label="Filtering Function", 
+                                        choices = c("SimpleLense","KernelDensity", "PCA"),selected = 1),
+                            selectInput("partitionCountSelection", label = "Number of Partitions", 
+                                        choices = c(2:15), selected = 3),  
+                            selectInput("overlapSelection", label = "Partition Overlap (percent)", 
+                                          choices = c(0:13) * 5  + 10, selected = 50),
+                            selectInput("clusterIndexSelection", label = "Cluster Index",
+                                        choices = clusterIndexChoices, selected = 1),
+                            actionButton("runMapper", "Calculate Mapper"),
+                            hr(),
+                            selectInput("selectedVar", label = "Variable", choices = varchoices, selected = 1),
+                          
                           hr(),
                           actionButton("grp1set", "Set Group 1"),
                           p("Group 1:", p(textOutput("group1list"))),
@@ -274,9 +293,22 @@ ui <-
                         h4("Mapper Output"), 
                         # uiOutput("cedarGraphUI")
                         # cedarGraphOutput("cedargraph",1000,500),
-                        cedarGraphOutput("otherCrap","100%",500)
-                 )
-               )),
+                        cedarGraphOutput("cgplot","100%",500),
+                        fluidRow(
+                          column(4,
+                            p("Data Set ", textOutput("dataSpecs", inline=TRUE)),
+                            p("Mapper options: ", "X")
+                            ),
+                          column(2, 
+                                 conditionalPanel(
+                                   condition="(input.nl)",plotOutput("selectedHist"))
+                                 ),
+                          column(4, 
+                            actionButton("redraw", "Redraw")
+                            )
+                        )
+                 ))
+               ),
       tabPanel("histograms",
                fluidRow(
                  wellPanel(
