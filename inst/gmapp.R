@@ -25,6 +25,8 @@ chemdiab  = subset(chemdiab, select = -c(cc))
 circle = circle_data(r=1, n=100)
 randomcircle = circle_data(r=1, n=100, randomize = TRUE)
 
+###
+
 ### OBJECT
 gm =   makegraphmapper(x = chemdiab, simple_lense, partition_count=4, overlap = 0.5, partition_method="single", index_method="gap", "rw")
 # gm =   makegraphmapper(circle_data(1, 60), circle_lense, partition_count=4, overlap = 0.5, partition_method="single", index_method="gap")
@@ -63,7 +65,7 @@ getSelectedValues = function(gm, node_id_list_str, varName){
 }
 
 ####### starting values
-varchoices = names(gm$d)
+# varchoices = names(gm$d)
 clusterIndexChoices = c( "gap", "all", "alllong", "kl", "ch", "hartigan", "ccc", "scott", "marriot", "trcovw", "tracew","friedman", "rubin", "cindex", "db", "silhouette", "duda", "pseudot2",  "beale", "ratkowsky", "ball", "ptbiserial", "frey", "mcclain", "gamma", "gplus", "tau", "dunn", "hubert", "sdindex", "dindex", "sdbw")
 partitionCountChoices = c(3:10)
 
@@ -71,8 +73,18 @@ partitionCountChoices = c(3:10)
 
 ########
 server <- function(input, output, session) {
-
-    output$dataSpecs  <- renderText({
+  
+  # this sends an array of data from the gm$d data frame column
+  # of the selected variable to Shiny via the session object
+  observe({
+    if (! is.null(input$selectedVar)){
+      if (input$selectedVar %in% names(gm$d)) {
+        session$sendCustomMessage(type='nodevalues',
+                              message = gm$d[[input$nodeValuesName]])
+    }}
+  })
+  
+  output$dataSpecs  <- renderText({
     paste0(input$dataSelection, " with ", nrow(gm$d), " rows and ", ncol(gm$d), " columns; ", "using variable ", input$selectedVar)
   })
   
@@ -125,6 +137,7 @@ server <- function(input, output, session) {
   
 ##########
 
+  
  output$cgplot <- renderCedarGraph({
    
     input$redraw
@@ -136,35 +149,14 @@ server <- function(input, output, session) {
   })
  
  output$selectedHist = renderPlot(
-   {hist(d, main=NULL, xlab=NULL, ylab=NULL,axes=FALSE,labels=TRUE,col="gray")}, 
-   width=200, height=50)
+   {
+     # get data from selected nodes, for selected variable
+     d = gm$d[[names(gm$d) ]]
+     hist(d, main=NULL, xlab=NULL, ylab=NULL,axes=FALSE,labels=TRUE,col="gray", 
+          width=200, height=50)
+   })
  
- # make a plot output for all variables 
- for (vname in varchoices) {
-   local({
-     local_vname <- vname
-     output[[paste0("nodePlot", local_vname)]] = renderPlot({
-          v =  getValues()[local_vname]
-          qplot(v,
-            main = paste0("Histogram of ", local_vname), 
-            xlab = "Data Values",
-            fill=I("blue"), 
-            col=I("black"), 
-            alpha=I(.2))
-         },height = 75, width=200)
-  })
-
-}
-#  output$nodePlotY = renderPlot({
-#      v = getValues()["Y"]
-#      qplot(v,
-#            main = "Histogram of Y", 
-#            xlab = "Data Values",
-#            fill=I("blue"), 
-#            col=I("black"), 
-#            alpha=I(.2))
-#    })
-  
+ 
   output$nodeListInput <- renderUI({
     textInput("nl","selected nodes", paste(getNodeList(), sep=",", collapse = ","))
   })
@@ -199,6 +191,7 @@ server <- function(input, output, session) {
   
   # NODE FUNCTIONS
   
+  # don't need this; just use the input value
   getSelectedVar <- reactive({
     return(input$selectedVar)  
   })
@@ -228,18 +221,17 @@ server <- function(input, output, session) {
     return(n)
   })
   
+  # return rows of data based on selection
+  # TODO rename getRows() and make seperate getValues(rows) function
   ## get node values from the getNodes()
   getValues <- reactive({
     node_ids = getNodeList() # getNodes()
     
     if( is.null(node_ids) || nrow(node_ids)==0 ){
       return(0) }
-    datarows = gm$d[unique(unlist(gm$nodes[names(gm$nodes) %in% ns])), ]
     
-    # previous method that called intermediate function # datarows = nodelistdata(as.numeric(unlist(node_ids)),gm) 
-    # n = gm$nodes[as.numeric(unlist(node_ids))]
-    # datarows = ldply(n, data.frame)
-    # return all the rows now for this one variable 
+    datarows = gm$d[unique(unlist(gm$nodes[names(gm$nodes) %in% ns])), ]
+        
     # get(selectedVar(),datarows)
     return(datarows)
   })
@@ -263,6 +255,10 @@ ui <-
                fluidRow(
                  column(2, 
                         wellPanel(
+                          selectInput("nodeValuesName", label = "Node Values",
+                                      choices = datachoices,
+                                      selected = 1),
+                          
                             selectInput("dataSelection", label = "Data", 
                                         choices = c("Diabetes", "Fixed Circle","Random Circle"), selected = 1),
                             selectInput("filterFunctionSelection", label="Filtering Function", 
@@ -275,7 +271,7 @@ ui <-
                                         choices = clusterIndexChoices, selected = 1),
                             actionButton("runMapper", "Calculate Mapper"),
                             hr(),
-                            selectInput("selectedVar", label = "Variable", choices = varchoices, selected = 1),
+                            selectInput("selectedVar", label = "Variable", choices =  names(gm$d), selected = 1),
                           
                           hr(),
                           actionButton("grp1set", "Set Group 1"),
@@ -328,12 +324,32 @@ ui <-
 
 
 
-
-
-
-
-
-
-
-
 shinyApp(ui, server)
+
+
+
+##### saved code
+#  output$nodePlotY = renderPlot({
+#      v = getValues()["Y"]
+#      qplot(v,
+#            main = "Histogram of Y", 
+#            xlab = "Data Values",
+#            fill=I("blue"), 
+#            col=I("black"), 
+#            alpha=I(.2))
+#    })
+
+# DON'T make a plot output for all variables; unstainable
+#for (vname in varchoices) {
+#   local({
+#    local_vname <- vname
+#     output[[paste0("nodePlot", local_vname)]] = renderPlot({
+#          v =  getValues()[local_vname]
+#          qplot(v,
+#            main = paste0("Histogram of ", local_vname), 
+#            xlab = "Data Values",
+#           fill=I("blue"), 
+#            col=I("black"), 
+#            alpha=I(.2))
+#         },height = 75, width=200)
+#  }
