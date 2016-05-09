@@ -6,6 +6,8 @@
 #
 
 library(shiny)
+clusterIndexChoices = c( "gap", "all", "alllong", "kl", "ch", "hartigan", "ccc", "scott", "marriot", "trcovw", "tracew","friedman", "rubin", "cindex", "db", "silhouette", "duda", "pseudot2",  "beale", "ratkowsky", "ball", "ptbiserial", "frey", "mcclain", "gamma", "gplus", "tau", "dunn", "hubert", "sdindex", "dindex", "sdbw")
+partitionCountChoices = c(3:10)
 
 shinyUI(
     fluidPage(
@@ -22,18 +24,21 @@ shinyUI(
                           wellPanel(
                 
                             selectInput("dataSelection", label = "Data", 
-                                        choices = c("Diabetes", "Fixed Circle","Random Circle"), selected = 1),
+                                        choices = list("Diabetes"='chemdiab', "Fixed Circle"='circle',"Random Circle"='randomcircle'), selected = 1),
                             selectInput("filterFunctionSelection", label="Filtering Function", 
-                                        choices = c("SimpleLense","KernelDensity", "PCA"),selected = 1),
+                                        choices = c("simple_lense","KernelDensity", "PCA"),selected = 1),
                             selectInput("partitionCountSelection", label = "Number of Partitions", 
-                                        choices = c(2:15), selected = 3),  
+                                        choices = partitionCountChoices, selected = 4),  
                             selectInput("overlapSelection", label = "Partition Overlap (percent)", 
                                         choices = c(0:13) * 5  + 10, selected = 50),
                             selectInput("clusterIndexSelection", label = "Cluster Index",
                                         choices = clusterIndexChoices, selected = 1),
                             actionButton("runMapper", "Calculate Mapper"),
                             hr(),
-                            selectInput("selectedVar", label = "Variable", choices =  names(gm$d), selected = 1),
+                            
+                            # TODO: this is temporary hard code of variable names
+                            #uiOutput("variableSelector"),
+                            selectInput("selectedVar", label = "Variable", choices =  list("rw","fpg","ga"), selected = 1),
                             
                             hr(),
                             actionButton("grp1set", "Set Group 1"),
@@ -58,7 +63,7 @@ shinyUI(
                                    p("Mapper options: ", "X")
                             ),
                             column(4, 
-                                   actionButton("redraw", "Redraw")
+                                   p("left column")
                             )
                           )
                    ))
@@ -67,8 +72,8 @@ shinyUI(
                  fluidRow(
                    wellPanel(
                      uiOutput("selectedVariable"),
-                     uiOutput("nodeListInput"),
-                     uiOutput("nodeValuesInput"),
+                     #uiOutput("nodeListInput"), 
+                     #uiOutput("nodeValuesInput"),
                      conditionalPanel(
                        condition="(input.nl)",
                        plotOutput("selectedHist")
