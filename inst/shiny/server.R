@@ -1,78 +1,218 @@
+# example_app.R
+# very basic example of using this widgnbcet in an RStudio Shiny app
 
-# This is the server logic for a Shiny web application.
-# You can find out more about building applications with Shiny here:
-#
-# http://shiny.rstudio.com
-#
-source("R/cedarFunctions.R")
+#' @import htmlwidgets
+#' @import cedargraph
+#' @import shiny
+#' @import plyr
+#' @import ggplot2
+#' @import shinyjs
 
-graphPrep <- function(nodes){
-  adjmatrix = cedar.adj(nodes)
-  # create an edge list
-  return(cedar.graph(adjmatrix))
-}
-
-library(cedar)
 library(htmlwidgets)
 library(cedargraph)
+library(cedar)
 library(shiny)
-library(datasets)
+library(plyr)
+library(shinyjs)
 
-data("cedarcircle")
-npoints = 100
+#source("R/nodeFunctions.R")
+#source("R/circleFunctions.R")
+#source("R/widget.R")
 
-# d is for data
-d = circle.data(r=1,n=npoints, randomize=FALSE)
+### DATA
+data(chemdiab)
+chemdiab  = subset(chemdiab, select = -c(cc))
+circle = circle_data(r=1, n=100)
+randomcircle = circle_data(r=1, n=100, randomize = TRUE)
 
-# lense partitions
-d.partitions= cedar.partition(d, l = 4)
+###
 
-# list of clusters using euclidean distance, single linkage, and  gap clustering detection, 
-d.clusters  = cedar.clusters(d, d.partitions)
+### OBJECT
+gm =   makegraphmapper(x = chemdiab, simple_lense, partition_count=4, overlap = 0.5, partition_method="single", index_method="gap", "rw")
 
-# from clusters create nodes of sets of d
-d.nodes     = cedar.nodes(d,d.clusters)
+####### useful functions
 
-# look for links and build adjacency_matrix
-d.adjmatrix = cedar.adj(d.nodes)
+#'@export
+varname2data <- function(nameOfVariable){
+  # given the name of data set in a variable
+  # nameOfVariable = "chemdiab"
+  # this returns the actual data in the variable chemdiab
+  # useful for selecting a data set from a drop down which returns a string
+  # and copying into an object or known variable
+  return(eval(parse(text=nameOfVariable)))
+}
 
-# create an edge list
-d.graph     = cedar.graph(d.adjmatrix) 
+# this handy function converts a string list "1,2,4" to a vector c(1,2,4)
+#'@export
+str2vec <- function(list_str, sep = ","){
+  as.numeric(unlist(strsplit(list_str,sep)))
+}
 
+#'@export
+getSelectedValues = function(gm, node_id_list_str, varName){
+  # TODO: check that varName is column in gm$d data
+  node_ids = str2vec(node_id_list_str)
+  nodes = gm$nodes[node_ids]
+  # collapse list of nodes (data frames) into single data frame
+  datarows = ldply(n, data.frame)
+  # return one column from above
+  return(get(varName,datarows))
+}
 
-shinyServer(function(input, output) {
-  # Return the requested dataset
-  colInput <- reactive({
-    switch(input$column,
-           "X" = "X", 
-           "Y" = "Y"
-      )
+####### starting values
+# varchoices = names(gm$d)
+clusterIndexChoices = c( "gap", "all", "alllong", "kl", "ch", "hartigan", "ccc", "scott", "marriot", "trcovw", "tracew","friedman", "rubin", "cindex", "db", "silhouette", "duda", "pseudot2",  "beale", "ratkowsky", "ball", "ptbiserial", "frey", "mcclain", "gamma", "gplus", "tau", "dunn", "hubert", "sdindex", "dindex", "sdbw")
+partitionCountChoices = c(3:10)
+
+####### server
+shinyServer(function(input, output, session) {
+  
+  # this sends an array of data from the gm$d data frame column
+  # of the selected variable to Shiny via the session object
+  observe({
+    if (! is.null(input$selectedVar)){
+      if (input$selectedVar %in% names(gm$d)) {
+        vals =  nodePrep(gm,input$selectedVar)$values
+        session$sendCustomMessage(type='nodevalues',message = vals)
+      }}
   })
   
-  output$graph <- renderSimpleGraph({
-    simpleGraph(circle.links, circle.nodes)
+  output$dataSpecs  <- renderText({
+    paste0(input$dataSelection, " with ", nrow(gm$d), " rows and ", ncol(gm$d), " columns; ", "using variable ", input$selectedVar)
   })
+  
+  output$varianceX <- renderUI({p(var(getValues()["rw"]))})
+  output$varianceY <- renderUI({p(var(getValues()["fpg"]))})
+  
+  # observeEvent(input$col, {
+  #  js$pageCol(input$col)
+  # })
+  
+  selectedVar = reactive({ 
+    v = input$variableselect
+    return(v)})
+  
+  output$selectedVariable <- renderText({selectedVar()})
+  
+  ### debugging only
+  observe({
+    print(cat(as.numeric(input$nodelist)))
+    if (!is.null(input$nodelist)) {
+      print("class:")
+      print(class(getNodeList()))
+      print(1 %in% getNodeList())
+    }
+  })
+  
+  ### collect nodes when buttons are clicked
+  group1 <- eventReactive(input$grp1set, {
+    paste(getNodeList(), sep=",", collapse = ",")
+  })
+  
+  group2 <- eventReactive(input$grp2set, {
+    paste(getNodeList(), sep=",", collapse = ",")
+  })
+  
+  # display the group node lists, if they are set
+  output$group1list <- renderText({group1()})
+  output$group2list <- renderText({group2()})
+  
+  # collect the two groups on button click
+  groupSets <- eventReactive(input$runTest, {
+    # TODO: add a test that the groups are set...
+    list( group1(), group2())
+  })
+  
+  ##########
+  
+  
+  output$cgplot <- renderCedarGraph({
     
+    input$redraw
+    graphdata <- isolate(
+      list(graph_nodes = nodePrep(gm,input$selectedVar), graph_links = linkPrep(gm))
+    )
+    cedarGraph(graphdata$graph_links, graphdata$graph_nodes,"500","500")
+  })
+  
+  output$selectedHist = renderPlot(
+    {
+      # get data from selected nodes, for selected variable
+      hist(getValues(), main=NULL, xlab=NULL, ylab=NULL,axes=FALSE,labels=TRUE,col="gray")
+    })
   
   
-  output$distPlot <- renderPlot({
+  output$nodeListInput <- renderUI({
+    textInput("nl","selected nodes", paste(getNodeList(), sep=",", collapse = ","))
+  })
   
-    # generate bins based on input$bins from ui.R
-    column = colInput()
+  output$nodeValuesInput <- renderUI({
+    textInput("vl","selected values", paste(getValues(), sep=",", collapse = ","))
+  })
+  
+  
+  output$nodeTable = renderDataTable(data.frame(getValues()))
+  
+  ### run hypothesis test
+  # get data from two inputs containing the groups
+  # depends on global var 'gm' 
+  output$hypTest <- renderText({
     
-    x    <- as.vector(d.nodes[[1]][[column]])
-    bins <- seq(min(x), max(x), length.out = input$bins + 1)
-
-    # draw the histogram with the specified number of bins
-    hist(x, breaks = bins, col = 'darkgray', border = 'white')
-
+    getNodeRows <- function(node_id_list){
+      node_ids = str2vec(node_id_list)
+      return(gm$d[unlist(gm$nodes[node_ids]),])
+    }
+    
+    nodes1 = getNodeRows(groupSets()[[1]])
+    nodes2 = getNodeRows(groupSets()[[2]])
+    n1 = get(getSelectedVar(),nodes1)
+    n2 = get(getSelectedVar(),nodes2)
+    x = ks.test(n1,n2)
+    paste0("Statistic: ", x$statistic, " P-value: ", x$p.value)
   })
   
-  output$caption <- renderText({
-    column = paste("Data Variable : ", colInput(), sep="")
+  
+  # NODE FUNCTIONS
+  
+  # don't need this; just use the input value
+  getSelectedVar <- reactive({
+    return(input$selectedVar)  
   })
-
-
- 
-
-})
+  
+  getNodeList <- reactive({
+    thisnodelist <- NULL
+    if (!is.null(input$nodelist)) {
+      thisnodelist <- as.numeric(input$nodelist)
+    }
+    return(thisnodelist)
+  })
+  
+  # get nodes from the graph_nodes data structure
+  # not from the gm graphmapper object
+  getNodes <- reactive({
+    ns <- getNodeList()
+    selected_nodes <- NULL
+    if( ! is.null(ns)) {
+      gm$nodes
+      selected_nodes <- graph_nodes[graph_nodes$name %in% ns,]}
+    n = as.vector(selected_nodes["name"])   #  "name" is 'nodeid' as used in the node prep script
+    # print(n)  # debug
+    return(n)
+  })
+  
+  # return rows of data based on selection
+  # TODO rename getRows() and make seperate getValues(rows) function
+  ## get node values from the getNodes()
+  getValues <- reactive({
+    node_ids = getNodeList() # getNodes()
+    
+    if( is.null(node_ids) || nrow(node_ids)==0 ){
+      return(0) }
+    
+    datarows = gm$d[unique(unlist(gm$nodes[names(gm$nodes) %in% ns])), input$selectedVar]
+    
+    # get(selectedVar(),datarows)
+    return(datarows)
+  })
+  
+})# end of shinyServer
