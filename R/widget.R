@@ -17,13 +17,19 @@ source("R/nodeFunctions.R")
 # creates data frame of graph nodes suitable for conversion to JSON for cedargraph HTML widget
 # includes internal functions for creating the 'value' of each node
 #'@export
-nodePrep = function(gm, selectedVariable="rw"){
+nodePrep = function(gm, selectedVariable=NULL){
   ## get node data ready for js widget
   #### prep nodes -- currently this only works with data with X variable
-  # TO DO: introspect columns in nodes and add means for all columns
+  
   # selectedVariable should be string of variable name, e.g. "X"
-
-   
+  
+  # check that what's sent is a variable name
+  # shoudl throw exception but reset to null and use default instead
+  if (! selectedVariable %in% names(gm$d)) { selecgtedVariable = NULL}
+  
+  # default selecgted variable
+  if (is.null(selectedVariable)){ selectedVariable = names(gm$d)[1]}
+  
   meanVariable <- function(node) { 
     mean(gm$d[node,selectedVariable])
   }
