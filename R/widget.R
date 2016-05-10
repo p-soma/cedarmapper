@@ -25,7 +25,7 @@ nodePrep = function(gm, selectedVariable=NULL){
   
   # check that what's sent is a variable name
   # shoudl throw exception but reset to null and use default instead
-  if (! selectedVariable %in% names(gm$d)) { selecgtedVariable = NULL}
+  if (! selectedVariable %in% names(gm$d)) { selectedVariable = NULL}
   
   # default selecgted variable
   if (is.null(selectedVariable)){ selectedVariable = names(gm$d)[1]}

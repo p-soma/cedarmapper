@@ -59,25 +59,36 @@ shinyServer(function(input, output, session) {
   d <- datasets[[1]]
 
     ### FIRST must select data
-  selectedDataSet <- reactive({
+  selectedDataSet <- observe({
     input$dataSelection
     if(is.null(input$dataSelection)){
       d <<- datasets[[1]] }
     else {
       d <<- datasets[[input$dataSelection]] }
     updateSelectInput(session, "selectedVar",choices = names(d), selected=1)
-    
+    updateSelectInput(session, "filterVar",  choices = names(d), selected=1)
+    # TODO: is this needed?
+    return(d)
   })
   
+  # filterVar ==> lenseparam
+  getfilterVar <- reactive({
+    if(is.null(input$filterVar)) v = names(selectedDataSet())[1]
+    else v = input$filterVar
+    return(v)
+  })
+  
+  # selectedVar ==> color and data exploration variable 
   selectedVar <- reactive({ 
-    if(is.null(input$variableselect)) v = names(selectedDataSet())[1]
-    else v = input$variableselect
-    return(v)})
+    if(is.null(input$selectedVar)) v = names(selectedDataSet())[1]
+    else v = input$selectedVar
+    return(v)
+  })
   
   # TODO temp disable this and use hard coded variable names for testing
   # selection button dynamic to gm object
 
-   calculateGM = eventReactive(input$runMapper, {
+   calc_gm <-eventReactive(input$runMapper, {
       #progress <- shiny::Progress$new()
       #progress$set(message = "Computing mapper", value = 0)
       #on.exit(progress$close())
@@ -89,19 +100,17 @@ shinyServer(function(input, output, session) {
       #  progress$set(value = value, detail = detail)
       #}
 
-      return(
-        isolate({
-          
-          gm <<- makegraphmapper(x = selectedDataSet(), 
+         gm<<- makegraphmapper(x = selectedDataSet(), 
                       lensefun = simple_lense, 
                       partition_count=as.numeric(input$partitionCountSelection),
                       overlap = as.numeric(input$overlapSelection)/100.0, 
                       partition_method="single", 
                       index_method="gap",
-                      lenseparam = input$selectedVar )#,
+                      lenseparam = filterVar() ) #,
                       #progressUpdater = updateProgress)
-      }))
-  })
+         
+      
+       })
   
   # this sends an array of means for each node,
   # from the gm$d data frame column
@@ -109,21 +118,19 @@ shinyServer(function(input, output, session) {
   observe({
       input$selectedVar
       if (selectedVar() %in% names(gm$d)) {
-        vals =  nodePrep(gm, selectVar())$values
+        vals =  nodePrep(gm, selectedVar())$values
         session$sendCustomMessage(type='nodevalues',message = vals)
       }
   })
   
   
   output$dataSpecs  <- renderText({
-    paste0(input$dataSelection, " with ", nrow(gm$d), " rows and ", ncol(gm$d), " columns; ", "using variable ", input$selectedVar)
+    paste0(input$dataSelection, " with ", nrow(gm$d), " rows and ", ncol(gm$d), " columns; ", "using variable ", selectedVar())
   })
   
   # TODO: should be observer on node selection
-  output$variance <- renderText({var(getValues()[SelectedVar])})
-  
+  # output$variance <- renderText({var(getValues()[selectedVar()])})
 
-  
   output$selectedVariable <- renderText({selectedVar()})
   
   ### collect nodes when buttons are clicked
@@ -151,8 +158,9 @@ shinyServer(function(input, output, session) {
   output$cgplot <- renderCedarGraph({
     input$runMapper
     graphdata <-isolate(
-      list(graph_nodes = nodePrep(gm,input$selectedVar), graph_links = linkPrep(gm))
+      list(graph_nodes = nodePrep(gm,selectedVar()), graph_links = linkPrep(gm))
     )
+    print("rendering graph")
     cedarGraph(graphdata$graph_links, graphdata$graph_nodes,"500","500")
   })
   

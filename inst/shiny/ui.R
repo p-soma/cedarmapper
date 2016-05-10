@@ -22,11 +22,11 @@ shinyUI(
                             selectInput("dataSelection", label = "Data", 
                                         choices = dataChoices, selected = 1),
                             
-                            selectInput("filterVar", label = "Variable", 
-                                        choices = initVariableChoices, selected = 1),
-                            
                             selectInput("filterFunctionSelection", label="Filtering Function", 
                                         choices = lenseChoices, selected = 1),
+                            
+                            selectInput("filterVar", label = "Filtering Variable", 
+                                        choices = initVariableChoices, selected = 1),
                             
                             selectInput("partitionCountSelection", label = "Number of Partitions", 
                                         choices = partitionCountChoices, selected = 4),  
@@ -39,10 +39,7 @@ shinyUI(
                             
                             actionButton("runMapper", "Calculate Mapper"),
                             hr(),
-                            
-                            selectInput("selectedVar", label = "Variable", choices =  initVariableChoices, selected = 1),
-                            
-                            hr(),
+                          
                             actionButton("grp1set", "Set Group 1"),
                             p("Group 1:", p(textOutput("group1list"))),
                             actionButton("grp2set", "Set Group 2"),
@@ -61,11 +58,11 @@ shinyUI(
                           cedarGraphOutput("cgplot","100%",500),
                           fluidRow(
                             column(4,
-                                   p("Data Set ", textOutput("dataSpecs", inline=TRUE)),
-                                   p("Mapper options: ", "X")
+                                   p("Data Set ", textOutput("dataSpecs", inline=TRUE))
                             ),
                             column(4, 
-                                   p("left column")
+                                   selectInput("selectedVar", label = "Variable", choices =  initVariableChoices, selected = 1)
+                                   
                             )
                           )
                    ))
