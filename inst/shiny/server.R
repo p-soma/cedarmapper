@@ -81,8 +81,8 @@ shinyServer(function(input, output, session) {
   
   # selectedVar ==> color and data exploration variable 
   selectedVar <- reactive({ 
-    if(is.null(input$selectedVar)) v = names(selectedDataSet())[1]
-    else v = input$selectedVar
+    if(is.null(input$selectedVar)){ v = names(selectedDataSet())[1]}
+    else{ v = input$selectedVar}
     return(v)
   })
   
@@ -100,9 +100,15 @@ shinyServer(function(input, output, session) {
           value <- value + (progress$getMax() - value) / 5 }
         progress$set(value = value, detail = detail)
       }
-
+      
+         lense_fun = simple_lense
+         if(! is.null(input$lenseFunctionSelection)) {
+           f = get(input$lenseFunctionSelection) 
+           if (is.function(f)){ lense_fun = f}
+         }
+         
          gm<<- makegraphmapper(x = d, 
-                      lensefun = simple_lense, 
+                      lensefun = lense_fun, 
                       partition_count=as.numeric(input$partitionCountSelection),
                       overlap = as.numeric(input$overlapSelection)/100.0, 
                       partition_method="single", 
@@ -182,6 +188,10 @@ shinyServer(function(input, output, session) {
   
   output$selectedData = renderDataTable({d})
   
+ # output$sparkhist = renderPlot({
+ #    if(!is.null(selectedVar())) sparkline( density(getValues(), bw="nrd",kernel="gaussian")$y)
+ #  })
+  
   ### run hypothesis test
   # get data from two inputs containing the groups
   output$hypTest <- renderText({
@@ -192,8 +202,8 @@ shinyServer(function(input, output, session) {
     
     nodes1 = getNodeRows(groupSets()[[1]])
     nodes2 = getNodeRows(groupSets()[[2]])
-    n1 = get(getSelectedVar(),nodes1)
-    n2 = get(getSelectedVar(),nodes2)
+    n1 = get(selectedVar(),nodes1)
+    n2 = get(selectedVar(),nodes2)
     x = ks.test(n1,n2)
     paste0("Statistic: ", x$statistic, " P-value: ", x$p.value)
   })
@@ -235,7 +245,7 @@ shinyServer(function(input, output, session) {
     ##### TODO Warning: Error in if: missing value where TRUE/FALSE needed
     if( is.null(node_ids)   ) { return(0) }
     if( length(node_ids)==0 ) { return(0) }
-    datarows = gm$d[unique(unlist(gm$nodes[names(gm$nodes) %in% node_ids])), input$selectedVar]
+    datarows = gm$d[unique(unlist(gm$nodes[names(gm$nodes) %in% node_ids])), selectedVar()]
     # get(selectedVar(),datarows)
     return(datarows)
   })

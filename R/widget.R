@@ -19,19 +19,14 @@ source("R/nodeFunctions.R")
 #'@export
 nodePrep = function(gm, selectedVariable=NULL){
   ## get node data ready for js widget
-  #### prep nodes -- currently this only works with data with X variable
-  
-  # selectedVariable should be string of variable name, e.g. "X"
-  
+
   # check that what's sent is a variable name
-  # shoudl throw exception but reset to null and use default instead
-  if (! selectedVariable %in% names(gm$d)) { selectedVariable = NULL}
+  # be nice and use a default variable name while developing Shiny
+  selectedVariable = guaranteedVarname(selectedVariable)
   
-  # default selecgted variable
-  if (is.null(selectedVariable)){ selectedVariable = names(gm$d)[1]}
-  
-  meanVariable <- function(node) { 
-    mean(gm$d[node,selectedVariable])
+  meanVariable <- function(node) {
+    mean(nodedata(gm, node,selectedVariable))
+    # mean(gm$d[node,selectedVariable])
   }
   
   meanFilter <- function(node) {
@@ -39,7 +34,11 @@ nodePrep = function(gm, selectedVariable=NULL){
     mean(gm$lensefun(d))
   }
   
-  
+  gmRowCount <- nrow(gm$d)
+  relativeSize <- function(node){
+    
+    
+  }
   # g = graphPrep(nodes)
   # nodegraph javascript is expecting a "name" attribute which is the nodeID
   # the index of these nodes will be set when converted to json, 
@@ -67,7 +66,8 @@ linkPrep <- function(gm){
 
 # TODO: rename this function to reflect it's data prep
 #' @export
-graphPrep = function(gm, varName="Y"){
+graphPrep = function(gm, varName=NULL){
+  
   # converts an gm object into structures with nodes and links for htmlwidget/shiny app
   # if using meanvar function, check that variable is in nodes
   return( list(graph_nodes = nodePrep(gm, varName), graph_links = linkPrep(gm)) )

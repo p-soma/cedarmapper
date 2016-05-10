@@ -8,7 +8,7 @@ data(chemdiab)
 chemdiab  <- subset(chemdiab, select = -c(cc))
 
 datasets[["Diabetes"]] <- chemdiab
-datasets[["Circle"]]   <-circle_data(r=1, n=100)
+datasets[["Circle"]]   <-circle_data(r=1, n=60)
 datasets[["Circle500"]]<-circle_data(r=1, n=500)
 datasets[["FuzzyCircle"]] <- circle_data(r=1, n=200, randomize = TRUE)
 
@@ -19,7 +19,7 @@ dataChoices           <- names(datasets)
 # mapper 
 clusterIndexChoices   <- c( "gap", "all", "alllong", "kl", "ch", "hartigan", "ccc", "scott", "marriot", "trcovw", "tracew","friedman", "rubin", "cindex", "db", "silhouette", "duda", "pseudot2",  "beale", "ratkowsky", "ball", "ptbiserial", "frey", "mcclain", "gamma", "gplus", "tau", "dunn", "hubert", "sdindex", "dindex", "sdbw")
 partitionCountChoices <- c(3:20)
-lenseChoices          <- c("simple_lense","KernelDensity", "PCA")
+lenseChoices          <- c("single variable"="simple_lense","Kernel Density"="lense.density", "PCA"="lense.pca", "M distance"="lense.distance")
 partitionCountChoices <- c(3:10)
 initVariableChoices   <- names(datasets[[1]])
 

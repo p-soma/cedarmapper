@@ -48,13 +48,10 @@ makegraphmapper <- function(x, lensefun, partition_count=4, overlap = 0.5, parti
 partition <- function(d, lensefun, n=4, o=0.5, lenseparam=NULL){
   # calculate lense values for all rows in d, use optional parameter
   # lensefun must return data.frame with columns L(values) and ID (rownames)
-  if(is.null(lenseparam)) {
-    lense.df = lensefun(d)  
-  } else {
-    lense.df = lensefun(d,lenseparam)
-  }
-
-  print(summary(lense.df))
+  
+  lense.df = lensefun(d, guaranteedVarname(lenseparam))
+  # debug
+  # print(summary(lense.df))
   
   # partition length = linear distance
   total_length = max(lense.df$L) - min(lense.df$L)
@@ -86,6 +83,9 @@ partition.graphmapper <- function(gm) {
   
   if (class(gm) != "graphmapper") stop("partition: requires input of class graphmapper class")
   gm[["partitions"]]  = partition(gm$d, gm$lensefun, gm$partition_count,  gm$overlap, gm[["lenseparam"]])
+  
+  # debug
+  for(i in length(gm["partitions"])) {print(paste0("parition ", i, " sized ", length(gm["partitions"][[i]])))}
 } 
 
 
@@ -208,22 +208,67 @@ graph.graphmapper<- function(gm){
 
 
 ####### helpers
+
+is.graphmapper <- function(o){
+  return((class(o)=="graphmapper"))
+}
+
+is.varname <- function(gm, varname){
+  return( Reduce("&", (varname %in% names(gm$d))))
+}
+
+# this is dangerous practice
+# but returns a variable name in the data set no matter what is sent
+guaranteedVarname <- function(gm,  varname=NULL){
+  if(!is.graphmapper(gm)) return(NULL)
+  
+  if (is.null(varname))   return(names(gm$d)[1])
+  
+  if( Reduce("&", (varname %in% names(gm$d)))) return(varname)
+
+  return(names(gm$d)[1])
+}
+
+# return data rows by variable for given node IDs
 #' @export
-nodedata <- function(nodeid, gm){
-  # ensure gm is a graphmapper
-  # ensure gm has 
-  return(gm$d[gm$nodes[[nodeid]],])
+nodedata <- function(gm, nodeid, varname=NULL){
+  if(!is.graphmapper(gm)) return (NULL)
+  if(is.null(varname)){
+    return(gm$d[gm$nodes[[nodeid]],])
+  } 
+  else {
+    # use reduce here to combine TRUES if varname is vector of names c("X", "Y")
+    if( Reduce("&", (varname %in% names(gm$d))))
+      return(gm$d[gm$nodes[[nodeid]],varname])
+  }
+  return()
 }
 
 #' @export
 nodelistdata <- function(node_ids, gm){
+  if(!is.graphmapper(gm)) return (NULL)
   # nodelist is a vector of nod
   gm$d[unlist(gm$nodes[node_ids]),]
 }
 
+#' @export
+partitiondata <- function(gm, p, varname = NULL){
+  if(!is.graphmapper(gm)) return (NULL)
+  if(is.null(varname)){
+    return(gm$d[gm$partitions[[p]],])
+  } 
+  else {
+    if (varname %in% names(gm$d))
+        return(gm$d[gm$partitions[[p]],varname])
+  }
+  # bad variable name sent - error condition?
+  return(NULL)
+}
+
+
 ####### LENSES
 #' @export
-simple_lense = function(d,varname="rw" ){
+simple_lense = function(d,varname=NULL ){
   # single column lense
   
   # simple lense function that returns a single variable
@@ -283,24 +328,27 @@ lense.distance <- function(d,varname=NULL) {
 
 ########## plotting 
 
+
 plot.graphmapper <- function(gm){
+  if(class(gm) != "graphmapper"){ stop("requires graphmapper object")}
   # create an edge list
   adjmatrix = cedar.adj(gm)
   cedar.graph(adjmatrix) 
 }
 
-plot_partitions <- function(gm, xvar="X", yvar="Y")  {
+plot_partitions <- function(gm,varx,vary)  {
   partitions = gm$partitions
   par(mfrow=c(2,2)) # set for 2X2 plot
-  for(i in 1:length(partitions)){ with(partitions[[i]], plot(X,Y)) }
+  for(i in 1:length(partitions)){ with(partitions[[i]], plot(gm$d[[varx]],gm$d[[vary]])) }
   par(mfrow=c(1,1))
   
   par(mfrow=c(2,2))
-  for(p in partitions){ 
+  
+  #for(p in partitions){ 
     # remove the ID column,TODO remove hard coded col num
      
-    print( eclust(gm$d[p,], FUNcluster="hclust", k.max = 5, stand =TRUE, B = 500, hc_metric="euclidean", hc_method="single"))
-  }
+  #  print( eclust(gm$d[p,], FUNcluster="hclust", k.max = 5, stand =TRUE, B = 500, hc_metric="euclidean", hc_method="single"))
+  # }
 }    
 
 plot_cluster = function(gm, cnumber){
