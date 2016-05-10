@@ -60,11 +60,12 @@ shinyServer(function(input, output, session) {
 
     ### FIRST must select data
   selectedDataSet <- observe({
-    input$dataSelection
+    print(input$dataSelection)
     if(is.null(input$dataSelection)){
       d <<- datasets[[1]] }
     else {
       d <<- datasets[[input$dataSelection]] }
+    print(paste0("1st row of",names(d)," is ", d[,1]))
     updateSelectInput(session, "selectedVar",choices = names(d), selected=1)
     updateSelectInput(session, "filterVar",  choices = names(d), selected=1)
     # TODO: is this needed?
@@ -72,7 +73,7 @@ shinyServer(function(input, output, session) {
   })
   
   # filterVar ==> lenseparam
-  getfilterVar <- reactive({
+  filterVar <- reactive({
     if(is.null(input$filterVar)) v = names(selectedDataSet())[1]
     else v = input$filterVar
     return(v)
@@ -100,7 +101,7 @@ shinyServer(function(input, output, session) {
       #  progress$set(value = value, detail = detail)
       #}
 
-         gm<<- makegraphmapper(x = selectedDataSet(), 
+         gm<<- makegraphmapper(x = d, 
                       lensefun = simple_lense, 
                       partition_count=as.numeric(input$partitionCountSelection),
                       overlap = as.numeric(input$overlapSelection)/100.0, 
@@ -109,7 +110,7 @@ shinyServer(function(input, output, session) {
                       lenseparam = filterVar() ) #,
                       #progressUpdater = updateProgress)
          
-      
+         return(gm)
        })
   
   # this sends an array of means for each node,
@@ -153,12 +154,11 @@ shinyServer(function(input, output, session) {
   })
   
   ##########
-  
-  
+
   output$cgplot <- renderCedarGraph({
     input$runMapper
     graphdata <-isolate(
-      list(graph_nodes = nodePrep(gm,selectedVar()), graph_links = linkPrep(gm))
+      list(graph_nodes = nodePrep(calc_gm(),selectedVar()), graph_links = linkPrep(calc_gm()))
     )
     print("rendering graph")
     cedarGraph(graphdata$graph_links, graphdata$graph_nodes,"500","500")
@@ -180,8 +180,7 @@ shinyServer(function(input, output, session) {
     textInput("vl","selected values", paste(getValues(), sep=",", collapse = ","))
   })
   
-  
-  output$nodeTable = renderDataTable(data.frame(getValues()))
+  output$selectedData = renderDataTable({d})
   
   ### run hypothesis test
   # get data from two inputs containing the groups

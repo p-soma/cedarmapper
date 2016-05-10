@@ -16,7 +16,8 @@ Depends:
     igraph(>= 1.0),
     ggplot2(>= 2.0),
     shinyjs(>= 0.5),
-    V8(>= 1.0)
+    V8(>= 1.0),
+    DT(>= 0.1)
 Suggests:
     knitr,
     devtools,

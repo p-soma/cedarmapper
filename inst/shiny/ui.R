@@ -79,6 +79,13 @@ shinyUI(
                      )
                    )
                  )
+        ), # end table panel
+        tabPanel("data",
+                 fluidRow(
+                   wellPanel(
+                     dataTableOutput('selectedData')
+                   )
+                 )
         ) # end table panel
       )
     )
