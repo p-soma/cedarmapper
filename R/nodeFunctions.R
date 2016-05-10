@@ -32,7 +32,7 @@ makegraphmapper <- function(x, lensefun, partition_count=4, overlap = 0.5, parti
   gm$partitions = partition.graphmapper(gm)
   
   # list of clusters using euclidean distance, single linkage, and  gap clustering detection, 
-  gm[["clusters"]]   = clusters.graphmapper(gm, 100 )  # progressUpdater
+  gm[["clusters"]]   = clusters.graphmapper(gm, 100,progressUpdater ) 
   
   # from clusters create nodes of sets of d
   gm[["nodes"]]     = nodes.graphmapper(gm)
@@ -122,11 +122,11 @@ clusters.graphmapper<- function(gm, iterations=250, shinyProgressFunction = NULL
     # gf = gapFunction(p)
     print(paste0("analyzing partition ", i))
     
-    # If we were passed a shiny progress update function, call it
-    #if (is.function(shinyProgressFunction)) {
-    #  text <- paste0("running ", iterations, " cluster iterations for partition ", i)
-    #  shinyProgressFunction(value = i/npart, detail = text)
-    # }
+    # If we were passed a shiny progress update function, call it for each loop
+    if (is.function(shinyProgressFunction)) {
+      text <- paste0("running ", iterations, " cluster iterations for partition ", i)
+      shinyProgressFunction(value = (i/npart), detail = text)
+     }
     
     x = as.matrix(gm$d[gm$partitions[[i]],])
     print(nrow(x))

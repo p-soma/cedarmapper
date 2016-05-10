@@ -90,16 +90,16 @@ shinyServer(function(input, output, session) {
   # selection button dynamic to gm object
 
    calc_gm <-eventReactive(input$runMapper, {
-      #progress <- shiny::Progress$new()
-      #progress$set(message = "Computing mapper", value = 0)
-      #on.exit(progress$close())
+      progress <- shiny::Progress$new()
+      progress$set(message = "Calculating Clustering", value = 0)
+      on.exit(progress$close())
       
-      #updateProgress <- function(value = NULL, detail = NULL) {
-      #  if (is.null(value)) {
-      #    value <- progress$getValue()
-      #    value <- value + (progress$getMax() - value) / 5 }
-      #  progress$set(value = value, detail = detail)
-      #}
+      updateProgress <- function(value = NULL, detail = NULL) {
+        if (is.null(value)) {
+          value <- progress$getValue()
+          value <- value + (progress$getMax() - value) / 5 }
+        progress$set(value = value, detail = detail)
+      }
 
          gm<<- makegraphmapper(x = d, 
                       lensefun = simple_lense, 
@@ -107,8 +107,8 @@ shinyServer(function(input, output, session) {
                       overlap = as.numeric(input$overlapSelection)/100.0, 
                       partition_method="single", 
                       index_method="gap",
-                      lenseparam = filterVar() ) #,
-                      #progressUpdater = updateProgress)
+                      lenseparam = filterVar(),
+                      progressUpdater = updateProgress)
          
          return(gm)
        })

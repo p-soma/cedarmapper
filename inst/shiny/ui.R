@@ -9,6 +9,10 @@ library(shiny)
 
 shinyUI(
     fluidPage(
+      tags$head(
+        tags$link(rel = "stylesheet", type = "text/css", href = "cedar.css")
+      ),
+      
       h3("CedarProject: Node Data"),
       # selectInput("col", "Colour:",
       #            c("white", "light green", "red", " light blue", "purple")),
