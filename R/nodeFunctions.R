@@ -235,8 +235,8 @@ simple_lense = function(d,varname="rw" ){
   if (is.null(varname)) { varname = names(d)[1] }
   
   # prep data frame for partitioning function with L column 
-  lense_data = data.frame(L=get(varname, d), ID=rownames(d), stringsAsFactors = FALSE)
-  return(lense_data)
+  lense_df = data.frame(L=get(varname, d), ID=rownames(d), stringsAsFactors = FALSE)
+  return(lense_df)
   
 }
 
@@ -251,26 +251,33 @@ y_lense <- function(d){
   simple_lense(d, "X")
 }
 
-
-lense.density <- function(d){
+#' @export
+lense.density <- function(d,varname=NULL){
   # single column lense; only first column is used
+  if (is.null(varname)) { varname = names(d)[1] }
   
   # kernel density using params from params object
   # params object ignored for now using standard values
-  # if (typeof(params) != "list")  params = list()
-  # if(is.null(params$bw)) params$bw= "nrd"
-  # if(is.null(params$kernal))params$kernel = "gaussian"
-  
+  #if(is.null(params$bw)) params$bw= "nrd"
+  #if(is.null(params$kernal))params$kernel = "gaussian"
+  bw = "SJ"
+  kernel = "gaussian"
+  dens_fun = approxfun(density(d[[varname]], bw="SJ",kernel="gaussian"))
+  lense_df = data.frame(L=dens_fun(d[[varname]]), ID=rownames(d), stringsAsFactors = FALSE)
+  return(lense_df) 
 }
 
-lense.pca <- function(d) {
-  # multiple column lense
-  d.pca = prcomp(gm$d, retx=TRUE, center=TRUE, scale. = TRUE)
-  data.frame(L=Ld.pca$x[,"PC1"], ID=rownames(d), stringsAsFactors = FALSE) 
+
+#' @export
+lense.pca <- function(d,varname=NULL) {
+  # multiple column lense, ignore var parameter
+  d.pca = prcomp(d, retx=TRUE, center=TRUE, scale. = TRUE)
+  data.frame(L=d.pca$x[,"PC1"], ID=rownames(d), stringsAsFactors = FALSE) 
 }
 
+#' @export
 lense.distance <- function(d,varname=NULL) {
-  # multi-column lense
+  # multi-column lense, ignore var parameter
   data.frame(L=mahalanobis(scale(d, center=TRUE,scale=TRUE ), center=colMeans(d), cov=cov(d)), stringsAsFactors = FALSE)
 }
 
