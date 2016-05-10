@@ -19,7 +19,7 @@ source("R/nodeFunctions.R")
 source("R/circleFunctions.R")
 source("R/widget.R")
 
-gm =   makegraphmapper(circle_data(1, 60), circle_lense, partition_count=4, overlap = 0.5, partition_method="single", index_method="gap")
+gm =   makegraphmapper(circle_data(1, 60), simple_lense, partition_count=4, overlap = 0.5, partition_method="single", index_method="gap", lenseparam = "Y")
 graph_nodes = nodePrep(gm,"Y")
 graph_links = linkPrep(gm)
 
@@ -42,7 +42,6 @@ getSelectedValues = function(gm, node_id_list_str, varName){
 
 
 varchoices = names(gm$d)
-clusterIndexChoices = c( "gap", "all", "alllong", "kl", "ch", "hartigan", "ccc", "scott", "marriot", "trcovw", "tracew","friedman", "rubin", "cindex", "db", "silhouette", "duda", "pseudot2",  "beale", "ratkowsky", "ball", "ptbiserial", "frey", "mcclain", "gamma", "gplus", "tau", "dunn", "hubert", "sdindex", "dindex", "sdbw")
 
 # jsCode <- "shinyjs.pageCol = function(params){$('body').css('background', params);}"
 
@@ -59,16 +58,9 @@ ui <-
       column(6, 
              wellPanel(
                
-               selectInput("randomizeSelect", label="Data Type", 
-                           choices= list("uniform", "random"),
-                           selected = 1),
-               
-               selectInput("clusterIndex", label = "Cluster Index",
-                            choices = clusterIndexChoices, selected = 1),
-               
                selectInput("selectedVar", label = "Variable", choices = varchoices, selected = 1),
 
-               actionButton("redraw", "Redraw"),
+               actionButton("redraw", "Redraw (inactive)"),
                
                wellPanel(h4("Mapper Output"), cedarGraphOutput("cedargraph")),
                div("Group 1:", textOutput("group1list")),
