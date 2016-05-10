@@ -1,0 +1,25 @@
+# global.R
+
+# starting values for Shiny Web application
+
+### DATA
+datasets = list()
+data(chemdiab)
+chemdiab  <- subset(chemdiab, select = -c(cc))
+
+datasets[["Diabetes"]] <- chemdiab
+datasets[["Circle"]]   <-circle_data(r=1, n=100)
+datasets[["Circle500"]]<-circle_data(r=1, n=500)
+datasets[["FuzzyCircle"]] <- circle_data(r=1, n=200, randomize = TRUE)
+
+
+####### starting values
+dataChoices           <- names(datasets)
+
+# mapper 
+clusterIndexChoices   <- c( "gap", "all", "alllong", "kl", "ch", "hartigan", "ccc", "scott", "marriot", "trcovw", "tracew","friedman", "rubin", "cindex", "db", "silhouette", "duda", "pseudot2",  "beale", "ratkowsky", "ball", "ptbiserial", "frey", "mcclain", "gamma", "gplus", "tau", "dunn", "hubert", "sdindex", "dindex", "sdbw")
+partitionCountChoices <- c(3:20)
+lenseChoices          <- c("simple_lense","KernelDensity", "PCA")
+partitionCountChoices <- c(3:10)
+initVariableChoices   <- names(datasets[[1]])
+

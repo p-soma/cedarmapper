@@ -6,14 +6,10 @@
 #
 
 library(shiny)
-clusterIndexChoices = c( "gap", "all", "alllong", "kl", "ch", "hartigan", "ccc", "scott", "marriot", "trcovw", "tracew","friedman", "rubin", "cindex", "db", "silhouette", "duda", "pseudot2",  "beale", "ratkowsky", "ball", "ptbiserial", "frey", "mcclain", "gamma", "gplus", "tau", "dunn", "hubert", "sdindex", "dindex", "sdbw")
-partitionCountChoices = c(3:10)
 
 shinyUI(
     fluidPage(
       h3("CedarProject: Node Data"),
-      shinyjs::useShinyjs(),
-      # extendShinyjs(text = jsCode),
       # selectInput("col", "Colour:",
       #            c("white", "light green", "red", " light blue", "purple")),
       tabsetPanel(
@@ -24,21 +20,27 @@ shinyUI(
                           wellPanel(
                 
                             selectInput("dataSelection", label = "Data", 
-                                        choices = list("Diabetes"='chemdiab', "Fixed Circle"='circle',"Random Circle"='randomcircle'), selected = 1),
+                                        choices = dataChoices, selected = 1),
+                            
+                            selectInput("filterVar", label = "Variable", 
+                                        choices = initVariableChoices, selected = 1),
+                            
                             selectInput("filterFunctionSelection", label="Filtering Function", 
-                                        choices = c("simple_lense","KernelDensity", "PCA"),selected = 1),
+                                        choices = lenseChoices, selected = 1),
+                            
                             selectInput("partitionCountSelection", label = "Number of Partitions", 
                                         choices = partitionCountChoices, selected = 4),  
+                            
                             selectInput("overlapSelection", label = "Partition Overlap (percent)", 
                                         choices = c(0:13) * 5  + 10, selected = 50),
+                            
                             selectInput("clusterIndexSelection", label = "Cluster Index",
                                         choices = clusterIndexChoices, selected = 1),
+                            
                             actionButton("runMapper", "Calculate Mapper"),
                             hr(),
                             
-                            # TODO: this is temporary hard code of variable names
-                            #uiOutput("variableSelector"),
-                            selectInput("selectedVar", label = "Variable", choices =  list("rw","fpg","ga"), selected = 1),
+                            selectInput("selectedVar", label = "Variable", choices =  initVariableChoices, selected = 1),
                             
                             hr(),
                             actionButton("grp1set", "Set Group 1"),

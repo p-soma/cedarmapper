@@ -19,18 +19,6 @@ library(shinyjs)
 #source("R/circleFunctions.R")
 #source("R/widget.R")
 
-### DATA
-data(chemdiab)
-chemdiab  = subset(chemdiab, select = -c(cc))
-circle = circle_data(r=1, n=100)
-randomcircle = circle_data(r=1, n=100, randomize = TRUE)
-
-###
-
-### First version of this app used a GLOBAL OBJECT; should not be global
-# replaced with gm() reactive function
-# gm =   makegraphmapper(x = chemdiab, simple_lense, partition_count=4, overlap = 0.5, partition_method="single", index_method="gap", "rw",progressUpdater = NULL)
-
 ####### useful functions
 
 #'@export
@@ -60,18 +48,36 @@ getSelectedValues = function(gmap, node_id_list_str, varName){
   return(get(varName,datarows))
 }
 
-####### starting values
-clusterIndexChoices = c( "gap", "all", "alllong", "kl", "ch", "hartigan", "ccc", "scott", "marriot", "trcovw", "tracew","friedman", "rubin", "cindex", "db", "silhouette", "duda", "pseudot2",  "beale", "ratkowsky", "ball", "ptbiserial", "frey", "mcclain", "gamma", "gplus", "tau", "dunn", "hubert", "sdindex", "dindex", "sdbw")
-partitionCountChoices = c(3:10)
+### start up with default gm object
+default_gm  = makegraphmapper(x = datasets[["Diabetes"]], simple_lense, partition_count=4, overlap = 0.5, partition_method="single", index_method="gap",  lenseparam = names(datasets[["Diabetes"]])[1], progressUpdater = NULL)
+
 
 ####### server
 shinyServer(function(input, output, session) {
+  startUpState <- TRUE
+  gm <- default_gm
+  d <- datasets[[1]]
+
+    ### FIRST must select data
+  selectedDataSet <- reactive({
+    input$dataSelection
+    if(is.null(input$dataSelection)){
+      d <<- datasets[[1]] }
+    else {
+      d <<- datasets[[input$dataSelection]] }
+    updateSelectInput(session, "selectedVar",choices = names(d), selected=1)
+    
+  })
+  
+  selectedVar <- reactive({ 
+    if(is.null(input$variableselect)) v = names(selectedDataSet())[1]
+    else v = input$variableselect
+    return(v)})
   
   # TODO temp disable this and use hard coded variable names for testing
-  # selection button dynamic to gm() object
-  # output$variableSelector <- renderUI({selectInput("selectedVar", label = "Variable", choices =  names(gm()$d), selected = 1)})
-  
-   gm = eventReactive(input$runMapper, {
+  # selection button dynamic to gm object
+
+   calculateGM = eventReactive(input$runMapper, {
       #progress <- shiny::Progress$new()
       #progress$set(message = "Computing mapper", value = 0)
       #on.exit(progress$close())
@@ -85,7 +91,8 @@ shinyServer(function(input, output, session) {
 
       return(
         isolate({
-          makegraphmapper(x = chemdiab, 
+          
+          gm <<- makegraphmapper(x = selectedDataSet(), 
                       lensefun = simple_lense, 
                       partition_count=as.numeric(input$partitionCountSelection),
                       overlap = as.numeric(input$overlapSelection)/100.0, 
@@ -97,29 +104,25 @@ shinyServer(function(input, output, session) {
   })
   
   # this sends an array of means for each node,
-  # from the gm()$d data frame column
+  # from the gm$d data frame column
   # of the selected variable to Shiny via the session object
   observe({
-    if (! is.null(input$selectedVar)){
-      if (input$selectedVar %in% names(gm()$d)) {
-        vals =  nodePrep(gm(),input$selectedVar)$values
+      input$selectedVar
+      if (selectedVar() %in% names(gm$d)) {
+        vals =  nodePrep(gm, selectVar())$values
         session$sendCustomMessage(type='nodevalues',message = vals)
-      }}
+      }
   })
+  
   
   output$dataSpecs  <- renderText({
-    paste0(input$dataSelection, " with ", nrow(gm()$d), " rows and ", ncol(gm()$d), " columns; ", "using variable ", input$selectedVar)
+    paste0(input$dataSelection, " with ", nrow(gm$d), " rows and ", ncol(gm$d), " columns; ", "using variable ", input$selectedVar)
   })
   
-  output$variance <- renderText({var(getValues()[input$selectedVar])})
+  # TODO: should be observer on node selection
+  output$variance <- renderText({var(getValues()[SelectedVar])})
   
-  # observeEvent(input$col, {
-  #  js$pageCol(input$col)
-  # })
-  
-  selectedVar = reactive({ 
-    v = input$variableselect
-    return(v)})
+
   
   output$selectedVariable <- renderText({selectedVar()})
   
@@ -148,7 +151,7 @@ shinyServer(function(input, output, session) {
   output$cgplot <- renderCedarGraph({
     input$runMapper
     graphdata <-isolate(
-      list(graph_nodes = nodePrep(gm(),input$selectedVar), graph_links = linkPrep(gm()))
+      list(graph_nodes = nodePrep(gm,input$selectedVar), graph_links = linkPrep(gm))
     )
     cedarGraph(graphdata$graph_links, graphdata$graph_nodes,"500","500")
   })
@@ -177,7 +180,7 @@ shinyServer(function(input, output, session) {
   output$hypTest <- renderText({
     getNodeRows <- function(node_id_list){
       node_ids = str2vec(node_id_list)
-      return(gm()$d[unlist(gm()$nodes[node_ids]),])
+      return(gm$d[unlist(gm$nodes[node_ids]),])
     }
     
     nodes1 = getNodeRows(groupSets()[[1]])
@@ -205,13 +208,13 @@ shinyServer(function(input, output, session) {
   })
   
   # get nodes from the graph_nodes data structure
-  # not from the gm() graphmapper object
+  # not from the gm graphmapper object
   # not used
   getNodes <- reactive({
     ns <- getNodeList()
     selected_nodes <- NULL
     if( ! is.null(ns)) {
-      gm()$nodes
+      gm$nodes
       selected_nodes <- graph_nodes[graph_nodes$name %in% ns,]}
     n = as.vector(selected_nodes["name"])   #  "name" is 'nodeid' as used in the node prep script
     # print(n)  # debug
@@ -225,7 +228,7 @@ shinyServer(function(input, output, session) {
     ##### TODO Warning: Error in if: missing value where TRUE/FALSE needed
     if( is.null(node_ids)   ) { return(0) }
     if( length(node_ids)==0 ) { return(0) }
-    datarows = gm()$d[unique(unlist(gm()$nodes[names(gm()$nodes) %in% node_ids])), input$selectedVar]
+    datarows = gm$d[unique(unlist(gm$nodes[names(gm$nodes) %in% node_ids])), input$selectedVar]
     # get(selectedVar(),datarows)
     return(datarows)
   })
