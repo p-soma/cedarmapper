@@ -22,7 +22,7 @@ nodePrep = function(gm, selectedVariable=NULL){
 
   # check that what's sent is a variable name
   # be nice and use a default variable name while developing Shiny
-  selectedVariable = guaranteedVarname(selectedVariable)
+  selectedVariable = guaranteedVarname(gm, selectedVariable)
   
   meanVariable <- function(node) {
     mean(nodedata(gm, node,selectedVariable))
@@ -34,11 +34,6 @@ nodePrep = function(gm, selectedVariable=NULL){
     mean(gm$lensefun(d))
   }
   
-  gmRowCount <- nrow(gm$d)
-  relativeSize <- function(node){
-    
-    
-  }
   # g = graphPrep(nodes)
   # nodegraph javascript is expecting a "name" attribute which is the nodeID
   # the index of these nodes will be set when converted to json, 

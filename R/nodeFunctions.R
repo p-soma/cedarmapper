@@ -28,8 +28,11 @@ makegraphmapper <- function(x, lensefun, partition_count=4, overlap = 0.5, parti
                       "lenseparam" = lenseparam),
                  class="graphmapper")
   
-  print(gm)
+
   gm$partitions = partition.graphmapper(gm)
+
+  # debug
+  print(lapply(gm$partitions, length))
   
   # list of clusters using euclidean distance, single linkage, and  gap clustering detection, 
   gm[["clusters"]]   = clusters.graphmapper(gm, 100,progressUpdater ) 
@@ -82,10 +85,10 @@ partition.graphmapper <- function(gm) {
   print(paste("gm values=", gm$partition_count,  gm$overlap, gm[["lenseparam"]]))
   
   if (class(gm) != "graphmapper") stop("partition: requires input of class graphmapper class")
-  gm[["partitions"]]  = partition(gm$d, gm$lensefun, gm$partition_count,  gm$overlap, gm[["lenseparam"]])
-  
+  return(partition(gm$d, gm$lensefun, gm$partition_count,  gm$overlap, gm[["lenseparam"]]))
+    
   # debug
-  for(i in length(gm["partitions"])) {print(paste0("parition ", i, " sized ", length(gm["partitions"][[i]])))}
+  # for(i in length(gm["partitions"])) {print(paste0("parition ", i, " sized ", length(gm["partitions"][[i]])))}
 } 
 
 
@@ -229,17 +232,19 @@ guaranteedVarname <- function(gm,  varname=NULL){
   return(names(gm$d)[1])
 }
 
-# return data rows by variable for given node IDs
+# return data rows by variable for given node
+# a node is a list of data row IDs from gm$d, note a node ID (node 3)
 #' @export
-nodedata <- function(gm, nodeid, varname=NULL){
+nodedata <- function(gm, node, varname=NULL){
+  
   if(!is.graphmapper(gm)) return (NULL)
   if(is.null(varname)){
-    return(gm$d[gm$nodes[[nodeid]],])
+    return(gm$d[node,])
   } 
   else {
     # use reduce here to combine TRUES if varname is vector of names c("X", "Y")
     if( Reduce("&", (varname %in% names(gm$d))))
-      return(gm$d[gm$nodes[[nodeid]],varname])
+      return(gm$d[node,varname])
   }
   return()
 }
