@@ -50,6 +50,10 @@ graphmapper <- function(x, lensefun, partition_count=4, overlap = 0.5, partition
                       "index_method"=index_method, 
                       "lenseparam" = lenseparam),
                  class="graphmapper")
+    gm$partitions = NULL
+    gm$clusters   = NULL
+    gm$nodes      = NULL
+    gm$adjmatrix  = NULL
   return(gm)
 }
 
