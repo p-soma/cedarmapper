@@ -367,9 +367,11 @@ plot_partitions <- function(gm,varx,vary)  {
   # }
 }    
 
-plot_cluster = function(gm, cnumber){
-  cldata = cbind(d.partitions[[cnumber]],gm$clusters[[cnumber]])
-  plot(cldata$X, cldata$Y, col = c("red", "green", "blue")[cldata$`d.clusters[[cnumber]]`])
+# TO DO: refactor to plot arbitrary columns
+# plot_cluster = function(gm, x, y, cnumber){
+#  cldata = cbind(rowid = gm$partitions[[cnumber]],clusterid = gm$clusters[[cnumber]])
+# SET X AND Y variables  FROM DATA
+#  plot(cldata$X, cldata$Y, col = c("red", "green", "blue")[rowid])
   # d[d$ID %in% names(cl[[1]]),]
-}
+# }
 
