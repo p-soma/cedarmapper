@@ -13,12 +13,35 @@ library(factoextra)
 # to install the above requires 'Hmisc' which requires binary install on Mac
 # see https://cran.r-project.org/web/packages/Hmisc/index.html 
 
-
-# graphmapper class factory
-# this prepares the data structure, then runs each mapper step
+#  single method to run all steps for graphmapper object
 #' @export
 makegraphmapper <- function(x, lensefun, partition_count=4, overlap = 0.5, partition_method="single", index_method="gap", lenseparam = NULL, progressUpdater=NULL){
-  # note: using as.numeric to convert arguments in case we forget to convert Shiny character inputs 
+  # create object with params 
+  gm = graphmapper(x, lensefun, partition_count, overlap, partition_method, index_method, lenseparam)
+  
+  # create partitions 
+  gm$partitions = partition.graphmapper(gm)
+
+  # create clusters in each partition; this takes a while depending on number of iterations
+  # TODO parameterize iterations (currently hard codes)
+  # note, the progressUpdater construct is for ShinyApps and optional
+  gm[["clusters"]]   = clusters.graphmapper(gm, 100,progressUpdater ) 
+  
+  # create nodes from clusters 
+  gm[["nodes"]]     = nodes.graphmapper(gm)
+
+  # build links of overlapping nodes as an adjancy matrix
+  gm[["adjmatrix"]] = adjacency.graphmapper(gm) 
+
+  return(gm)
+  
+}
+
+
+# graphmapper class factory
+#' @export
+graphmapper <- function(x, lensefun, partition_count=4, overlap = 0.5, partition_method="single", index_method="gap", lenseparam = NULL){
+  # note: using as.numeric to convert arguments becuase Shiny inputs return strings
   gm = structure(list(d = x, 
                       "partition_count"=as.numeric(partition_count), 
                       "overlap" = as.numeric(overlap),   # percent, o <= 1
@@ -27,26 +50,10 @@ makegraphmapper <- function(x, lensefun, partition_count=4, overlap = 0.5, parti
                       "index_method"=index_method, 
                       "lenseparam" = lenseparam),
                  class="graphmapper")
-  
-
-  gm$partitions = partition.graphmapper(gm)
-
-  # debug
-  print(lapply(gm$partitions, length))
-  
-  # list of clusters using euclidean distance, single linkage, and  gap clustering detection, 
-  gm[["clusters"]]   = clusters.graphmapper(gm, 100,progressUpdater ) 
-  
-  # from clusters create nodes of sets of d
-  gm[["nodes"]]     = nodes.graphmapper(gm)
-  
-  gm[["adjmatrix"]] = adjacency.graphmapper(gm) 
-
   return(gm)
-  
 }
 
-# TODO add parameter for name of column to use for lense
+
 #' @export
 partition <- function(d, lensefun, n=4, o=0.5, lenseparam=NULL){
   # calculate lense values for all rows in d, use optional parameter
