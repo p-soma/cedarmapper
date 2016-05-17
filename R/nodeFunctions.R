@@ -246,27 +246,35 @@ guaranteedVarname <- function(gm,  varname=NULL){
 # return data rows by variable for given node
 # a node is a list of data row IDs from gm$d, note a node ID (node 3)
 #' @export
-nodedata <- function(gm, node, varname=NULL){
-  
+nodedata <- function(gm, nodes, varname=NULL){
   if(!is.graphmapper(gm)) return (NULL)
+
+  # unlisting potentially overlapping nodes, this works on single node, too
+  nodes = unique(unlist(nodes))
+
+  # if no variable name sent, return all columns
   if(is.null(varname)){
-    return(gm$d[node,])
+    return(gm$d[nodes,])
   } 
   else {
+    # return only column(s) requested in varname
     # use reduce here to combine TRUES if varname is vector of names c("X", "Y")
     if( Reduce("&", (varname %in% names(gm$d))))
-      return(gm$d[node,varname])
+      return(gm$d[nodes,varname])
   }
   return()
 }
 
+# TODO : replace references to this function with nodedata() above
 #' @export
 nodelistdata <- function(node_ids, gm){
+  # TODO remove in favor of nodedata above
   if(!is.graphmapper(gm)) return (NULL)
   # nodelist is a vector of nod
   gm$d[unlist(gm$nodes[node_ids]),]
 }
 
+# returns 
 #' @export
 partitiondata <- function(gm, p, varname = NULL){
   if(!is.graphmapper(gm)) return (NULL)
