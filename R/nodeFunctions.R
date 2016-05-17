@@ -265,24 +265,21 @@ nodedata <- function(gm, nodes, varname=NULL){
   return()
 }
 
-# TODO : replace references to this function with nodedata() above
-#' @export
-nodelistdata <- function(node_ids, gm){
-  # TODO remove in favor of nodedata above
-  if(!is.graphmapper(gm)) return (NULL)
-  # nodelist is a vector of nod
-  gm$d[unlist(gm$nodes[node_ids]),]
-}
-
-# returns 
+# returns one or more columns of data as listed in one or more partitions
 #' @export
 partitiondata <- function(gm, p, varname = NULL){
   if(!is.graphmapper(gm)) return (NULL)
+  
+  # convert list of partitions into single vector of row ids
+  p = unique(unlist(p))
+  
+  # if no varname param, return all columns
   if(is.null(varname)){
     return(gm$d[gm$partitions[[p]],])
   } 
   else {
-    if (varname %in% names(gm$d))
+    # use reduce() here to allow a vector of column names
+    if (Reduce("&", (varname %in% names(gm$d))))
         return(gm$d[gm$partitions[[p]],varname])
   }
   # bad variable name sent - error condition?
