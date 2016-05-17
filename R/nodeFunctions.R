@@ -54,6 +54,7 @@ graphmapper <- function(x, lensefun, partition_count=4, overlap = 0.5, partition
     gm$clusters   = NULL
     gm$nodes      = NULL
     gm$adjmatrix  = NULL
+    gm$groups     = NULL
   return(gm)
 }
 
@@ -220,6 +221,57 @@ graph.graphmapper<- function(gm){
   return(g)
 }
 
+# assign groups in gm object
+#' @export
+setgroup.graphmapper <-function(gm,node_ids,group_id = NULL) {
+  
+  if(!is.graphmapper(gm)) return(NULL)  # raise exception
+  
+  # check that group_id is numeric
+  # if group_id is null, append to list
+  
+  if(is.null(group_id)) {
+    if(length(gm$groups == 0)) group_id = 1
+    else group_id = length(gm$groups)+1
+  }
+  
+  if(!is.numeric(group_id)) {
+    # sorry group_id must be numeric for this version
+    # raise exception
+    return(NULL)
+  }
+    
+  gm$groups[[group_id]] = node_ids
+}
+
+
+# returns a table of ks results for each variable in gm$d
+#' @export
+kstable <- function(gm, group_ids = c(1,2)){
+  # requires the 'groups' of the gm object be set ahead of time
+  # could have more than 2 groups, allow to select 2 groups 
+  if(is.null(groups)) return(NULL) # raise exception need some groups!
+  
+  # inner function for apply
+  ksfun <- function(varname) {
+    # TODO this is duplicating the data in memory
+    d1 = groupdata(gm,group_ids[1],varname)
+    d2 = groupdata(gm,group_ids[2],varname)
+    kt = ks.test(d1,d2, alternatives = "two.sided", exact = FALSE)
+    return(data.frame("var"=varname, "pvalue" = kt$p.value, "kstatistic" = kt$statistic))
+  }
+  
+  ktable = ldply(vars, ksfun)
+  return(ktable[order(ktable$pvalue),])
+}
+
+
+# returns the data rows for a given group id
+groupdata <- function(gm, group_id, varname = NULL){
+  if(group_id > length(gm$groups)) return(NULL)
+  nodedata(gm, gm$nodes[gm$groups[[group_id]]], varname)
+}
+
 
 ####### helpers
 
@@ -305,6 +357,8 @@ simple_lense = function(d,varname=NULL ){
   return(lense_df)
   
 }
+
+
 
 # simple lense on X coordinate
 #' @export
