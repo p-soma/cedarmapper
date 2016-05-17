@@ -20,4 +20,9 @@ gm$nodes      = nodes.graphmapper(gm)
 gm$adjmatrix  = adjacency.graphmapper(gm) 
 
 
+# use gui or other method for selecting groups/
+gm$groups = list(group1 = c(1,2,3,4), group2=c(5,6,7,8,9))
 
+# TURN OFF WARNINGS
+kt = kstable(gm)
+print(kt)
