@@ -257,11 +257,16 @@ kstable <- function(gm, group_ids = c(1,2)){
     # TODO this is duplicating the data in memory
     d1 = groupdata(gm,group_ids[1],varname)
     d2 = groupdata(gm,group_ids[2],varname)
-    kt = ks.test(d1,d2, alternatives = "two.sided", exact = FALSE)
+    # suppress the ks test warnings because we know there will be ties
+    kt = suppressWarnings(
+      ks.test(d1,d2, alternatives = "two.sided", exact = FALSE) 
+      )
     return(data.frame("var"=varname, "pvalue" = kt$p.value, "kstatistic" = kt$statistic))
   }
   
+  vars = names(gm$d)
   ktable = ldply(vars, ksfun)
+  
   return(ktable[order(ktable$pvalue),])
 }
 
