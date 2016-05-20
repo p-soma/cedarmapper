@@ -7,10 +7,10 @@ library(shinydashboard)
 
 dashboardPage(
   
-  dashboardHeader(title = "CEDAR"),
+dashboardHeader(title = "CEDAR"),
   
-  ################
-  dashboardSidebar(
+################
+dashboardSidebar(
     
     sidebarMenu(
       id = "tabs",
@@ -22,13 +22,13 @@ dashboardPage(
     p(textOutput("dataname"))
   ),
   
-  #############
-  dashboardBody(
+#############
+dashboardBody(
     tabItems(
       # First tab content
       tabItem(tabName = "params",
               fluidRow(
-                box( title = "Parameters",
+                box( background ="light-blue", title = "Parameters",width=4,
                        selectInput("dataSelection", label = "Data", 
                                    choices = dataChoices, selected = 1),
                        selectInput("lenseFunctionSelection", label="Lense Function", 
@@ -62,6 +62,6 @@ dashboardPage(
               )
       )
     )
-  )
-  
-)
+    
+) # end of dashboard body
+) # end of dashboard page

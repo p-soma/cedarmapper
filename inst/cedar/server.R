@@ -16,6 +16,8 @@ library(shiny)
 library(plyr)
 library(shinyjs)
 
+# see global.R for starting values for each new session 
+
 gm <- graphmapper(x=d, lensefun=simple_lense, partition_count=4, overlap=0.5, partition_method="single", index_method="gap", lenseparam="rw")
 
 ####### server
@@ -33,6 +35,7 @@ shinyServer(function(input, output, session) {
   })
   
   output$dataname = renderText(input$dataSelection)
+  output$datarows = renderText({nrow(d)})
   output$dataset = renderDataTable({d})
   output$partitionCount = reactive({gm$partition_count})
   
