@@ -19,8 +19,6 @@ dataChoices           <- names(datasets)
 clusterIndexChoices   <- c( "gap", "all", "alllong", "kl", "ch", "hartigan", "ccc", "scott", "marriot", "trcovw", "tracew","friedman", "rubin", "cindex", "db", "silhouette", "duda", "pseudot2",  "beale", "ratkowsky", "ball", "ptbiserial", "frey", "mcclain", "gamma", "gplus", "tau", "dunn", "hubert", "sdindex", "dindex", "sdbw")
 partitionCountChoices <- c(3:20)
 lenseChoices          <- c("single variable"="simple_lense","Kernel Density"="lense.density", "PCA"="lense.pca", "M distance"="lense.distance")
-partitionCountChoices <- c(3:10)
 initVariableChoices   <- names(datasets[[1]])
-
 # starting value for dataset d
 d                     <- datasets[[1]]
