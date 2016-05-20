@@ -7,14 +7,13 @@
 #' @import shiny
 #' @import plyr
 #' @import ggplot2
-#' @import shinyjs
+
 
 library(htmlwidgets)
 library(cedargraph)
 library(cedar)
 library(shiny)
 library(plyr)
-library(shinyjs)
 
 # see global.R for starting values for each new session 
 
@@ -35,6 +34,7 @@ shinyServer(function(input, output, session) {
     return(d)
   })
   
+  dataRows <- reactive({ nrow(d)})
   # this sends an array of means for each node,
   # from the gm$d data frame column
   # of the selected variable to Shiny via the session object
@@ -45,6 +45,7 @@ shinyServer(function(input, output, session) {
     else{ v = input$selectedVar}
     return(v)
   })
+  
   
   observe({
     input$selectedVar
@@ -80,15 +81,7 @@ shinyServer(function(input, output, session) {
     length(gm$groups[["group2"]])
   })
   
-  ########### outputs
-  output$dataname   <- renderText(input$dataSelection)
-  output$datarows   <- renderText({nrow(d)})
-  output$dataset    <- renderDataTable({d})
-  output$nodeCount  <- renderText({paste0(length(gm$nodes), " nodes")})
-  output$group1Count <- renderText({ group1() })
-  output$group2Count <- renderText({ group2() })
-  # custom inputs from CedarGraph html widget
-  output$nodeListText = renderText({ getNodeList()})
+
   
 
   # graph widget, but only if the mapper object has been created via button
@@ -133,5 +126,31 @@ shinyServer(function(input, output, session) {
     return(gm)
   })
   
+  testy <- eventReactive(input$runTest,
+                         # also on     #group1()
+                         # group2()
+                         
+           #print('testing groups =- ')
+           #print(has.groups(gm))
+           # if(!has.groups(gm)) return(NULL)
+           # print("running table on groups = ")
+           # print(gm$groups)
+          {updateTabItems(session, "tabs", selected = "results")
+            kstable(gm)} )
+  
+  output$hypTestTable <- renderTable({
+    testy()
+    return()
+  })   
+  
+  ########### outputs
+  output$dataname   <- renderText(input$dataSelection)
+  output$datarows   <- renderText({dataRows()})
+  output$dataset    <- renderDataTable({d})
+  output$nodeCount  <- renderText({paste0(length(gm$nodes), " nodes")})
+  output$group1Count <- renderText({ group1() })
+  output$group2Count <- renderText({ group2() })
+  # custom inputs from CedarGraph html widget
+  output$nodeListText = renderText({ getNodeList()})
   
 })
