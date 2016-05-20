@@ -1,0 +1,61 @@
+Cedar WorkList
+
+Graph
+---
+Size nodes by number of rows per node
+
+Understand Clustering
+---
+
+add clustering visualizations to application
+    
+Lense Functions
+---
+
+Eccentrity(data) - for every point variance of the distance (eg. euclidean) to all other points
+see notes on density function
+    
+for point p
+    d = set of distances from all other non-p vars)
+    eccentrity of p =  sqrt(avg(d . ^ 2))
+    
+See notes on density
+
+Normalization functions required
+
+
+Hypothesis Testing
+
+Create table for KS test
+columns = each column in dataset (variable) including categoricals/factors
+rows = p values and statistic
+order with lowest p value at the left
+
+harder to sort horizontally
+
+Or variables vertical list
+Given two groupings, use sparkline/histograms
+
+columns : VarName, Pvalue, KS statistic, G1Hist  G2Hist? 
+
+could make varnames a button that opens window to ... date? other graph?
+
+
+
+
+how to include categorical variables 
+    coloring via percentage of the factor in that node
+    ability to select categorical variable for coloring
+
+
+Save/Load data
+
+look into this application for code to steal: http://vnijs.github.io/radiant/  and https://github.com/Robinlovelace/R-for-Big-Data
+
+Export an analysis to Rmarkdown - see http://vnijs.github.io/radiant/programming.html
+
+
+
+
+
+

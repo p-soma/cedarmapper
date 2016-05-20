@@ -49,7 +49,7 @@ getSelectedValues = function(gmap, node_id_list_str, varName){
 }
 
 ### start up with default gm object
-default_gm  = makegraphmapper(x = datasets[["Diabetes"]], simple_lense, partition_count=4, overlap = 0.5, partition_method="single", index_method="gap",  lenseparam = names(datasets[["Diabetes"]])[1], progressUpdater = NULL)
+default_gm  = graphmapper(x = datasets[["Diabetes"]], simple_lense, partition_count=4, overlap = 0.5, partition_method="single", index_method="gap",  lenseparam = names(datasets[["Diabetes"]])[1])
 
 
 ####### server
@@ -93,7 +93,6 @@ shinyServer(function(input, output, session) {
       progress <- shiny::Progress$new()
       progress$set(message = "Calculating Clustering", value = 0)
       on.exit(progress$close())
-      
       updateProgress <- function(value = NULL, detail = NULL) {
         if (is.null(value)) {
           value <- progress$getValue()
@@ -101,21 +100,23 @@ shinyServer(function(input, output, session) {
         progress$set(value = value, detail = detail)
       }
       
-         lense_fun = simple_lense
-         if(! is.null(input$lenseFunctionSelection)) {
-           f = get(input$lenseFunctionSelection) 
-           if (is.function(f)){ lense_fun = f}
-         }
+      
+      lense_fun = simple_lense
+      if(! is.null(input$lenseFunctionSelection)) {
+         f = get(input$lenseFunctionSelection) 
+         if (is.function(f)){ lense_fun = f}
+      }
          
-         gm<<- makegraphmapper(x = d, 
-                      lensefun = lense_fun, 
-                      partition_count=as.numeric(input$partitionCountSelection),
-                      overlap = as.numeric(input$overlapSelection)/100.0, 
-                      partition_method="single", 
-                      index_method="gap",
-                      lenseparam = filterVar(),
-                      progressUpdater = updateProgress)
+      gm<<- makegraphmapper(x = d, 
+            lensefun = lense_fun, 
+            partition_count=as.numeric(input$partitionCountSelection),
+            overlap = as.numeric(input$overlapSelection)/100.0, 
+            partition_method="single", 
+            index_method="gap",
+            lenseparam = filterVar(),
+            progressUpdater = updateProgress)
          
+         # updateTabsetPanel(session, "tabs", selected = "graph")
          return(gm)
        })
   
@@ -139,28 +140,8 @@ shinyServer(function(input, output, session) {
   # output$variance <- renderText({var(getValues()[selectedVar()])})
 
   output$selectedVariable <- renderText({selectedVar()})
+  output$selectedData = renderDataTable({d})
   
-  ### collect nodes when buttons are clicked
-  group1 <- eventReactive(input$grp1set, {
-    paste(getNodeList(), sep=",", collapse = ",")
-  })
-  
-  group2 <- eventReactive(input$grp2set, {
-    paste(getNodeList(), sep=",", collapse = ",")
-  })
-  
-  # display the group node lists, if they are set
-  output$group1list <- renderText({group1()})
-  output$group2list <- renderText({group2()})
-  
-  # collect the two groups on button click
-  groupSets <- eventReactive(input$runTest, {
-    # TODO: add a test that the groups are set...
-    list( group1(), group2())
-  })
-  
-  ##########
-
   output$cgplot <- renderCedarGraph({
     input$runMapper
     graphdata <-isolate(
@@ -171,51 +152,72 @@ shinyServer(function(input, output, session) {
   })
   
     
-  output$selectedHist = renderPlot(
-    {
+  # output$selectedHist = renderPlot(
+  #  {
       # get data from selected nodes, for selected variable
-      hist(getValues(), main=NULL, xlab=NULL, ylab=NULL,axes=FALSE,labels=TRUE,col="gray")
-    })
+  #    hist(getValues(), main=NULL, xlab=NULL, ylab=NULL,axes=FALSE,labels=TRUE,col="gray")
+  #   })
   
-  
+  # display the list of selected nodes
+  # TODO: this is not needed for display, but may be needed for tracking selections
   output$nodeListInput <- renderUI({
     textInput("nl","selected nodes", paste(getNodeList(), sep=",", collapse = ","))
   })
   
-  output$nodeValuesInput <- renderUI({
-    textInput("vl","selected values", paste(getValues(), sep=",", collapse = ","))
-  })
-  
-  output$selectedData = renderDataTable({d})
-  
- # output$sparkhist = renderPlot({
- #    if(!is.null(selectedVar())) sparkline( density(getValues(), bw="nrd",kernel="gaussian")$y)
- #  })
+  # collect values from selected nodes into a text input button
+  # currently not displayed, and not needed 
+  #output$nodeValuesInput <- renderUI({
+  #  textInput("vl","selected values", paste(getValues(), sep=",", collapse = ","))
+  # })
+
+  output$sparkHist = renderPlot({
+     if(!is.null(selectedVar())) sparkline( density(getValues(), bw="nrd",kernel="gaussian")$y)
+   })
   
   ### run hypothesis test
   # get data from two inputs containing the groups
-  output$hypTest <- renderText({
-    getNodeRows <- function(node_id_list){
-      node_ids = str2vec(node_id_list)
-      return(gm$d[unlist(gm$nodes[node_ids]),])
-    }
+  
+  # when 'group 1 button is clicked, return currently selected nodes
+  group1 <- eventReactive(input$grp1set, {
+    nl = as.numeric(getNodeList())
+    gm$groups[["group1"]] = nl
+    print(gm$groups)
+    length(unlist(gm$groups[["group1"]]))
+  })
+  
+    # when 'group 2' button is clicked, return currently selected nodes
+  group2 <- eventReactive(input$grp2set, {
+    nl = as.numeric(getNodeList())
+    gm$groups[["group2"]] = nl
+    print(gm$groups)
+    length(gm$groups[["group2"]])
+  })
+
+  output$group1Count <- renderText({ group1() })
+  output$group2Count <- renderText({ group2() })
+  
+  # on button click, render table
+  hypTable <- eventReactive(input$runTest, {
+
+    t = kstable(gm, c("group1", "group2"))
+    print(t)
+    return(t)
+  })
+  
+  output$hypTestTable <- renderTable({
+    group1()
+    group2()
+    print('testing groups =- ')
+    print(has.groups(gm))
+    if(!has.groups(gm)) return(NULL)
     
-    nodes1 = getNodeRows(groupSets()[[1]])
-    nodes2 = getNodeRows(groupSets()[[2]])
-    n1 = get(selectedVar(),nodes1)
-    n2 = get(selectedVar(),nodes2)
-    x = ks.test(n1,n2)
-    paste0("Statistic: ", x$statistic, " P-value: ", x$p.value)
-  })
-  
-  
-  # NODE FUNCTIONS
-  
-  # don't need this; just use the input value
-  getSelectedVar <- reactive({
-    return(input$selectedVar)  
-  })
-  
+    print("running table on groups = ")
+    print(gm$groups)
+     kstable(gm)
+  })   
+ 
+  # input$nodelist is created by the Javascript HTMLWidget on selection events
+  # this wraps that input in reactive context to return 0 when no selection made 
   getNodeList <- reactive({
     thisnodelist <- 0
     if (!is.null(input$nodelist)) {
@@ -224,9 +226,9 @@ shinyServer(function(input, output, session) {
     return(thisnodelist)
   })
   
+  output$nodeListText = renderText({ getNodeList()})
   # get nodes from the graph_nodes data structure
   # not from the gm graphmapper object
-  # not used
   getNodes <- reactive({
     ns <- getNodeList()
     selected_nodes <- NULL
@@ -240,6 +242,9 @@ shinyServer(function(input, output, session) {
   
   # return rows of data based on selection
   # TODO rename getRows() and make seperate getValues(rows) function
+  # TODO use R functions from GraphMapper object to get data
+  # nodes = ?getnodes?(node_ids)
+  # nodedata(gm,nodes, selectedVar())
   getValues <- reactive({
     node_ids = getNodeList()
     ##### TODO Warning: Error in if: missing value where TRUE/FALSE needed

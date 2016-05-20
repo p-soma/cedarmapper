@@ -54,7 +54,7 @@ graphmapper <- function(x, lensefun, partition_count=4, overlap = 0.5, partition
     gm$clusters   = NULL
     gm$nodes      = NULL
     gm$adjmatrix  = NULL
-    gm$groups     = NULL
+    gm$groups     = list()
   return(gm)
 }
 
@@ -230,27 +230,25 @@ setgroup.graphmapper <-function(gm,node_ids,group_id = NULL) {
   # check that group_id is numeric
   # if group_id is null, append to list
   
-  if(is.null(group_id)) {
-    if(length(gm$groups == 0)) group_id = 1
-    else group_id = length(gm$groups)+1
-  }
-  
-  if(!is.numeric(group_id)) {
-    # sorry group_id must be numeric for this version
-    # raise exception
-    return(NULL)
-  }
-    
-  gm$groups[[group_id]] = node_ids
+ 
+  if(!is.list(gm$groups)) gm$groups = list(node_ids)
+  else gm$groups[[group_id]] = node_ids
+  return(gm$groups)
 }
 
+
+has.groups <- function(gm){
+  if(is.null(gm$groups)) return(FALSE)
+  if(length(gm$groups) < 2) return(FALSE)
+  return(TRUE)
+}
 
 # returns a table of ks results for each variable in gm$d
 #' @export
 kstable <- function(gm, group_ids = c(1,2)){
   # requires the 'groups' of the gm object be set ahead of time
-  # could have more than 2 groups, allow to select 2 groups 
-  if(is.null(groups)) return(NULL) # raise exception need some groups!
+  # could have more than 2 , allow to select 2 groups 
+  # if(!has.groups(gm)) stop("requires groups to run test") # raise exception need some groups!
   
   # inner function for apply
   ksfun <- function(varname) {
@@ -263,6 +261,7 @@ kstable <- function(gm, group_ids = c(1,2)){
       )
     return(data.frame("var"=varname, "pvalue" = kt$p.value, "kstatistic" = kt$statistic))
   }
+  print('making table')
   
   vars = names(gm$d)
   ktable = ldply(vars, ksfun)
