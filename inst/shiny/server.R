@@ -66,8 +66,8 @@ shinyServer(function(input, output, session) {
     else {
       d <<- datasets[[input$dataSelection]] }
     print(paste0("1st row of",names(d)," is ", d[,1]))
-    updateSelectInput(session, "selectedVar",choices = names(d), selected=1)
-    updateSelectInput(session, "filterVar",  choices = names(d), selected=1)
+    updateSelectInput(session, "selectedVar",choices = names(d))
+    updateSelectInput(session, "filterVar",  choices = names(d))
     # TODO: is this needed?
     return(d)
   })
