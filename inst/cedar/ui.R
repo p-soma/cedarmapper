@@ -43,7 +43,8 @@ dashboardBody(
                  selectInput("filterVar", label = "Filtering Variable", 
                              choices = initVariableChoices, selected = 1),
                  sliderInput("partitionCountSelection", label = "Number of Partitions", 
-                             min(partitionCountChoices),max(partitionCountChoices), 4),  
+                             min=min(partitionCountChoices),max=max(partitionCountChoices), value=4,
+                             step=1),  
                  selectInput("overlapSelection", label = "Partition Overlap (percent)", 
                              choices = c(0:13) * 5  + 10, selected = 50),
                  selectInput("clusterIndexSelection", label = "Cluster Index",
@@ -81,6 +82,7 @@ dashboardBody(
                   selectInput("selectedVar", label = "Color by:", 
                             choices =  initVariableChoices)),
               
+              
               box(width=NULL,background="light-blue",
                   actionButton("grp1set", "Set Group 1"),
                   p(textOutput("group1Count", inline = TRUE), " nodes")
@@ -99,13 +101,17 @@ dashboardBody(
       
       tabItem(tabName="console",
               fluidRow(
-                box(title="Code",width=6,
-                    p("textHere"))
-              )
+                box(title="Enter R code",width=6,
+                    aceEditor("rcode", mode="r", value="names(gm)")
+                    ),
+                box(title="R Output",width=6,
+                    verbatimTextOutput("eval_output") )
+              ),
+              fluidRow(actionButton("eval", "Evaluate"))
       ),
       tabItem(tabName="results",
               fluidRow(
-                box(title="test",width=12,
+                box(title="Hypothesis test",width=12,
                     tableOutput("hypTestTable"))
               )
       )

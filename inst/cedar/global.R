@@ -22,3 +22,5 @@ lenseChoices          <- c("single variable"="simple_lense","Kernel Density"="le
 initVariableChoices   <- names(datasets[[1]])
 # starting value for dataset d
 d                     <- datasets[[1]]
+
+

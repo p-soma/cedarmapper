@@ -15,7 +15,7 @@ library(cedar)
 library(shiny)
 library(plyr)
 
-# see global.R for starting values for each new session 
+# see the file global.R, which creates starting values for each new session of this shiny app 
 
 gm <- graphmapper(x=d, lensefun=simple_lense, partition_count=4, overlap=0.5, partition_method="single", index_method="gap", lenseparam="rw")
 
@@ -46,7 +46,11 @@ shinyServer(function(input, output, session) {
     return(v)
   })
   
-  
+  # Server->Javascript
+  # when a new variable is selected in the selectVar select box input,
+  # collects mean values of that variable from all nodes, and sends those values
+  # to the cedar_graph widget via sendCustomMessage, and the javascript is updated
+  # there and the (D3.js) nodes are updated and recolored, etc
   observe({
     input$selectedVar
     if (selectedVar() %in% names(gm$d)) {
@@ -55,7 +59,9 @@ shinyServer(function(input, output, session) {
     }
   })
   
+  # javascript => server
   # input$nodelist is created by the Javascript HTMLWidget on selection events
+  # ( e.g. currently using the D3.js dispatch feature)
   # this wraps that input in reactive context to return 0 when no selection made 
   getNodeList <- reactive({
     thisnodelist <- 0
@@ -65,23 +71,27 @@ shinyServer(function(input, output, session) {
     return(thisnodelist)
   })
   
-  # when 'group 1 button is clicked, return currently selected nodes
+  # when group 1 button is clicked, get the currently selected nodes
+  # and store the list in the graphmapper object 
   group1 <- eventReactive(input$grp1set, {
     nl = as.numeric(getNodeList())
+    
     gm$groups[["group1"]] = nl
     print(gm$groups)
+    # return value is the size of the group, but list is stored in global GM object
     length(unlist(gm$groups[["group1"]]))
   })
   
   # when 'group 2' button is clicked, return currently selected nodes
+  # and store the list in the graphmapper object 
   group2 <- eventReactive(input$grp2set, {
     nl = as.numeric(getNodeList())
     gm$groups[["group2"]] = nl
     print(gm$groups)
+    # return value is the size of the group, but list is stored in global GM object
     length(gm$groups[["group2"]])
   })
   
-
   
 
   # graph widget, but only if the mapper object has been created via button
@@ -144,13 +154,23 @@ shinyServer(function(input, output, session) {
   })   
   
   ########### outputs
-  output$dataname   <- renderText(input$dataSelection)
-  output$datarows   <- renderText({dataRows()})
-  output$dataset    <- renderDataTable({d})
-  output$nodeCount  <- renderText({paste0(length(gm$nodes), " nodes")})
+  output$dataname    <- renderText(input$dataSelection)
+  output$datarows    <- renderText({dataRows()})
+  output$dataset     <- renderDataTable({d})
+  output$nodeCount   <- renderText({paste0(length(gm$nodes), " nodes")})
   output$group1Count <- renderText({ group1() })
   output$group2Count <- renderText({ group2() })
+  
   # custom inputs from CedarGraph html widget
-  output$nodeListText = renderText({ getNodeList()})
+  output$nodeListText <- renderText({ getNodeList()})
+  
+  # output from ACE code editor
+  # TODO : secure this function; check session$host=='localhost'?
+  output$eval_output <- renderPrint({
+    input$eval
+    return(isolate(eval(parse(text=input$rcode))))
+  }) 
+  
+  # output$sessionInfo <- renderPrint({ session })
   
 })
