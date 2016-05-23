@@ -243,6 +243,18 @@ has.groups <- function(gm){
   return(TRUE)
 }
 
+# return a table of the variance for each variable for each group
+#' @export
+varTable <- function(gm){
+  if(! has.groups) {return(NULL)}
+  varFun <- function(varname){
+    d1 = groupdata(gm,group_ids[1],varname)
+    d2 = groupdata(gm,group_ids[2],varname)
+    return(data.frame("var"=varname, "mean group 1"=mean(d1),  "variance group 1" = var(d1), "mean group 2"=mean(d2), "variance group 2" = var(d2)))
+  }
+  ktable = ldply(names(gm$d), ksfun)
+}
+
 # returns a table of ks results for each variable in gm$d
 #' @export
 kstable <- function(gm, group_ids = c(1,2)){

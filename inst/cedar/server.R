@@ -34,7 +34,7 @@ shinyServer(function(input, output, session) {
     return(d)
   })
   
-  dataRows <- reactive({ nrow(d)})
+  dataRows <- reactive({ nrow(gm$d)})
   # this sends an array of means for each node,
   # from the gm$d data frame column
   # of the selected variable to Shiny via the session object
@@ -145,7 +145,9 @@ shinyServer(function(input, output, session) {
   
   output$hypTestTable <- renderTable({
     testy()
-  })   
+  }) 
+  
+  output$varianceTable <- renderTable({varTable(gm)})
   
   ########### outputs
   output$dataname    <- renderText(input$dataSelection)

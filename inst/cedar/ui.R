@@ -115,8 +115,10 @@ dashboardBody(
       ),
       tabItem(tabName="results",
               fluidRow(
-                box(title="Hypothesis test",width=12,
-                    tableOutput("hypTestTable"))
+                box(title="Hypothesis test",width=6,
+                    tableOutput("hypTestTable")),
+                box(title="Group Data",width=6,
+                    tableOutput("varianceTable"))
               )
       )
       
