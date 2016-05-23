@@ -34,7 +34,10 @@ shinyServer(function(input, output, session) {
     return(d)
   })
   
-  dataRows <- reactive({ nrow(gm$d)})
+  dataRows <- eventReactive(input$dataSelection, { 
+      return(nrow(d))
+    })
+  
   # this sends an array of means for each node,
   # from the gm$d data frame column
   # of the selected variable to Shiny via the session object
@@ -115,10 +118,14 @@ shinyServer(function(input, output, session) {
     }
     
     
-    lense_fun = simple_lense
+    lense_fun <- simple_lense
     if(! is.null(input$lenseFunctionSelection)) {
       f = get(input$lenseFunctionSelection) 
-      if (is.function(f)){ lense_fun = f}
+      if (is.function(f)){ 
+        lense_fun <- f
+        # debug
+        print(lense_fun)
+        }
     }
     
     gm<<- makegraphmapper(x = d, 
@@ -151,9 +158,10 @@ shinyServer(function(input, output, session) {
   
   ########### outputs
   output$dataname    <- renderText(input$dataSelection)
-  output$datarows    <- renderText({dataRows()})
+  output$datarows    <- renderText({ prettyNum(dataRows()) })
+  output$dataColumnNames <- renderPrint({ names(gm$d)})
   output$dataset     <- renderDataTable({d})
-  output$nodeCount   <- renderText({prettyNum(length(gm$nodes))})
+  output$nodeCount   <- renderText({prettyNum(nrow(gm$nodes))})
   output$selectedNodeCount <- renderText({ prettyNum(length(as.numeric(input$nodelist)))})
   output$group1Count <- renderText({group1Length()})
   output$group2Count <- renderText({group2Length()})
