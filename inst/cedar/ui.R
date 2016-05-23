@@ -53,7 +53,7 @@ dashboardBody(
               )
             ),
             column(width=4,
-                   box( title="Mapper", witdh=NULL,
+                   box(width=NULL, title="Mapper", witdh=NULL,
                         actionButton("runMapper", "Calculate Mapper"))
 
             )
@@ -74,10 +74,14 @@ dashboardBody(
                   cedarGraphOutput("cgplot","100%",500))
               ),
           column(width=2,
-              box(title="NodeCount",
-                  width=NULL,background="light-blue",
-                 textOutput("nodeCount")),
+              valueBox(uiOutput("nodeCount"), 
+                  subtitle="NodeCount", icon=icon("circle"),
+                  width=NULL, color="light-blue"),
               
+              valueBox(uiOutput("selectedNodeCount"), 
+                  subtitle= "Selected Nodes", icon = icon("pointer"),
+                  width=NULL, color="light-blue"),
+
               box(width=NULL,background="light-blue",
                   selectInput("selectedVar", label = "Color by:", 
                             choices =  initVariableChoices)),

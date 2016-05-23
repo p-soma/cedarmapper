@@ -63,33 +63,30 @@ shinyServer(function(input, output, session) {
   # input$nodelist is created by the Javascript HTMLWidget on selection events
   # ( e.g. currently using the D3.js dispatch feature)
   # this wraps that input in reactive context to return 0 when no selection made 
-  getNodeList <- reactive({
-    thisnodelist <- 0
-    if (!is.null(input$nodelist)) {
-      thisnodelist <- as.numeric(input$nodelist)
-    }
-    return(thisnodelist)
-  })
-  
+    # note this is changed on Shiny.onInputChange("nodelist", nodelist);
+
   # when group 1 button is clicked, get the currently selected nodes
   # and store the list in the graphmapper object 
-  group1 <- eventReactive(input$grp1set, {
-    nl = as.numeric(getNodeList())
-    
-    gm$groups[["group1"]] = nl
-    print(gm$groups)
-    # return value is the size of the group, but list is stored in global GM object
-    length(unlist(gm$groups[["group1"]]))
+  observeEvent(input$grp1set,{
+    gm$groups[["group1"]] <<- as.numeric(input$nodelist)
+      #getNodeList())
   })
   
   # when 'group 2' button is clicked, return currently selected nodes
   # and store the list in the graphmapper object 
-  group2 <- eventReactive(input$grp2set, {
-    nl = as.numeric(getNodeList())
-    gm$groups[["group2"]] = nl
-    print(gm$groups)
-    # return value is the size of the group, but list is stored in global GM object
-    length(gm$groups[["group2"]])
+  observeEvent(input$grp2set,{
+    gm$groups[["group2"]] <<- as.numeric(input$nodelist)
+  })
+  
+  
+  group1Length <- reactive({
+    input$grp1set
+    length(unlist(gm$groups[["group1"]]))
+  })
+  
+  group2Length <- reactive({
+    input$grp2set
+    length(unlist(gm$groups[["group2"]]))
   })
   
   
@@ -136,33 +133,28 @@ shinyServer(function(input, output, session) {
     return(gm)
   })
   
-  testy <- eventReactive(input$runTest,
-                         # also on     #group1()
-                         # group2()
-                         
-           #print('testing groups =- ')
+  testy <- eventReactive(input$runTest,{
+           print('testing groups =- ')
            #print(has.groups(gm))
            # if(!has.groups(gm)) return(NULL)
            # print("running table on groups = ")
            # print(gm$groups)
-          {updateTabItems(session, "tabs", selected = "results")
-            kstable(gm)} )
+          updateTabItems(session, "tabs", selected = "results")
+          return(kstable(gm))
+            } )
   
   output$hypTestTable <- renderTable({
     testy()
-    return()
   })   
   
   ########### outputs
   output$dataname    <- renderText(input$dataSelection)
   output$datarows    <- renderText({dataRows()})
   output$dataset     <- renderDataTable({d})
-  output$nodeCount   <- renderText({paste0(length(gm$nodes), " nodes")})
-  output$group1Count <- renderText({ group1() })
-  output$group2Count <- renderText({ group2() })
-  
-  # custom inputs from CedarGraph html widget
-  output$nodeListText <- renderText({ getNodeList()})
+  output$nodeCount   <- renderText({prettyNum(length(gm$nodes))})
+  output$selectedNodeCount <- renderText({ prettyNum(length(as.numeric(input$nodelist)))})
+  output$group1Count <- renderText({group1Length()})
+  output$group2Count <- renderText({group2Length()})
   
   # output from ACE code editor
   # TODO : secure this function; check session$host=='localhost'?
