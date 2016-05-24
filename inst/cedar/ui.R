@@ -14,30 +14,34 @@ dashboardSidebar(
     
     sidebarMenu(
       id = "tabs",
-      menuItem("Parameters", tabName = "params", icon = icon("dashboard")),
-      menuItem("Data",       tabName = "data",       icon = icon("th")),
+      menuItem("Data",       tabName = "data",       icon = icon("table")),
+      menuItem("Parameters", tabName = "params",     icon = icon("sliders")),
       menuItem("Graph",      tabName = "graph",      icon = icon("eye")),
-      menuItem("Results",    tabName=  "results",    icon = icon("chart")),
+      menuItem("Results",    tabName=  "results",    icon = icon("bar-chart")),
       menuItem("Console",    tabName = "console",    icon = icon("terminal"))
-    ),
-    h3("Data:",textOutput("dataname",inline=TRUE))
+    )
 
   ),
   
 #############
 dashboardBody(
     tabItems(
+      # Second tab content
+      tabItem(tabName = "data",
+          fluidRow(
+            box(width=4,selectInput("dataSelection", label = "Select Dataset", choices = dataChoices, selected = 1)), 
+            valueBox(width=2, subtitle="rows", value = textOutput("dataRowCount",inline=TRUE),color='black'),
+            valueBox(width=2, subtitle="variables", value = textOutput("dataVarCount",inline=TRUE),color='black'),
+            valueBox(width=2, subtitle="TBD", value = "?",color='black')
+          ),
+          hr(),
+          dataTableOutput('dataset')
+      ),
       # First tab content
       tabItem(tabName = "params",
           fluidRow(
             column(width=4,
-                box(title="DataSets",width=NULL,
-                   selectInput("dataSelection", label = "Select Dataset", choices = dataChoices, selected = 1)),
-                valueBox(width=NULL, subtitle="rows", value = textOutput("datarows",inline=TRUE))
-                
-            ),
-            column(width=4,
-              box( title="Parameters", width=NULL, background ="light-blue", 
+              box( title="Mapper Parameters", width=NULL, background ="light-blue", 
                  selectInput("lenseFunctionSelection", label="Lense Function", 
                              choices = lenseChoices, selected = 1),
                  selectInput("filterVar", label = "Filtering Variable", 
@@ -54,16 +58,21 @@ dashboardBody(
             ),
             column(width=4,
                    box(width=NULL, title="Mapper", witdh=NULL,
-                        actionButton("runMapper", "Calculate Mapper"))
+                        actionButton("runMapper", "Calculate Mapper")),
+                   infoBox(width=NULL, "Dataset",value=textOutput("dataname",inline=TRUE), icon = icon("table"), color="black",fill=TRUE)
 
-            )
+            ),
+            column(width=4,
+                   box(title="TBD",width=NULL,"TBD")
+                       # selectInput("dataSelection", label = "Select Dataset", choices = dataChoices, selected = 1)),
+                       
+                       
+                   )
+                   
             )# end row
       ),
       
-      # Second tab content
-      tabItem(tabName = "data",
-              dataTableOutput('dataset')
-      ),
+
       
       tabItem(tabName = "graph",
          fluidRow(

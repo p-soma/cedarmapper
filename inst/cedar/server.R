@@ -16,6 +16,7 @@ library(shiny)
 library(plyr)
 
 # see the file global.R, which creates starting values for each new session of this shiny app 
+# TODO : put this in global.R?
 
 gm <- graphmapper(x=d, lensefun=simple_lense, partition_count=4, overlap=0.5, partition_method="single", index_method="gap", lenseparam="rw")
 
@@ -34,9 +35,10 @@ shinyServer(function(input, output, session) {
     return(d)
   })
   
-  dataRows <- eventReactive(input$dataSelection, { 
-      return(nrow(d))
-    })
+  # these function interrogate the 'd' data object which is not the same as the datamapper data gm$d, but it used when the button is pressed
+  selectedDataSet <- eventReactive(input$dataSelection,{d})
+  dataRowCount <- eventReactive(input$dataSelection, { return(nrow(d))})
+  dataVarCount <- eventReactive(input$dataSelection, { length(names(d))})
   
   # this sends an array of means for each node,
   # from the gm$d data frame column
@@ -157,14 +159,15 @@ shinyServer(function(input, output, session) {
   output$varianceTable <- renderTable({varTable(gm)})
   
   ########### outputs
-  output$dataname    <- renderText(input$dataSelection)
-  output$datarows    <- renderText({ prettyNum(dataRows()) })
+  output$dataname        <- renderText(input$dataSelection)
+  output$dataRowCount    <- renderText({ prettyNum(dataRowCount()) })
+  output$dataVarCount    <- renderText({ prettyNum(dataVarCount()) })
   output$dataColumnNames <- renderPrint({ names(gm$d)})
-  output$dataset     <- renderDataTable({d})
-  output$nodeCount   <- renderText({prettyNum(nrow(gm$nodes))})
+  output$dataset         <- renderDataTable({selectedDataSet()})
+  output$nodeCount       <- renderText({prettyNum(nrow(gm$nodes))})
   output$selectedNodeCount <- renderText({ prettyNum(length(as.numeric(input$nodelist)))})
-  output$group1Count <- renderText({group1Length()})
-  output$group2Count <- renderText({group2Length()})
+  output$group1Count     <- renderText({group1Length()})
+  output$group2Count     <- renderText({group2Length()})
   
   # output from ACE code editor
   # TODO : secure this function; check session$host=='localhost'?
