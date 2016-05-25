@@ -73,6 +73,7 @@ shinyServer(function(input, output, session) {
   # when group 1 button is clicked, get the currently selected nodes
   # and store the list in the graphmapper object 
   observeEvent(input$grp1set,{
+    session$sendCustomMessage(type='setgroup1',message=input$nodelist )
     gm$groups[["group1"]] <<- as.numeric(input$nodelist)
       #getNodeList())
   })
@@ -80,6 +81,7 @@ shinyServer(function(input, output, session) {
   # when 'group 2' button is clicked, return currently selected nodes
   # and store the list in the graphmapper object 
   observeEvent(input$grp2set,{
+    session$sendCustomMessage(type='setgroup2',message=input$nodelist )
     gm$groups[["group2"]] <<- as.numeric(input$nodelist)
   })
   
