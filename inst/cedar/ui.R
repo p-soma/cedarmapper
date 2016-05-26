@@ -6,7 +6,7 @@ library(shiny)
 library(shinydashboard)
 
 dashboardPage(
-  
+    
 dashboardHeader(title = "CEDAR"),
   
 ################
@@ -17,7 +17,7 @@ dashboardSidebar(
       menuItem("Data",       tabName = "data",       icon = icon("table")),
       menuItem("Parameters", tabName = "params",     icon = icon("sliders")),
       menuItem("Graph",      tabName = "graph",      icon = icon("eye")),
-      menuItem("Results",    tabName=  "results",    icon = icon("bar-chart")),
+      menuItem("Results",    tabName=  "resulttable",    icon = icon("bar-chart")),
       menuItem("Console",    tabName = "console",    icon = icon("terminal"))
     )
 
@@ -25,6 +25,8 @@ dashboardSidebar(
   
 #############
 dashboardBody(
+    includeCSS("cedarcustom.css"),
+  
     tabItems(
       # Second tab content
       tabItem(tabName = "data",
@@ -41,7 +43,8 @@ dashboardBody(
       tabItem(tabName = "params",
           fluidRow(
             column(width=4,
-              box( title="Mapper Parameters", width=NULL, background ="light-blue", 
+              box( title="Mapper Parameters", width=NULL, background ="light-blue",
+                 h3("Data set:", textOutput("dataname",inline=TRUE),color="light-blue"),
                  selectInput("lenseFunctionSelection", label="Lense Function", 
                              choices = lenseChoices, selected = 1),
                  selectInput("filterVar", label = "Filtering Variable", 
@@ -57,13 +60,16 @@ dashboardBody(
               )
             ),
             column(width=4,
-                   box(width=NULL, title="Mapper", witdh=NULL,
-                        actionButton("runMapper", "Calculate Mapper")),
-                   infoBox(width=NULL, "Dataset",value=textOutput("dataname",inline=TRUE), icon = icon("table"), color="black",fill=TRUE)
+                   box(width=NULL, title="Mapper", 
+                   actionButton("runMapper", "Calculate Mapper")),
+                   box(width=NULL, title="Current Parameters",
+                      valueBox(width=NULL, subtitle = "Partitions",value=textOutput("gmPartitionCount",inline=TRUE),  color="black"),
+                      valueBox(width=NULL, subtitle = "Percent Overlap",value=textOutput("gmOverlap",inline=TRUE),  color="black")
+                   )
 
             ),
             column(width=4,
-                   box(title="TBD",width=NULL,"TBD")
+                   box(title="Cluster Info",width=NULL,"")
                        # selectInput("dataSelection", label = "Select Dataset", choices = dataChoices, selected = 1)),
                        
                        
@@ -77,18 +83,17 @@ dashboardBody(
       tabItem(tabName = "graph",
          fluidRow(
            column(width=10,
-              box(title = " node graph",
-                  solidHeader = TRUE, 
+              box(title = NULL,
                   width=NULL,
                   cedarGraphOutput("cgplot","100%",500))
               ),
           column(width=2,
               valueBox(uiOutput("nodeCount"), 
-                  subtitle="NodeCount", icon=icon("circle"),
+                  subtitle="Nodes", icon = icon("circle-o"),
                   width=NULL, color="light-blue"),
               
               valueBox(uiOutput("selectedNodeCount"), 
-                  subtitle= "Selected Nodes", icon = icon("pointer"),
+                  subtitle= "Selected Nodes", icon = icon("mouse-pointer"),
                   width=NULL, color="light-blue"),
 
               box(width=NULL,background="light-blue",
@@ -97,17 +102,21 @@ dashboardBody(
               
               
               box(width=NULL,background="light-blue",
-                  actionButton("grp1set", "Set Group 1"),
+                  actionButton("grp1set",   "Set Group 1"),
+                  actionButton("grp1remove","Remove Nodes"),
+                  actionButton("grp1clear", "Reset"),
                   p(textOutput("group1Count", inline = TRUE), " nodes")
                   ),
               
               box(width=NULL,background="light-blue",
-                  actionButton("grp2set", "Set Group 2"),
+                  actionButton("grp2set",   "Set Group 2"),
+                  actionButton("grp2remove","Remove Nodes"),
+                  actionButton("grp2clear", "Reset"),
                   p(textOutput("group2Count", inline = TRUE), " nodes")
                   ),
               
               box(width=NULL,background="black",
-                  actionButton("runTest", "Test"))
+                  actionButton("runTest", "Compare Groups"))
               )
          ) # end row
       ),
@@ -122,7 +131,7 @@ dashboardBody(
               ),
               fluidRow(actionButton("eval", "Evaluate"))
       ),
-      tabItem(tabName="results",
+      tabItem(tabName="resulttable",
               fluidRow(
                 box(title="Hypothesis test",width=6,
                     tableOutput("hypTestTable")),

@@ -18,7 +18,7 @@ library(plyr)
 # see the file global.R, which creates starting values for each new session of this shiny app 
 # TODO : put this in global.R?
 
-gm <- graphmapper(x=d, lensefun=simple_lense, partition_count=4, overlap=0.5, partition_method="single", index_method="gap", lenseparam="rw")
+gm <- graphmapper(x=d, lensefun=simple_lense, partition_count=NULL, overlap=NULL, partition_method="single", index_method="gap", lenseparam="rw")
 
 ####### server
 shinyServer(function(input, output, session) {
@@ -145,13 +145,8 @@ shinyServer(function(input, output, session) {
   })
   
   testy <- eventReactive(input$runTest,{
-           print('testing groups =- ')
-           #print(has.groups(gm))
-           # if(!has.groups(gm)) return(NULL)
-           # print("running table on groups = ")
-           # print(gm$groups)
-          updateTabItems(session, "tabs", selected = "results")
-          return(kstable(gm))
+      updateTabItems(session, "tabs", selected = "resulttable")
+      return(kstable(gm))
             } )
   
   output$hypTestTable <- renderTable({
@@ -161,15 +156,24 @@ shinyServer(function(input, output, session) {
   output$varianceTable <- renderTable({varTable(gm)})
   
   ########### outputs
-  output$dataname        <- renderText(input$dataSelection)
-  output$dataRowCount    <- renderText({ prettyNum(dataRowCount()) })
-  output$dataVarCount    <- renderText({ prettyNum(dataVarCount()) })
-  output$dataColumnNames <- renderPrint({ names(gm$d)})
-  output$dataset         <- renderDataTable({selectedDataSet()})
-  output$nodeCount       <- renderText({prettyNum(nrow(gm$nodes))})
-  output$selectedNodeCount <- renderText({ prettyNum(length(as.numeric(input$nodelist)))})
-  output$group1Count     <- renderText({group1Length()})
-  output$group2Count     <- renderText({group2Length()})
+  output$dataname          <- renderText(input$dataSelection)
+  output$dataRowCount      <- renderText({ prettyNum(dataRowCount()) })
+  output$dataVarCount      <- renderText({ prettyNum(dataVarCount()) })
+  output$dataColumnNames   <- renderPrint({ names(gm$d)})
+  output$dataset           <- renderDataTable({selectedDataSet()})
+  output$nodeCount         <- renderText({prettyNum(length(gm$nodes))})
+  output$selectedNodeCount <- renderText({prettyNum(length(as.numeric(input$nodelist)))})
+  output$group1Count       <- renderText({group1Length()})
+  output$group2Count       <- renderText({group2Length()})
+  output$gmPartitionCount  <- renderText({
+        input$runMapper
+        gm$partition_count
+        })
+  output$gmOverlap         <- renderText({
+              input$runMapper
+              gm$overlap})
+  output$gmClusterMethod   <- renderText({input$runMapper
+            gm$index_method})
   
   # output from ACE code editor
   # TODO : secure this function; check session$host=='localhost'?
