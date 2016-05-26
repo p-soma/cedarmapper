@@ -45,10 +45,11 @@ shinyServer(function(input, output, session) {
       return(NULL)
     dataName = input$newDataName
     newData <- read.csv(inFile$datapath, header = input$header,
-             sep = input$sep, quote = input$quote)
+             sep = input$sep, quote = input$quote, stringsAsFactors = FALSE)
     datasets[[dataName]] <<- newData
     dataChoices <<- names(datasets)
     updateSelectInput(session, inputId = "dataSelection",choices = names(datasets))
+    
   })
   
   
