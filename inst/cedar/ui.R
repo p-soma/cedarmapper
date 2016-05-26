@@ -33,10 +33,25 @@ dashboardBody(
           fluidRow(
             box(width=3,selectInput("dataSelection", label = "Select Dataset", choices = dataChoices, selected = 1)), 
             valueBox(width=2, subtitle="rows", value = textOutput("dataRowCount",inline=TRUE),color='black'),
-            valueBox(width=2, subtitle="variables", value = textOutput("dataVarCount",inline=TRUE),color='black')
-
+            valueBox(width=2, subtitle="variables", value = textOutput("dataVarCount",inline=TRUE),color='black'),
+            box(width=5, fileInput('file1', 'Choose file to upload',
+                      accept = c(
+                        'text/csv',
+                        'text/comma-separated-values',
+                        'text/tab-separated-values',
+                        'text/plain',
+                        '.csv',
+                        '.tsv'
+                      )
+            ),
+            textInput('newDataName', "Name", placeholder = "name your data"),
+            checkboxInput('header', 'Header', TRUE),
+            radioButtons('sep', 'Separator',
+                         c(Comma=',',Semicolon=';', Tab='\t'),','),
+            radioButtons('quote', 'Quote',c(None='','Double Quote'='"','Single Quote'="'"),'"'),
+            actionButton("uploadDataAction", "Upload")
+            ) # end of upload box
           ),
-          hr(),
           dataTableOutput('dataset')
       ),
       # First tab content
@@ -68,7 +83,8 @@ dashboardBody(
                    box(width=NULL, title="Current Parameters",
                       valueBox(width=NULL, subtitle = "Partitions",     value=textOutput("gmPartitionCount",inline=TRUE),  color="black"),
                       valueBox(width=NULL, subtitle = "Percent Overlap",value=textOutput("gmOverlap",inline=TRUE),  color="black"),
-                      valueBox(width=NULL ,subtitle = "Nodes",          value=textOutput("nodeCount",inline=TRUE),  color="black")
+                      valueBox(width=NULL ,subtitle = "Nodes",          value=textOutput("nodeCount",inline=TRUE),  color="black"),
+                      downloadButton('downloadMapper', 'Download Mapper')
 
                    )
 

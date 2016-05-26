@@ -15,6 +15,9 @@ library(cedar)
 library(shiny)
 library(plyr)
 
+# change file size limit to 50mb
+options(shiny.maxRequestSize = 50*1024^2)
+
 # see the file global.R, which creates starting values for each new session of this shiny app 
 # TODO : put this in global.R?
 
@@ -35,6 +38,26 @@ shinyServer(function(input, output, session) {
     updateSelectInput(session, inputId = "filterVar",  choices = names(d))
     return(d)
   })
+  
+  newData <- observeEvent(input$uploadDataAction,{
+    inFile <- input$file1
+    if (is.null(inFile))
+      return(NULL)
+    dataName = input$newDataName
+    newData <- read.csv(inFile$datapath, header = input$header,
+             sep = input$sep, quote = input$quote)
+    datasets[[dataName]] <<- newData
+    dataChoices <<- names(datasets)
+    updateSelectInput(session, inputId = "dataSelection",choices = names(datasets))
+  })
+  
+  
+  output$downloadMapper <- downloadHandler(
+    filename = function() { paste(input$dataSelection, '.mapper', '.rds', sep='') },
+    content = function(file) {
+      saveRDS(gm, file=file)
+    }
+  )
   
   # these function interrogate the 'd' data object which is not the same as the datamapper data gm$d, but it used when the button is pressed
   selectedDataSet <- eventReactive(input$dataSelection,{d})
