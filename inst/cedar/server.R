@@ -18,13 +18,14 @@ library(plyr)
 # see the file global.R, which creates starting values for each new session of this shiny app 
 # TODO : put this in global.R?
 
-gm <- graphmapper(x=d, lensefun=simple_lense, partition_count=NULL, overlap=NULL, partition_method="single", index_method="gap", lenseparam="rw")
+# gm <- graphmapper(x=d, lensefun=simple_lense, partition_count=NULL, overlap=NULL, partition_method="single", index_method="gap", lenseparam="rw")
 
 ####### server
 shinyServer(function(input, output, session) {
 
   # observers, selections
   selectedDataSet <- observe({
+    input$dataSelection
     if(is.null(input$dataSelection)){
       d <<- datasets[[1]] }
     else {
@@ -70,30 +71,70 @@ shinyServer(function(input, output, session) {
   # this wraps that input in reactive context to return 0 when no selection made 
     # note this is changed on Shiny.onInputChange("nodelist", nodelist);
 
-  # when group 1 button is clicked, get the currently selected nodes
-  # and store the list in the graphmapper object 
+  # when group 1 button is clicked, 
+  # send javascript message to cedargraph widget 
+  # then get the currently selected nodes
+  # and store (Or add to ) the list in the graphmapper object 
   observeEvent(input$grp1set,{
-    session$sendCustomMessage(type='setgroup1',message=input$nodelist )
-    gm$groups[["group1"]] <<- as.numeric(input$nodelist)
-      #getNodeList())
+    if(!is.null(input$nodelist)) {
+        session$sendCustomMessage(type='setgroup1',message=array(input$nodelist) )
+        group_id <- "1"
+        # combine the list of nodes with any that may be present
+        gm[["groups"]] <<- setgroup.graphmapper(gm, as.numeric(input$nodelist),group_id)
+    }    
+      
+  })
+  
+  observeEvent(input$grp1clear,{
+    group_id <- "1"
+    session$sendCustomMessage(type='unsetgroup',message=group_id  )
+    gm$groups[[group_id]] <<- NULL
   })
   
   # when 'group 2' button is clicked, return currently selected nodes
   # and store the list in the graphmapper object 
   observeEvent(input$grp2set,{
-    session$sendCustomMessage(type='setgroup2',message=input$nodelist )
-    gm$groups[["group2"]] <<- as.numeric(input$nodelist)
+    if(!is.null(input$nodelist)) {
+      session$sendCustomMessage(type='setgroup2',message=array(input$nodelist) )
+      group_id <- "2"
+      # combine the list of nodes with any that may be present
+      gm[["groups"]] <<- setgroup.graphmapper(gm, as.numeric(input$nodelist),group_id)
+    }
   })
   
+  observeEvent(input$grp2clear,{
+    group_id <- "2"
+    session$sendCustomMessage(type='unsetgroup',message=group_id  )
+    gm$groups[[group_id]] <<- NULL
+  })
+  
+  # remove selected elements from list when button pressed
+  # if none selected, then skip
+  observeEvent(input$grp1remove,{
+    if(length(input$nodelist)>0){
+      session$sendCustomMessage(type='removefromgroup1',message=input$nodelist  )
+      group_id <- "1"
+      gm$groups[[group_id]] <<- setdiff(gm$groups[[group_id]], as.numeric(input$nodelist))
+    }
+  })
+  
+  observeEvent(input$grp2remove,{
+    if(length(input$nodelist)>0){
+      session$sendCustomMessage(type='removefromgroup2',message=input$nodelist  )
+      group_id <- "2"
+      gm$groups[[group_id]] <<- setdiff(gm$groups[[group_id]], as.numeric(input$nodelist))
+    }
+  })
   
   group1Length <- reactive({
     input$grp1set
-    length(unlist(gm$groups[["group1"]]))
+    input$grp1remove
+    length(unlist(gm$groups[["1"]]))
   })
   
   group2Length <- reactive({
     input$grp2set
-    length(unlist(gm$groups[["group2"]]))
+    length(unlist(gm$groups[["2"]]))
   })
   
   
@@ -162,7 +203,8 @@ shinyServer(function(input, output, session) {
   output$dataVarCount      <- renderText({ prettyNum(dataVarCount()) })
   output$dataColumnNames   <- renderPrint({ names(gm$d)})
   output$dataset           <- renderDataTable({selectedDataSet()})
-  output$nodeCount         <- renderText({prettyNum(length(gm$nodes))})
+  output$nodeCount         <- renderText({length(gm$nodes)})
+  output$graphNodeCount     <- renderText({prettyNum(length(gm$nodes))})
   output$selectedNodeCount <- renderText({prettyNum(length(as.numeric(input$nodelist)))})
   output$group1Count       <- renderText({group1Length()})
   output$group2Count       <- renderText({group2Length()})

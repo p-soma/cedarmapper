@@ -230,13 +230,22 @@ setgroup.graphmapper <-function(gm,node_ids,group_id = NULL) {
   
   if(!is.graphmapper(gm)) return(NULL)  # raise exception
   
-  # check that group_id is numeric
-  # if group_id is null, append to list
+  # setup default empty group list if not previously set
+  if(!is.list(gm$groups)){ 
+    gm$groups = list()
+  } 
   
- 
-  if(!is.list(gm$groups)) gm$groups = list(node_ids)
-  else gm$groups[[group_id]] = node_ids
-  return(gm$groups)
+  g = gm$groups
+  
+  # default group id name is one more then current length
+  if(is.null(group_id)) {
+    group_id <- as.character(length(g) + 1)
+  }
+  
+  g[[group_id]] <- union(g[[group_id]],as.numeric(node_ids))
+  
+  
+  return(g)
 }
 
 

@@ -23,7 +23,12 @@ gm$adjmatrix  = adjacency.graphmapper(gm)
 
 # use gui or other method for selecting groups
 
-gm$groups = list(group1 = c(1,2,3,4), group2=c(5,6,7,8,9))
+
+gm[["groups"]] <- setgroup.graphmapper(gm, c(1,2,3),group_id = "1")
+gm[["groups"]] <- setgroup.graphmapper(gm,c(5,6,7,8,9), group_id = "2")
+
+# demo of adding to a group.  setgroup appends to existing group
+gm[["groups"]] <- setgroup.graphmapper(gm, c(4), "1")
 
 # TURN OFF WARNINGS
 kt = kstable(gm)

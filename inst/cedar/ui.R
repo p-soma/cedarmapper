@@ -31,10 +31,10 @@ dashboardBody(
       # Second tab content
       tabItem(tabName = "data",
           fluidRow(
-            box(width=4,selectInput("dataSelection", label = "Select Dataset", choices = dataChoices, selected = 1)), 
+            box(width=3,selectInput("dataSelection", label = "Select Dataset", choices = dataChoices, selected = 1)), 
             valueBox(width=2, subtitle="rows", value = textOutput("dataRowCount",inline=TRUE),color='black'),
-            valueBox(width=2, subtitle="variables", value = textOutput("dataVarCount",inline=TRUE),color='black'),
-            valueBox(width=2, subtitle="TBD", value = "?",color='black')
+            valueBox(width=2, subtitle="variables", value = textOutput("dataVarCount",inline=TRUE),color='black')
+
           ),
           hr(),
           dataTableOutput('dataset')
@@ -66,8 +66,10 @@ dashboardBody(
                    box(width=NULL, title="Mapper", 
                    actionButton("runMapper", "Calculate Mapper")),
                    box(width=NULL, title="Current Parameters",
-                      valueBox(width=NULL, subtitle = "Partitions",value=textOutput("gmPartitionCount",inline=TRUE),  color="black"),
-                      valueBox(width=NULL, subtitle = "Percent Overlap",value=textOutput("gmOverlap",inline=TRUE),  color="black")
+                      valueBox(width=NULL, subtitle = "Partitions",     value=textOutput("gmPartitionCount",inline=TRUE),  color="black"),
+                      valueBox(width=NULL, subtitle = "Percent Overlap",value=textOutput("gmOverlap",inline=TRUE),  color="black"),
+                      valueBox(width=NULL ,subtitle = "Nodes",          value=textOutput("nodeCount",inline=TRUE),  color="black")
+
                    )
 
             ),
@@ -93,7 +95,7 @@ dashboardBody(
               )
             ),
            column(width=2,
-              valueBox(uiOutput("nodeCount"), 
+              valueBox(uiOutput("graphNodeCount"), 
                   subtitle="Nodes", icon = icon("circle-o"),
                   width=NULL, color="light-blue"),
               

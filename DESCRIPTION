@@ -12,6 +12,7 @@ Depends:
     cluster (>= 2.0.0),
     NbClust (>= 3.0),
     shiny (>= 0.13),
+    shinydashboard (>= 0.5.1),
     htmlwidgets(>= 0.6), 
     igraph(>= 1.0),
     ggplot2(>= 2.0),
