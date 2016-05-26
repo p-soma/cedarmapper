@@ -54,6 +54,9 @@ dashboardBody(
                              step=1),  
                  selectInput("overlapSelection", label = "Partition Overlap (percent)", 
                              choices = c(0:13) * 5  + 10, selected = 50),
+                 sliderInput("clusterIterationsSelection", label = "Cluster Test Iterations", 
+                             min=min(100),max=max(500), value=100,
+                             step=25),  
                  selectInput("clusterIndexSelection", label = "Cluster Index",
                              choices = clusterIndexChoices, selected = 1)
 
@@ -85,9 +88,11 @@ dashboardBody(
            column(width=10,
               box(title = NULL,
                   width=NULL,
-                  cedarGraphOutput("cgplot","100%",500))
-              ),
-          column(width=2,
+                  conditionalPanel("input.runMapper", cedarGraphOutput("cgplot","100%",500)),
+                  conditionalPanel("!input.runMapper",h4("Please select parameters and calculate mapper to see graph"))
+              )
+            ),
+           column(width=2,
               valueBox(uiOutput("nodeCount"), 
                   subtitle="Nodes", icon = icon("circle-o"),
                   width=NULL, color="light-blue"),

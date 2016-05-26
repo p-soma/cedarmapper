@@ -139,6 +139,7 @@ shinyServer(function(input, output, session) {
                           partition_method="single", 
                           index_method="gap",
                           lenseparam = input$filterVar,
+                          cluster_iterations = input$clusterIterationsSelection,
                           progressUpdater = updateProgress)
     
     return(gm)

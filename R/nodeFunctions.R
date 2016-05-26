@@ -15,7 +15,7 @@ library(factoextra)
 
 #  single method to run all steps for graphmapper object
 #' @export
-makegraphmapper <- function(x, lensefun, partition_count=4, overlap = 0.5, partition_method="single", index_method="gap", lenseparam = NULL, progressUpdater=NULL){
+makegraphmapper <- function(x, lensefun, partition_count=4, overlap = 0.5, partition_method="single", index_method="gap", lenseparam = NULL, cluster_iterations=250, progressUpdater=NULL){
   # create object with params 
   gm = graphmapper(x, lensefun, partition_count, overlap, partition_method, index_method, lenseparam)
   
@@ -25,7 +25,7 @@ makegraphmapper <- function(x, lensefun, partition_count=4, overlap = 0.5, parti
   # create clusters in each partition; this takes a while depending on number of iterations
   # TODO parameterize iterations (currently hard codes)
   # note, the progressUpdater construct is for ShinyApps and optional
-  gm[["clusters"]]   = clusters.graphmapper(gm, 100,progressUpdater ) 
+  gm[["clusters"]]   = clusters.graphmapper(gm, cluster_iterations,progressUpdater ) 
   
   # create nodes from clusters 
   gm[["nodes"]]     = nodes.graphmapper(gm)
@@ -113,6 +113,7 @@ clusters.graphmapper<- function(gm, iterations=250, shinyProgressFunction = NULL
   distance_method = "euclidean"
   index_method    = "single"
   
+  # function to be given to apply for each partition
   distanceFunction <- function(x) dist(x, method=distance_method)
   
   clusterFunction  <- function(x, k) list(cluster=cutree(hclust(dist(x), method = "single"),k=k))
@@ -128,6 +129,7 @@ clusters.graphmapper<- function(gm, iterations=250, shinyProgressFunction = NULL
 
   gmClusts = list()
   
+  # loop through each partition
   npart = length(gm$partitions)
   for ( i in 1:npart) {
     # if (debug) print(i)
@@ -137,7 +139,8 @@ clusters.graphmapper<- function(gm, iterations=250, shinyProgressFunction = NULL
     # gf = gapFunction(p)
     print(paste0("analyzing partition ", i))
     
-    # If we were passed a shiny progress update function, call it for each loop
+    # SHINY STUFF for displaying progress bar when this is run; 
+    # If we were passed a shiny progress update function, call update each iteration
     if (is.function(shinyProgressFunction)) {
       text <- paste0("running ", iterations, " cluster iterations for partition ", i)
       shinyProgressFunction(value = (i/npart), detail = text)
