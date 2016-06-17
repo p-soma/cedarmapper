@@ -6,7 +6,7 @@ data(chemdiab)
 chemdiab  <- subset(chemdiab, select = -c(cc))
 
 
-gm  = graphmapper(x = chemdiab, 
+gm  = graphmapper(dataset = chemdiab, 
                     simple_lense, 
                     partition_count=4, 
                     overlap = 0.5, 

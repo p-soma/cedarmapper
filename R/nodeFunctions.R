@@ -15,9 +15,9 @@ library(factoextra)
 
 #  single method to run all steps for graphmapper object
 #' @export
-makegraphmapper <- function(x, lensefun, partition_count=4, overlap = 0.5, partition_method="single", index_method="gap", lenseparam = NULL, cluster_iterations=250, progressUpdater=NULL){
+makegraphmapper <- function(dataset, lensefun, partition_count=4, overlap = 0.5, partition_method="single", index_method="gap", lenseparam = NULL, cluster_iterations=250, progressUpdater=NULL){
   # create object with params 
-  gm = graphmapper(x, lensefun, partition_count, overlap, partition_method, index_method, lenseparam)
+  gm = graphmapper(dataset, lensefun, partition_count, overlap, partition_method, index_method, lenseparam)
   
   # create partitions 
   gm$partitions = partition.graphmapper(gm)
@@ -40,9 +40,9 @@ makegraphmapper <- function(x, lensefun, partition_count=4, overlap = 0.5, parti
 
 # graphmapper class factory
 #' @export
-graphmapper <- function(x, lensefun, partition_count=4, overlap = 0.5, partition_method="single", index_method="gap", lenseparam = NULL){
+graphmapper <- function(dataset, lensefun, partition_count=4, overlap = 0.5, partition_method="single", index_method="gap", lenseparam = NULL){
   # note: using as.numeric to convert arguments becuase Shiny inputs return strings
-  gm = structure(list(d = x, 
+  gm = structure(list(d = dataset, 
                       "partition_count"=as.numeric(partition_count), 
                       "overlap" = as.numeric(overlap),   # percent, o <= 1
                       "lensefun"=lensefun, 

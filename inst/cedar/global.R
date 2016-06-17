@@ -23,5 +23,5 @@ initVariableChoices   <- names(datasets[[1]])
 # starting value for dataset d
 d                     <- datasets[[1]]
 
-gm <- graphmapper(x=d, lensefun=simple_lense, partition_count=NULL, overlap=NULL, partition_method="single", index_method="gap", lenseparam="rw")
+gm <- graphmapper(dataset=d, lensefun=simple_lense, partition_count=NULL, overlap=NULL, partition_method="single", index_method="gap", lenseparam="rw")
 
