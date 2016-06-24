@@ -15,17 +15,18 @@ library(factoextra)
 
 #  single method to run all steps for graphmapper object
 #' @export
-makegraphmapper <- function(dataset, lensefun, partition_count=4, overlap = 0.5, partition_method="single", index_method="gap", lenseparam = NULL, cluster_iterations=250, progressUpdater=NULL){
+makegraphmapper <- function(dataset, lensefun, partition_count=4, overlap = 0.5, partition_method="single", lenseparam = NULL, bin_count=10, progressUpdater=NULL){
   # create object with params 
-  gm = graphmapper(dataset, lensefun, partition_count, overlap, partition_method, index_method, lenseparam)
+  gm = graphmapper(dataset, lensefun, as.numeric(partition_count), as.numeric(overlap), partition_method, lenseparam, as.numeric(bin_count))
   
   # create partitions 
   gm$partitions = partition.graphmapper(gm)
 
-  # create clusters in each partition; this takes a while depending on number of iterations
-  # TODO parameterize iterations (currently hard codes)
+  # debug
+  for(i in length(gm["partitions"])) {print(paste0("parition ", i, " sized ", length(gm["partitions"][[i]])))}
+  
   # note, the progressUpdater construct is for ShinyApps and optional
-  gm[["clusters"]]   = clusters.graphmapper(gm, cluster_iterations,progressUpdater ) 
+  gm[["clusters"]]   = clusters.graphmapper(gm, progressUpdater ) 
   
   # create nodes from clusters 
   gm[["nodes"]]     = nodes.graphmapper(gm)
@@ -40,7 +41,7 @@ makegraphmapper <- function(dataset, lensefun, partition_count=4, overlap = 0.5,
 
 # graphmapper class factory
 #' @export
-graphmapper <- function(dataset, lensefun, partition_count=4, overlap = 0.5, partition_method="single", index_method="gap", lenseparam = NULL){
+graphmapper <- function(dataset, lensefun, partition_count=4, overlap = 0.5, partition_method="single", index_method="gap", bin_count=10, lenseparam = NULL){
   # note: using as.numeric to convert arguments becuase Shiny inputs return strings
   gm = structure(list(d = dataset, 
                       "partition_count"=as.numeric(partition_count), 
@@ -48,7 +49,8 @@ graphmapper <- function(dataset, lensefun, partition_count=4, overlap = 0.5, par
                       "lensefun"=lensefun, 
                       "partition_method"=partition_method, 
                       "index_method"=index_method, 
-                      "lenseparam" = lenseparam),
+                      "lenseparam" = lenseparam,
+                      "bin_count" = as.numeric(bin_count)),
                  class="graphmapper")
     gm$partitions = NULL
     gm$clusters   = NULL
@@ -61,13 +63,12 @@ graphmapper <- function(dataset, lensefun, partition_count=4, overlap = 0.5, par
 
 #' @export
 partition <- function(d, lensefun, n=4, o=0.5, lenseparam=NULL){
+  # called by partition.graphmapper()
   # calculate lense values for all rows in d, use optional parameter
-  # lensefun must return data.frame with columns L(values) and ID (rownames)
-  
-  lense.df = lensefun(d, guaranteedVarname(lenseparam))
-  # debug
-  # print(summary(lense.df))
-  
+  # lensefun must return data.frame with columns L (values) and ID (rownames)
+  # to do: instead to returning data frame, return vector with named rows from rowIDs
+  lense.df = lensefun(d, guaranteedVarname(lenseparam))  
+
   # partition length = linear distance
   total_length = max(lense.df$L) - min(lense.df$L)
   pl = total_length/(n - ((n-1)*o))
@@ -75,17 +76,14 @@ partition <- function(d, lensefun, n=4, o=0.5, lenseparam=NULL){
   
   partitions = list()
   
-  # TODO: rewrite to use 'ldapply'  instead of forloop for when n > 10^6
+  # TODO: vectorise with plyr
   for (i in 1:n) {
     partition_start = p0 + pl * (i - 1) * (1-o)  # offset== starting value is 1/2 partition size X parttion number
     partition_end   = partition_start + pl
     partitions[[i]] = with(lense.df, lense.df[L >=  partition_start & L <= partition_end, "ID"])
-
-    
-    # previously was partition of data: partitions[[i]] = d[lenses[[i]]$ID,]; now just an ID
   }
-  # to test that all rows have been included in at least one partition
-    # if(nrow(d) != length(unique(unlist(partitions)))) stop("partitioning does not include all rows")
+  # Note : here is a test that all rows have been included in at least one partition
+  # if(nrow(d) != length(unique(unlist(partitions)))) stop("partitioning does not include all rows")
   
   return(partitions)
   
@@ -95,68 +93,94 @@ partition <- function(d, lensefun, n=4, o=0.5, lenseparam=NULL){
 #' @export
 partition.graphmapper <- function(gm) {
   print(paste("gm values=", gm$partition_count,  gm$overlap, gm[["lenseparam"]]))
-  
   if (class(gm) != "graphmapper") stop("partition: requires input of class graphmapper class")
   return(partition(gm$d, gm$lensefun, gm$partition_count,  gm$overlap, gm[["lenseparam"]]))
-    
-  # debug
-  # for(i in length(gm["partitions"])) {print(paste0("parition ", i, " sized ", length(gm["partitions"][[i]])))}
+
 } 
 
 
-# cluster detection using NbClust; 
-# the clustering built in so works on partitions
-#' @export
-clusters.graphmapper<- function(gm, iterations=250, shinyProgressFunction = NULL) {
-  
-  # TODO : use gm object values as parameters for these 
-  distance_method = "euclidean"
-  index_method    = "single"
-  
-  # function to be given to apply for each partition
-  distanceFunction <- function(x) dist(x, method=distance_method)
-  
-  clusterFunction  <- function(x, k) list(cluster=cutree(hclust(dist(x), method = "single"),k=k))
-  
-  gapFunction      <- function(x){ 
-    maxClusters = sqrt(nrow(x))*2
-    gf =clusGap(x, FUNcluster = clusterFunction, K.max = maxClusters, B = iterations)
-    kvalue = with(gf,maxSE(Tab[,"gap"],Tab[,"SE.sim"]))
-    return(clusterFunction(x,kvalue)$cluster)
-    }   
-  
-  clusterResult <- function(x, k) list(cluster=cutree(hclust(mydist(x), method = "average"),k=k))
 
-  gmClusts = list()
+# this function creates a list with same length as partitions, 
+# each list item containing vector, with same labels/names as rowids,  of cluster ids from cutree function
+# eg. for partition[[1]];  gmclusts[[1]]  = 
+# 114 115 116 117 126 127 133 134 143 145 
+# 2   1   2   2   2   2   2   1   2   3
+# 
+#' @export
+clusters.graphmapper<- function(gm, distance_method = "euclidean", index_method = "single", shinyProgressFunction = NULL) {
+   #TODO : make parameters for distance_method and index_method  gm object members
+
+  # function for pairwise distances, but scale numeric data
+  # TODO: answer question: will distance matrix differ is scaled here (per partition), or scaled for all data...
+  distanceFunction <- function(x) {
+    dist(scale(as.matrix(x)),method="euclidean")
+      # x %>% scale %>%  as.matrix %>% dist(method="euclidean")
+  } 
+
+  cut_function  <-  function(cluster_heights, maxdist, bin_count) {
+      # if there are only two points (one height value), then we have a single cluster
+      if (length(cluster_heights) == 1) { 
+          #if (cluster_heights == maxdist) {  # if this isn't true, then drop to code below 
+          #    cutoff <- Inf
+          #}
+          return(cutoff)
+      }
+      minbin   = min(cluster_heights)
+      maxbin   = maxdist
+      binwidth = (maxbin - minbin)/bin_count
+      print("cluster cut")
+      print(paste("seqparams=",minbin,maxbin,binwidth,sep=", "))
+      
+      bin_breaks <- seq(from=minbin,to=maxbin, by=binwidth)
+      # print(paste("hist of ",minbin,maxdist,sep=", "))
+      # print(bin_breaks)
+      height_hist <- hist(c(cluster_heights,maxdist), breaks=bin_breaks, plot=FALSE)
+      # height_hist <- hist(cluster_heights, breaks=bin_breaks, plot=FALSE)
+
+      z <- ( height_hist$counts == 0 )
+      if (sum(z) == 0) {
+        cutoff <- Inf
+      } else {
+        #  which returns the indices of the logical vector (z == TRUE), min gives the smallest index
+        cutoff <- height_hist$mids[ min(which(z == TRUE)) ]
+      }
+      return(cutoff)
+  }   
+
+  # empty list to be added to TODO = preallocate list if it will be long (partition count > 1000)  
+  gmClusts = list() 
+  npart = length(gm$partitions)
   
   # loop through each partition
-  npart = length(gm$partitions)
   for ( i in 1:npart) {
-    # if (debug) print(i)
-    # subset of data for this partition, which contains row names...
-    # this is not necessary here, and adds to R memory burden for large partitions
-    # but adds to code readability
-    # gf = gapFunction(p)
     print(paste0("analyzing partition ", i))
     
-    # SHINY STUFF for displaying progress bar when this is run; 
+    # SHINY STUFF for displaying progress bar when this is run; remove when parallelizing
     # If we were passed a shiny progress update function, call update each iteration
     if (is.function(shinyProgressFunction)) {
-      text <- paste0("running ", iterations, " cluster iterations for partition ", i)
+      text <- paste0("clustering partition ", i)
       shinyProgressFunction(value = (i/npart), detail = text)
      }
+    # end shiny stuff
     
-    x = as.matrix(gm$d[gm$partitions[[i]],])
-    print(nrow(x))
-    # alternative method to using clusgap above
-    #nb = NbClust( x, 
-    #             distance = "euclidean", 
-    #             method=    "single",
-    #             min.nc = 1, max.nc = sqrt(nrow(x))*2,              #TO DO  nrow(x)/2,
-    #             index = "gap"  )  # gm$index_method
-    #gmClusts[[i]] =  nb$Best.partition
+    # x = rowset for this partition
+    print(gm$partitions[[i]])
+    rowset = scale(as.matrix(gm$d[gm$partitions[[i]],]))
     
-    gmClusts[[i]] = gapFunction(x)
+    # calculate distance matrix for this partition
+    # scaled for THIS partition
+    # if need to scale the data using all rows, means storing 2nd structure equally as large as original data 
+    partition_dist =  dist(rowset,method="euclidean")
+    print(max(partition_dist))
+      # distanceFunction(rowset)   # TODO : increase efficiency in calculating distance function
+    partition_cluster <- hclust(partition_dist, method="single" ) 
+   
+    # cut the cluster tree
+    cluster_cutheight <- cut_function(partition_cluster$height,  max( partition_dist), gm$bin_count)
+    
+    # note rowIDs are propagated in cluster$labels, so cutree returns 
+    gmClusts[[i]] <- cutree(partition_cluster, h=cluster_cutheight )
+
   }
   
   return(gmClusts)
@@ -171,20 +195,21 @@ nodes.graphmapper <- function(gm){
   l = length(gm$clusters)
   nodes = list()
   node_counter = 0
-  
-  # for each partition
+  # TODO pre-allocatenode list as total number of nodes = sum(max(gm$clusters))
+  # for each partition<-> cluster
   for ( i in 1:l) {
-    
+
     # shortened name for the cluster list
     cuts = gm$clusters[[i]] 
     
     # cuts are a list of data points with associated cluster numbers, 1,1,2,2,...,k
     # convert this repeating list of cluster numbers to just the numbers 1,2,..k
+    # TODO: which is faster unique or max(cuts) which assumes cuts are always natural sequence from 1
     for(j in unique(cuts)){
       # advance the node counter TODO: vectorize this loop
       node_counter = node_counter + 1
+      # for each cut number, collect the rowids (names) into a vector and store in list item
       nodes[[node_counter]] = names(cuts[cuts == j])
-      
     }
   }
   names(nodes)<- 1:length(nodes)
@@ -194,6 +219,9 @@ nodes.graphmapper <- function(gm){
 
 #' @export
 adjacency.graphmapper<- function(gm) {
+    # TODO: create an edge list instead and call it 
+    # gm$edges <- findedges.graphmapper(gm)
+
   # shorten the name
   nodes = gm$nodes
   # function that tells if there is overlapping rows of data
