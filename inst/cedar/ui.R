@@ -69,12 +69,9 @@ dashboardBody(
                              step=1),  
                  selectInput("overlapSelection", label = "Partition Overlap (percent)", 
                              choices = c(0:13) * 5  + 10, selected = 50),
-                 sliderInput("clusterIterationsSelection", label = "Cluster Test Iterations", 
-                             min=min(100),max=max(500), value=100,
-                             step=25),  
-                 selectInput("clusterIndexSelection", label = "Cluster Index",
-                             choices = clusterIndexChoices, selected = 1)
-
+                 sliderInput("binCountSelection", label = "Cluster Bin Count", 
+                             min=min(3),max=max(50), value=10,
+                             step=1)  
               )
             ),
             column(width=4,

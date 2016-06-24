@@ -202,10 +202,9 @@ shinyServer(function(input, output, session) {
                           partition_count=as.numeric(input$partitionCountSelection),
                           overlap = as.numeric(input$overlapSelection)/100.0, 
                           partition_method="single", 
-                          index_method="gap",
                           lenseparam = input$filterVar,
-                          cluster_iterations = input$clusterIterationsSelection,
-                          progressUpdater = updateProgress)
+                          bin_count = as.numeric(input$binCountSelection),
+                          progressUpdater = NULL)  #updateProgress
     
     return(gm)
   })
@@ -239,8 +238,6 @@ shinyServer(function(input, output, session) {
   output$gmOverlap         <- renderText({
               input$runMapper
               gm$overlap})
-  output$gmClusterMethod   <- renderText({input$runMapper
-            gm$index_method})
   
   # output from ACE code editor
   # TODO : secure this function; check session$host=='localhost'?
