@@ -10,6 +10,11 @@ datasets[["Diabetes"]] <- chemdiab
 datasets[["Circle"]]   <-circle_data(r=1, n=60)
 datasets[["Circle500"]]<-circle_data(r=1, n=500)
 datasets[["FuzzyCircle"]] <- circle_data(r=1, n=200, randomize = TRUE)
+ 
+#  two intertwined spirals
+set.seed("1")
+t <- runif(200, min=1, max=6.3) # theta
+datasets[["Spiral"]] <- data.frame( x = c( t*cos(t), -t*cos(t) ), y = c( t*sin(t), -t*sin(t) ) )
 
 
 ####### starting values
