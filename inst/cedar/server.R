@@ -201,7 +201,7 @@ shinyServer(function(input, output, session) {
                           lensefun = lense_fun, 
                           partition_count=as.numeric(input$partitionCountSelection),
                           overlap = as.numeric(input$overlapSelection)/100.0, 
-                          partition_method="single", 
+                          cluster_method="single", 
                           lenseparam = input$filterVar,
                           bin_count = as.numeric(input$binCountSelection),
                           progressUpdater = NULL)  #updateProgress
@@ -238,7 +238,7 @@ shinyServer(function(input, output, session) {
   output$gmOverlap         <- renderText({
               input$runMapper
               gm$overlap})
-  
+  output$lensesigma <- renderText(input$lensesigma)
   # output from ACE code editor
   # TODO : secure this function; check session$host=='localhost'?
   output$eval_output <- renderPrint({

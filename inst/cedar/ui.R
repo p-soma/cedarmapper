@@ -62,8 +62,13 @@ dashboardBody(
                  h3("Data set:", textOutput("dataname",inline=TRUE),color="light-blue"),
                  selectInput("lenseFunctionSelection", label="Lense Function", 
                              choices = lenseChoices, selected = 1),
-                 selectInput("filterVar", label = "Filtering Variable", 
-                             choices = initVariableChoices, selected = 1),
+                 conditionalPanel(condition = "input.lenseFunctionSelection == 'simple_lense'",
+                        selectInput("filterVar", label = "Filtering Variable", 
+                             choices = initVariableChoices, selected = 1)
+                 ),
+                 conditionalPanel(condition = "input.lenseFunctionSelection == 'lense.density'",
+                                  textInput("filterVar", label = "Sigma")
+                 ),
                  sliderInput("partitionCountSelection", label = "Number of Partitions", 
                              min=min(partitionCountChoices),max=max(partitionCountChoices), value=4,
                              step=1),  
