@@ -3,19 +3,27 @@ library(cedar)
 library(plyr)
 
 data(chemdiab)
-chemdiab  <- subset(chemdiab, select = -c(cc))
+chemdiab  <- scale(subset(chemdiab, select = -c(cc)))
+
+testlensefun = lense.density
+lenseparam = 1.0
+
+# alternative, single var projection
+# testlensefun = simple_lense
+# lenseparam = names(chemdiab)[1]
 
 
 gm  = graphmapper(dataset = chemdiab, 
-                    simple_lense, 
+                    lensefun = testlensefun, 
                     partition_count=6, 
                     overlap = 0.5, 
                     partition_method="single", 
                     index_method="gap",  
-                    lenseparam = names(chemdiab)[1],
+                    lenseparam = lenseparam,
                     bin_count=5 
                   )
 
+gm$distance = dist(gm$d,method="euclidean", upper=FALSE)
 gm$partitions = partition.graphmapper(gm)
 gm$clusters   = clusters.graphmapper(gm) 
 gm$nodes      = nodes.graphmapper(gm)

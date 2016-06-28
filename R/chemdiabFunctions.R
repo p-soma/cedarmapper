@@ -1,5 +1,4 @@
-# graphmapper on chemdiab data
-library(locfit)
+# graphmapper on chemdiab data; data borrowed and included from R package locfit
 
 gmdiab<- function(diabvar="rw") {
   data("chemdiab")

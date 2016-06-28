@@ -8,6 +8,9 @@
 library(igraph)
 library(cluster)
 
+# SETUP GLOBAL VAR for debugging
+assign("DEBUG", FALSE,.GlobalEnv)
+
 # for gap and colored dendograms, optional, uncomment to for printing dendograms
 # library(factoextra)
 # to install the above requires 'Hmisc' which requires binary install on Mac
@@ -15,9 +18,9 @@ library(cluster)
 
 #  single method to run all steps for graphmapper object
 #' @export
-makegraphmapper <- function(dataset, lensefun, partition_count=4, overlap = 0.5, partition_method="single", lenseparam = NULL, bin_count=10, progressUpdater=NULL){
+makegraphmapper <- function(dataset, lensefun, partition_count=4, overlap = 0.5, cluster_method="single", lenseparam = NULL, bin_count=10, progressUpdater=NULL){
   # create object with params 
-  gm = graphmapper(dataset, lensefun, as.numeric(partition_count), as.numeric(overlap), partition_method, lenseparam, as.numeric(bin_count))
+  gm = graphmapper(dataset, lensefun, partition_count, overlap, partition_method, lenseparam, bin_count)
   
   # for now, add the distance matrix to the object
   # TODO replace with external data source
@@ -30,7 +33,9 @@ makegraphmapper <- function(dataset, lensefun, partition_count=4, overlap = 0.5,
   # for(i in length(gm["partitions"])) {print(paste0("parition ", i, " sized ", length(gm["partitions"][[i]])))}
   
   # note, the progressUpdater construct is for ShinyApps and optional
-  gm[["clusters"]]   = clusters.graphmapper(gm, progressUpdater ) 
+  gm[["clusters"]]   = clusters.graphmapper(gm, cluster_method = cluster_method, shinyProgressFunction=progressUpdater ) 
+  
+  # clusters.graphmapper<- function(gm, cluster_method = cluster_method, scaling=FALSE, shinyProgressFunction = NULL) {
   
   # create nodes from clusters 
   gm[["nodes"]]     = nodes.graphmapper(gm)
@@ -43,16 +48,16 @@ makegraphmapper <- function(dataset, lensefun, partition_count=4, overlap = 0.5,
 }
 
 
-#' Constructor for graphmapper object
+#' Constructor for graphmapper object to be used in mapper pipeline
+#' @return graphmapper object with all params needed for pipeline
 #' @export
-graphmapper <- function(dataset, lensefun, partition_count=4, overlap = 0.5, partition_method="single", index_method="gap", bin_count=10, lenseparam = NULL){
+graphmapper <- function(dataset, lensefun, partition_count=4, overlap = 0.5, cluster_method="single", bin_count=10, lenseparam = NULL){
   # note: using as.numeric to convert arguments becuase Shiny inputs return strings
   gm = structure(list(d = dataset, 
                       "partition_count"=as.numeric(partition_count), 
                       "overlap" = as.numeric(overlap),   # percent, o <= 1
                       "lensefun"=lensefun, 
-                      "partition_method"=partition_method, 
-                      "index_method"=index_method, 
+                      "cluster_method"=cluster_method, 
                       "lenseparam" = lenseparam,
                       "bin_count" = as.numeric(bin_count)),
                  class="graphmapper")
@@ -66,21 +71,20 @@ graphmapper <- function(dataset, lensefun, partition_count=4, overlap = 0.5, par
   return(gm)
 }
 
-
-#' @export
-partition <- function(gm, lensefun, n=4, o=0.5, lenseparam){
+#' no longer used see partition.graphmapper below
+partition <- function(gm, lensefun, n=4, o=0.5, lenseparam=NULL){
   # called by partition.graphmapper()
   # calculate lense values for all rows in d, use optional parameter
   # lensefun must return data.frame with columns L (values) and ID (rownames)
   # to do: instead to returning data frame, return vector with named rows from rowIDs
   
   ## REPLACE THIS WITH SUBSETTING
-  #lense.df = lensefun(d,lenseparam)  
+  L  = lensefun(d,lenseparam)  
 
   # partition length = linear distance
-  total_length = max(lense.df$L) - min(lense.df$L)
+  total_length = max(L) - min(L)
   pl = total_length/(n - ((n-1)*o))
-  p0 = min(lense.df$L)
+  p0 = min(L)
   
   partitions = list()
   
@@ -88,16 +92,23 @@ partition <- function(gm, lensefun, n=4, o=0.5, lenseparam){
   for (i in 1:n) {
     partition_start = p0 + pl * (i - 1) * (1-o)  # offset== starting value is 1/2 partition size X parttion number
     partition_end   = partition_start + pl
-    partitions[[i]] = with(lense.df, lense.df[L >=  partition_start & L <= partition_end, "ID"])
+    partitions[[i]] = L[L >=  partition_start & L <= partition_end, "ID"]
   }
-  # Note : here is a test that all rows have been included in at least one partition
-  # if(nrow(d) != length(unique(unlist(partitions)))) stop("partitioning does not include all rows")
+  
+  #test that all rows have been included in at least one partition
+  if(DEBUG){
+    if(nrow(d) != length(unique(unlist(partitions)))) stop("partitioning does not include all rows")
+  }
   
   return(partitions)
   
 }
 
-# creates a list of 'partitions' of dataset, using a reducing 'lense' function
+#' partition a graphmapper object dataset by reducing dimensions via lense or filter function
+#' lense function must be defined in the graphmapper object, and must return vector with 
+#' rownames preserved
+#' @param gm graphmapper object with dataset and lense function and lense parameters
+#' @return a list of vectors of rownames from the dataset, e.g. subsets or partitions 
 #' @export
 partition.graphmapper <- function(gm) {
   if (class(gm) != "graphmapper") stop("partition: requires input of class graphmapper class")
@@ -106,12 +117,8 @@ partition.graphmapper <- function(gm) {
   n <- gm$partition_count # num of partitions  
   o <- gm$overlap         # percent overlap
   
-  # gm$lensefun = function
-  # gm[["lenseparam"]] optional lense parameter( or list of parameters)
-  
+  # L is vector of filtered values (1-d)
   # as a by product this may create the distance matrix ?
-  # create vector of filtered values (1-d)
-  # do we need to send the whole gm object, or just the data
   # all we usually need is some way to obtain or calculate a distance matrix
   L = gm$lensefun(gm, gm$lenseparam)
   
@@ -157,15 +164,8 @@ partition.graphmapper <- function(gm) {
 #' 2   1   2   2   2   2   2   1   2   3
 #' to be used by mapper node creation function
 #' @export
-clusters.graphmapper<- function(gm, distance_method = "euclidean", index_method = "single", scaling=FALSE, shinyProgressFunction = NULL) {
+clusters.graphmapper<- function(gm, cluster_method = "single", scaling=FALSE, shinyProgressFunction = NULL) {
    #TODO : make parameters for distance_method and index_method  gm object members
-
-  # function for pairwise distances, but scale numeric data
-  # TODO: answer question: will distance matrix differ is scaled here (per partition), or scaled for all data...
-  distanceFunction <- function(x) {
-    dist(as.matrix(x),method="euclidean")
-      # x %>% scale %>%  as.matrix %>% dist(method="euclidean")
-  } 
 
   cut_function  <-  function(cluster_heights, maxdist, bin_count) {
       # if there are only two points (one height value), then we have a single cluster
@@ -219,19 +219,16 @@ clusters.graphmapper<- function(gm, distance_method = "euclidean", index_method 
     rowset = as.matrix(gm$d[gm$partitions[[i]],])
     
     # calculate distance matrix for this partition
-    # scaled for THIS partition
-    # if need to scale the data using all rows, means storing 2nd structure equally as large as original data 
     partition_dist =  dist(rowset,method="euclidean")
-    print(max(partition_dist))
-      # distanceFunction(rowset)   # TODO : increase efficiency in calculating distance function
-    partition_cluster <- hclust(partition_dist, method="single" ) 
-   
+      if(DEBUG) {print(max(partition_dist))}
+    # do standard clustering
+    partition_cluster <- hclust(partition_dist, method=cluster_method ) 
     # cut the cluster tree
     cluster_cutheight <- cut_function(partition_cluster$height,  max( partition_dist), gm$bin_count)
     
-    # note rowIDs are propagated in cluster$labels, so cutree returns 
+    # note rowIDs are propagated in cluster$labels, so cutree returns groups labeled correctly
     gmClusts[[i]] <- cutree(partition_cluster, h=cluster_cutheight )
-
+    
   }
   
   return(gmClusts)
