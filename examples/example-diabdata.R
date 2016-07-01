@@ -1,8 +1,8 @@
 # example scripts of creating and using a Mapper object
 library(cedar)
-library(plyr)
 
 data(chemdiab)
+# current must remove the classification variable
 chemdiab  <- scale(subset(chemdiab, select = -c(cc)))
 
 testlensefun = lense.density
@@ -17,27 +17,29 @@ gm  = graphmapper(dataset = chemdiab,
                     lensefun = testlensefun, 
                     partition_count=6, 
                     overlap = 0.5, 
-                    partition_method="single", 
-                    index_method="gap",  
                     lenseparam = lenseparam,
-                    bin_count=5 
+                    bin_count=15 
                   )
 
+# create distance matrix for all data manually
 gm$distance = dist(gm$d,method="euclidean", upper=FALSE)
 gm$partitions = partition.graphmapper(gm)
-gm$clusters   = clusters.graphmapper(gm) 
+gm$clusters   = clusters.graphmapper(gm)
 gm$nodes      = nodes.graphmapper(gm)
 gm$adjmatrix  = adjacency.graphmapper(gm) 
 
-print(gm$nodes)
+plot(graph.graphmapper(gm),main=paste0("Diabetes Data"))
 
-# use gui or other method for selecting groups
+# select 2 disjoint  groups at random
+nodecount = length(gm$nodes)
+g1 = sample(1:nodecount,nodecount/2)
+g2 = setdiff(1:nodecount,g1)
 
-gm[["groups"]] <- setgroup.graphmapper(gm, c(1,2,3),group_id = "1")
-gm[["groups"]] <- setgroup.graphmapper(gm,c(5,6,7,8,9), group_id = "2")
+gm[["groups"]] <- setgroup.graphmapper(gm, g1,group_id = "1")
+gm[["groups"]] <- setgroup.graphmapper(gm, g2, group_id = "2")
 
-# demo of adding to a group.  setgroup appends to existing group
-gm[["groups"]] <- setgroup.graphmapper(gm, c(4), "1")
+# example of adding to a group.  setgroup appends to existing group
+# gm[["groups"]] <- setgroup.graphmapper(gm, c(4), "1")
 
 # TURN OFF WARNINGS
 kt = kstable(gm)

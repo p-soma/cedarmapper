@@ -2,23 +2,7 @@
 #' Synthetic x,y data in shape of Y when plotted for testing Mapper output
 #' 
 
-assign("DEBUG",TRUE,.GlobalEnv)
-
-#' create x,y data in shape of reclining Y
-#' @export
-yshape <- function(n=100){
-  r1 = runif(n,-1,0)
-  r2 = runif(n,-1,0)
-  r3 = runif(n,0,1)
-  
-  d1 = cbind(x=r1, y=-r1)
-  d2 = cbind(x=r2,y=r2)
-  d3 = cbind(x=r3,y=0)
-  return(data.frame(rbind(d1,d2,d3)))
-}
-
-
-testdata = yshape(100)
+testdata = y_data(100)
 plot(testdata, main="Our example Y-shaped, x-y data")
 
 cat ("Press [enter] to run Mapper and plot")
@@ -47,10 +31,10 @@ gm[["adjmatrix"]] = adjacency.graphmapper(gm)
 # create iGraph and plot
 plot(graph.graphmapper(gm))
 
-# example 2, use single function to create mapper object and plot
+# example 2, using the 'maker' function to create mapper object in one step
 
 cat ("Press [enter] to run Mapper")
 line <- readline()
-gm2  = makegraphmapper(dataset = data.frame(yshape(100)), lensefun=lense.projection,  lenseparam = 'x',
-                partition_count=6, overlap = 0.5, bin_count=15)
+gm2  = makegraphmapper(dataset = testdata, lensefun=lense.projection,  lenseparam = 'y',
+                partition_count=4, overlap = 0.5, bin_count=10)
 plot(graph.graphmapper(gm2),main="Y-data mapper graph")
