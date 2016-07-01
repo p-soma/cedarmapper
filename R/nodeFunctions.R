@@ -9,7 +9,7 @@ library(igraph)
 library(cluster)
 
 # SETUP GLOBAL VAR for debugging
-assign("DEBUG", FALSE,.GlobalEnv)
+# assign("DEBUG", FALSE,.GlobalEnv)
 
 # for gap and colored dendograms, optional, uncomment to for printing dendograms
 # library(factoextra)
@@ -143,76 +143,73 @@ partition.graphmapper <- function(gm) {
 #' to be used by mapper node creation function
 #' @export
 clusters.graphmapper<- function(gm, cluster_method = "single", scaling=FALSE, shinyProgressFunction = NULL) {
-   #TODO : make parameters for distance_method and index_method  gm object members
-
-  cut_function  <-  function(cluster_heights, maxdist, bin_count) {
-      # if there are only two points (one height value), then we have a single cluster
-      if (length(cluster_heights) == 1) { 
-          #if (cluster_heights == maxdist) {  # if this isn't true, then drop to code below 
-          #    cutoff <- Inf
-          #}
-          return(cutoff)
-      }
-      minbin   = min(cluster_heights)
-      maxbin   = maxdist
-      binwidth = (maxbin - minbin)/bin_count
-      print("cluster cut")
-      print(paste("seqparams=",minbin,maxbin,binwidth,sep=", "))
-      
-      bin_breaks <- seq(from=minbin,to=maxbin, by=binwidth)
-      # print(paste("hist of ",minbin,maxdist,sep=", "))
-      # print(bin_breaks)
-      height_hist <- hist(c(cluster_heights,maxdist), breaks=bin_breaks, plot=FALSE)
-      # height_hist <- hist(cluster_heights, breaks=bin_breaks, plot=FALSE)
-
-      z <- ( height_hist$counts == 0 )
-      if (sum(z) == 0) {
-        cutoff <- Inf
-      } else {
-        #  which returns the indices of the logical vector (z == TRUE), min gives the smallest index
-        cutoff <- height_hist$mids[ min(which(z == TRUE)) ]
-      }
-      return(cutoff)
-  }   
-
-  # empty list to be added to 
-  # TODO = preallocate list if it will be long (partition count > 1000)  
-  gmClusts = list() 
-  npart = length(gm$partitions)
   
+  gmClusts = list() 
+  npartition = length(gm$partitions)
   # loop through each partition
-  for ( i in 1:npart) {
+  for ( i in 1:npartition) {
     print(paste0("analyzing partition ", i))
     
     # SHINY STUFF for displaying progress bar when this is run; remove when parallelizing
     # If we were passed a shiny progress update function, call update each iteration
     if (is.function(shinyProgressFunction)) {
       text <- paste0("clustering partition ", i)
-      shinyProgressFunction(value = (i/npart), detail = text)
+      shinyProgressFunction(value = (i/npartition), detail = text)
      }
     # end shiny stuff
     
     
     print(gm$partitions[[i]])
-    rowset = as.matrix(gm$d[names(gm$partitions[[i]]),])
+    rowset = gm$d[names(gm$partitions[[i]]),] 
     
     # calculate distance matrix for this partition
+    # TODO: check if whole data set partition is present, and extract subset from that
     partition_dist =  dist(rowset,method="euclidean")
-      if(DEBUG) {print(max(partition_dist))}
-    # do standard clustering
-    partition_cluster <- hclust(partition_dist) 
-    # cut the cluster tree
-    cluster_cutheight <- cut_function(partition_cluster$height,  max( partition_dist), gm$bin_count)
     
-    # note rowIDs are propagated in cluster$labels, so cutree returns groups labeled correctly
+    # if(DEBUG) {print(max(partition_dist))}
+    # do standard clustering and cut 
+    partition_cluster <- hclust(partition_dist, method="single") 
+    cluster_cutheight <- cut_function(partition_cluster$height,  max( partition_dist), gm$bin_count)
     gmClusts[[i]] <- cutree(partition_cluster, h=cluster_cutheight )
     
+    # note rowIDs are propagated in cluster$labels, so cutree returns groups labeled correctly
   }
-  
   return(gmClusts)
 }
 
-
+#' histogram based cut function for single-linkage clusters
+#' @export
+cut_function  <-  function(cluster_heights, maxdist, bin_count) {
+  # default cutoff is infinity, meaning 1 node
+  cutoff <- Inf
+  # if there  is one height value, then we have a single cluster
+  if (length(cluster_heights) == 1) { 
+    #if (cluster_heights == maxdist) {  # if this isn't true, then drop to code below 
+    #    cutoff <- Inf
+    #}
+    return(cutoff)
+  }
+  
+  minbin   = min(cluster_heights)
+  maxbin   = maxdist
+  binwidth = (maxbin - minbin)/bin_count
+  bin_breaks <- seq(from=minbin,to=maxbin, by=binwidth)
+  
+  
+  #print("cluster cut")
+  #print(paste("seqparams=",minbin,maxbin,binwidth,sep=", "))
+  #print(paste("hist of ",minbin,maxdist,sep=", "))
+  #print(bin_breaks)
+  
+  height_hist <- hist(c(cluster_heights,maxdist), breaks=bin_breaks, plot=FALSE)
+  
+  z <- ( height_hist$counts == 0 )
+  if (sum(z) != 0) {
+    #  returns the indices of the logical vector (z == TRUE), min gives the smallest index
+    cutoff <- height_hist$mids[ min(which(z == TRUE)) ]
+  }
+  return(cutoff)
+}   
 
 #' create the nodes from clustered partitions in graphmapper object
 #' nodes are subsets of IDs (rownames) based on optimal partitions
@@ -320,7 +317,7 @@ varTable <- function(gm, group_ids = c(1,2)){
     d2 = groupdata(gm,group_ids[2],varname)
     return(data.frame("var"=varname, "mean group 1"=mean(d1),  "variance group 1" = var(d1), "mean group 2"=mean(d2), "variance group 2" = var(d2)))
   }
-  vtable = ldply(names(gm$d), varFun)
+  vtable = ldply(colnames(gm$d), varFun)
 }
 
 # returns a table of ks results for each variable in gm$d
@@ -343,7 +340,7 @@ kstable <- function(gm, group_ids = c(1,2)){
   }
   print('making table')
   
-  vars = names(gm$d)
+  vars = colnames(gm$d)
   ktable = ldply(vars, ksfun)
   
   return(ktable[order(ktable$pvalue),])
@@ -386,17 +383,17 @@ nodedata <- function(gm, nodes, varname=NULL){
   if(!is.graphmapper(gm)) return (NULL)
 
   # unlisting potentially overlapping nodes, this works on single node, too
-  nodes = unique(unlist(nodes))
+  rowids = unique(unlist(nodes))
 
   # if no variable name sent, return all columns
   if(is.null(varname)){
-    return(gm$d[nodes,])
+    return(gm$d[rowids,])
   } 
   else {
     # return only column(s) requested in varname
     # use reduce here to combine TRUES if varname is vector of names c("X", "Y")
-    if( Reduce("&", (varname %in% names(gm$d))))
-      return(gm$d[nodes,varname])
+    if( Reduce("&", (varname %in% colnames(gm$d))))
+      return(gm$d[rowids,varname])
   }
   return()
 }
