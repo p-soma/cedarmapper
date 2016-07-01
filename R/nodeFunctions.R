@@ -20,7 +20,7 @@ assign("DEBUG", FALSE,.GlobalEnv)
 #' @export
 makegraphmapper <- function(dataset, lensefun, partition_count=4, overlap = 0.5, cluster_method="single", lenseparam = NULL, bin_count=10, progressUpdater=NULL){
   # create object with params 
-  gm = graphmapper(dataset, lensefun, partition_count, overlap, partition_method, lenseparam, bin_count)
+  gm = graphmapper(dataset, lensefun, partition_count, overlap, lenseparam, bin_count)
   
   # for now, add the distance matrix to the object
   # TODO replace with external data source
@@ -53,6 +53,9 @@ makegraphmapper <- function(dataset, lensefun, partition_count=4, overlap = 0.5,
 #' @export
 graphmapper <- function(dataset, lensefun, partition_count=4, overlap = 0.5, cluster_method="single", bin_count=10, lenseparam = NULL){
   # note: using as.numeric to convert arguments becuase Shiny inputs return strings
+  
+  
+  
   gm = structure(list(d = dataset, 
                       "partition_count"=as.numeric(partition_count), 
                       "overlap" = as.numeric(overlap),   # percent, o <= 1
@@ -61,6 +64,8 @@ graphmapper <- function(dataset, lensefun, partition_count=4, overlap = 0.5, clu
                       "lenseparam" = lenseparam,
                       "bin_count" = as.numeric(bin_count)),
                  class="graphmapper")
+  
+  rownames(dataset)<- 1:nrow(dataset)
     gm$distance   = NULL
     gm$partitions = NULL
     gm$clusters   = NULL
@@ -71,38 +76,6 @@ graphmapper <- function(dataset, lensefun, partition_count=4, overlap = 0.5, clu
   return(gm)
 }
 
-#' no longer used see partition.graphmapper below
-partition <- function(gm, lensefun, n=4, o=0.5, lenseparam=NULL){
-  # called by partition.graphmapper()
-  # calculate lense values for all rows in d, use optional parameter
-  # lensefun must return data.frame with columns L (values) and ID (rownames)
-  # to do: instead to returning data frame, return vector with named rows from rowIDs
-  
-  ## REPLACE THIS WITH SUBSETTING
-  L  = lensefun(d,lenseparam)  
-
-  # partition length = linear distance
-  total_length = max(L) - min(L)
-  pl = total_length/(n - ((n-1)*o))
-  p0 = min(L)
-  
-  partitions = list()
-  
-  # TODO: vectorise with plyr
-  for (i in 1:n) {
-    partition_start = p0 + pl * (i - 1) * (1-o)  # offset== starting value is 1/2 partition size X parttion number
-    partition_end   = partition_start + pl
-    partitions[[i]] = L[L >=  partition_start & L <= partition_end, "ID"]
-  }
-  
-  #test that all rows have been included in at least one partition
-  if(DEBUG){
-    if(nrow(d) != length(unique(unlist(partitions)))) stop("partitioning does not include all rows")
-  }
-  
-  return(partitions)
-  
-}
 
 #' partition a graphmapper object dataset by reducing dimensions via lense or filter function
 #' lense function must be defined in the graphmapper object, and must return vector with 
@@ -127,15 +100,20 @@ partition.graphmapper <- function(gm) {
 
   # partition length = linear distance
   total_length = max(L) - min(L)
+  
   pl = total_length/(n - ((n-1)*o))
+  
+  # [0:(n-1)]
+  # pl 
   p0 = min(L)
   partitions = list()
-  
+  n = gm$partition_count
+  epsilon =  1e-15
   # TODO: vectorise with plyr
   for (i in 1:n) {
-    partition_start = p0 + pl * (i - 1) * (1-o)  # offset== starting value is 1/2 partition size X parttion number
+    partition_start = p0 + (pl * (i - 1) * (1-o))  # offset== starting value is 1/2 partition size X parttion number
     partition_end   = partition_start + pl
-    partitions[[i]] = L[L >=  partition_start & L <= partition_end]
+    partitions[[i]] = L[L >=  partition_start & L < partition_end ]
   }
   
   # Note : here is a test that all rows have been included in at least one partition
@@ -216,13 +194,13 @@ clusters.graphmapper<- function(gm, cluster_method = "single", scaling=FALSE, sh
     
     
     print(gm$partitions[[i]])
-    rowset = as.matrix(gm$d[gm$partitions[[i]],])
+    rowset = as.matrix(gm$d[names(gm$partitions[[i]]),])
     
     # calculate distance matrix for this partition
     partition_dist =  dist(rowset,method="euclidean")
       if(DEBUG) {print(max(partition_dist))}
     # do standard clustering
-    partition_cluster <- hclust(partition_dist, method=cluster_method ) 
+    partition_cluster <- hclust(partition_dist) 
     # cut the cluster tree
     cluster_cutheight <- cut_function(partition_cluster$height,  max( partition_dist), gm$bin_count)
     
