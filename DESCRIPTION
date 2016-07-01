@@ -5,23 +5,23 @@ Version: 0.1.0
 Date: 2016-04-27
 Authors@R: person("P", "Bills", email = "billspat@msu.edu", role = c("aut", "cre"))
 Description: visualization of topo data analysis
-License: GPL > 3
+License: file LICENSE
 Depends:
     R (>= 2.15),
     cedargraph (>= 0.0.2),
     cluster (>= 2.0.0),
     NbClust (>= 3.0),
+    plyr(>= 1.8.0),
+    igraph(>= 1.0),
+    ggplot2(>= 2.0),
     shiny (>= 0.13),
     shinydashboard (>= 0.5.1),
     htmlwidgets(>= 0.6), 
-    igraph(>= 1.0),
-    ggplot2(>= 2.0),
-    shinyjs(>= 0.5),
     V8(>= 1.0),
     DT(>= 0.1),
-    shinyAce(>= 0.2.1),
-    fastcluster(>= 1.1.20)
+    shinyAce(>= 0.2.1)
 Suggests:
+    fastcluster,
     knitr,
     devtools,
     roxygen2,
