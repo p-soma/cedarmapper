@@ -187,22 +187,28 @@ shinyServer(function(input, output, session) {
     }
     
     
-    lense_fun <- simple_lense
+    lense_fun <- lense.projection
     if(! is.null(input$lenseFunctionSelection)) {
-      f = get(input$lenseFunctionSelection) 
+      fname = get(input$lenseFunctionSelection) 
+      f = match.fun(fname)
       if (is.function(f)){ 
         lense_fun <- f
-        # debug
-        print(lense_fun)
+          if(input$lenseFunctionSelection == "lense.projection"){
+            lenseParam = input$filterVar
+        } else{
+            lenseParam = input$lenseParam
+        }
+          
         }
     }
     
+    partitionCount=as.numeric(input$partitionCountSelection)
+    print(paste0("graphmapper param=",lenseParam," for ", input$lenseFunctionSelection))
     gm<<- makegraphmapper(dataset = d, 
                           lensefun = lense_fun, 
-                          partition_count=as.numeric(input$partitionCountSelection),
+                          partition_count=partitionCount,
                           overlap = as.numeric(input$overlapSelection)/100.0, 
-                          cluster_method="single", 
-                          lenseparam = input$filterVar,
+                          lenseparam = lenseParam,
                           bin_count = as.numeric(input$binCountSelection),
                           progressUpdater = NULL)  #updateProgress
     
@@ -210,7 +216,7 @@ shinyServer(function(input, output, session) {
   })
   
   testy <- eventReactive(input$runTest,{
-      updateTabItems(session, "tabs", selected = "resulttable")
+      # updateTabItems(session, "tabs", selected = "resulttable")
       return(kstable(gm))
             } )
   
@@ -235,9 +241,13 @@ shinyServer(function(input, output, session) {
         input$runMapper
         gm$partition_count
         })
-  output$gmOverlap         <- renderText({
+  output$gmOverlap   <- renderText({
               input$runMapper
               gm$overlap})
+  
+  output$gmBinCount <-  renderText({input$runMapper
+                        gm$bin_count})
+  
   output$lensesigma <- renderText(input$lensesigma)
   # output from ACE code editor
   # TODO : secure this function; check session$host=='localhost'?

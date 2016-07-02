@@ -34,24 +34,23 @@ dashboardBody(
             box(width=3,selectInput("dataSelection", label = "Select Dataset", choices = dataChoices, selected = 1)), 
             valueBox(width=2, subtitle="rows", value = textOutput("dataRowCount",inline=TRUE),color='black'),
             valueBox(width=2, subtitle="variables", value = textOutput("dataVarCount",inline=TRUE),color='black'),
-            box(width=5, fileInput('file1', 'Choose file to upload',
-                      accept = c(
-                        'text/csv',
-                        'text/comma-separated-values',
-                        'text/tab-separated-values',
-                        'text/plain',
-                        '.csv',
-                        '.tsv'
-                      )
-            ),
-            textInput('newDataName', "Name", placeholder = "name your data"),
-            checkboxInput('header', 'Header', TRUE),
-            radioButtons('sep', 'Separator',
+            
+            box(width=5, 
+            bsCollapse(id = "collapseExample", open = "Panel 1", 
+            bsCollapsePanel("Click to Upload Data",
+              box(                                                                   
+            
+                fileInput('file1', 'Choose file to upload',accept = c('text/csv','text/comma-separated-values','text/tab-separated-values','text/plain',
+                        '.csv','.tsv')),
+                textInput('newDataName', "Name", placeholder = "name your data"),
+                checkboxInput('header', 'Header', TRUE),
+                radioButtons('sep', 'Separator',
                          c(Comma=',',Semicolon=';', Tab='\t'),','),
             radioButtons('quote', 'Quote',c(None='','Double Quote'='"','Single Quote'="'"),'"'),
             actionButton("uploadDataAction", "Upload")
-            ) # end of upload box
-          ),
+            ),# end of upload box 
+            style = "primary") 
+          ))),
           dataTableOutput('dataset')
       ),
       # First tab content
@@ -62,12 +61,13 @@ dashboardBody(
                  h3("Data set:", textOutput("dataname",inline=TRUE),color="light-blue"),
                  selectInput("lenseFunctionSelection", label="Lense Function", 
                              choices = lenseChoices, selected = 1),
-                 conditionalPanel(condition = "input.lenseFunctionSelection == 'simple_lense'",
+                 conditionalPanel(condition = "input.lenseFunctionSelection == 'lense.projection'",
                         selectInput("filterVar", label = "Filtering Variable", 
                              choices = initVariableChoices, selected = 1)
                  ),
-                 conditionalPanel(condition = "input.lenseFunctionSelection == 'lense.density'",
-                                  textInput("filterVar", label = "Sigma")
+                 conditionalPanel(condition = "input.lenseFunctionSelection != 'lense.projection'",
+                                  { p(lenses[lenses$fun=='lense.density',"params"])
+                                  textInput("lenseParam", label = "")}
                  ),
                  sliderInput("partitionCountSelection", label = "Number of Partitions", 
                              min=min(partitionCountChoices),max=max(partitionCountChoices), value=4,
@@ -85,8 +85,9 @@ dashboardBody(
                    box(width=NULL, title="Current Parameters",
                       valueBox(width=NULL, subtitle = "Partitions",     value=textOutput("gmPartitionCount",inline=TRUE),  color="black"),
                       valueBox(width=NULL, subtitle = "Percent Overlap",value=textOutput("gmOverlap",inline=TRUE),  color="black"),
+                      valueBox(width=NULL ,subtitle = "Clustering Bins",  value=textOutput("gmBinCount",inline=TRUE),  color="black"),
                       valueBox(width=NULL ,subtitle = "Nodes",          value=textOutput("nodeCount",inline=TRUE),  color="black"),
-                      downloadButton('downloadMapper', 'Download Mapper')
+                      downloadButton('downloadMapper', 'Download Mapper Rdata')
 
                    )
 
@@ -143,7 +144,10 @@ dashboardBody(
               box(width=NULL,background="black",
                   actionButton("runTest", "Compare Groups"))
               )
-         ) # end row
+         )
+         
+         ,bsModal("hypothesisTest", "KS Test", "runTest",size = "large",
+                  tableOutput("hypTestTable"))# end row
       ),
       
       tabItem(tabName="console",
@@ -157,12 +161,13 @@ dashboardBody(
               fluidRow(actionButton("eval", "Evaluate"))
       ),
       tabItem(tabName="resulttable",
-              fluidRow(
-                box(title="Hypothesis test",width=6,
-                    tableOutput("hypTestTable")),
-                box(title="Group Data",width=6,
-                    tableOutput("varianceTable"))
-              )
+              p("")
+              #fluidRow(
+              #  box(title="Hypothesis test",width=6,
+              #      tableOutput("hypTestTable")),
+              #  box(title="Group Data",width=6,
+              #      tableOutput("varianceTable"))
+              #)
       )
       
     ) # end of tabitems
