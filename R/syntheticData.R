@@ -20,7 +20,7 @@ circle_data <- function(r=1, n=60, randomize=FALSE) {
 }
 
 
-#' #' create x,y data in shape of reclining Y
+#' create x,y data in shape of reclining Y
 #' @export
 y_data <- function(n=100){
   r1 = runif(n,-1,0)
@@ -33,3 +33,10 @@ y_data <- function(n=100){
   return(data.frame(rbind(d1,d2,d3)))
 }
 
+#' Spiral 
+#' @export
+spiral_data <- function(n=200){
+  set.seed("1")
+  t <- runif(n, min=1, max=6.3) # theta
+  return(data.frame( x = c( t*cos(t), -t*cos(t) ), y = c( t*sin(t), -t*sin(t) ) ))
+}
