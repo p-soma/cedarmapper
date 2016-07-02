@@ -9,8 +9,8 @@ cat ("Press [enter] to run Mapper and plot")
 line <- readline()
 
 # create object
-gm = graphmapper(dataset = testdata, lensefun=lense.projection,  lenseparam = 'x',
-                   partition_count=5, overlap = 0.5, bin_count=10)
+gm = graphmapper(dataset = testdata, lensefun=lense.density,  lenseparam = 0.5,
+                   partition_count=7, overlap = 0.5, bin_count=10)
 
 # gm pipeline, run manually
 gm$distance = dist(gm$d,method="euclidean", upper=FALSE)
