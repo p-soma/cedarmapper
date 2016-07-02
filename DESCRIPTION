@@ -19,7 +19,8 @@ Depends:
     htmlwidgets(>= 0.6), 
     V8(>= 1.0),
     DT(>= 0.1),
-    shinyAce(>= 0.2.1)
+    shinyAce(>= 0.2.1),
+    shinyBS(>= 0.60)
 Suggests:
     fastcluster,
     knitr,
