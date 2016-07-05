@@ -150,6 +150,14 @@ clusters.graphmapper<- function(gm, cluster_method = "single", scaling=FALSE, sh
   for ( i in 1:npartition) {
     print(paste0("analyzing partition ", i))
     
+    # check for special case of only one datapoint, so no clustering necessary, break out of loop
+    if(length(gm$partitions[[i]]) < 2 ){
+      gmClusts[[i]] = c(1)
+      names(gmClusts[[i]]) = rownames(gm$partitions[[i]])
+      next
+    }
+    
+    
     # SHINY STUFF for displaying progress bar when this is run; remove when parallelizing
     # If we were passed a shiny progress update function, call update each iteration
     if (is.function(shinyProgressFunction)) {
@@ -158,8 +166,8 @@ clusters.graphmapper<- function(gm, cluster_method = "single", scaling=FALSE, sh
      }
     # end shiny stuff
     
-    
-    print(gm$partitions[[i]])
+    # debug 
+    # print(gm$partitions[[i]])
     rowset = gm$d[names(gm$partitions[[i]]),] 
     
     # calculate distance matrix for this partition
@@ -194,8 +202,7 @@ cut_function  <-  function(cluster_heights, maxdist, bin_count) {
   maxbin   = maxdist
   binwidth = (maxbin - minbin)/bin_count
   bin_breaks <- seq(from=minbin,to=maxbin, by=binwidth)
-  
-  
+
   #print("cluster cut")
   #print(paste("seqparams=",minbin,maxbin,binwidth,sep=", "))
   #print(paste("hist of ",minbin,maxdist,sep=", "))
