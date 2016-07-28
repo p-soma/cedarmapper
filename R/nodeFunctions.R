@@ -108,7 +108,7 @@ partition.graphmapper <- function(gm) {
   p0 = min(L)
   partitions = list()
   n = gm$partition_count
-  epsilon =  1e-15
+  
   # TODO: vectorise with plyr
   for (i in 1:n) {
     partition_start = p0 + (pl * (i - 1) * (1-o))  # offset== starting value is 1/2 partition size X parttion number
