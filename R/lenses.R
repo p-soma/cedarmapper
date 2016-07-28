@@ -49,6 +49,27 @@ lense.projection <- function(gm,lenseparam=NULL ){
   return(L)
 }
 
+lense.2dprojection <- function(gm,lenseparam=NULL ){
+  coordinates <- lenseparam
+  # returns a vector variable, defaults to the first column
+  if (is.null(coordinate)) { coordinate= names(gm$d)[1] }
+  
+  #if (! coordinate %in% colnames(gm$d)){
+  #  return(NULL)
+  # }
+  
+  # get single column
+  L <- gm$d[,coordinate]
+  # assign rownames
+  if (is.null(dim(L))){
+    # single dimension vector
+    names(L) <- rownames(gm$d)
+  } else {
+    # multidimension vector use rownames
+    rownames(L) <- rownames(gm$d)  
+  }
+  return(L)
+}
 
 #' Mapper lense using first principle component
 #' @family lenses
