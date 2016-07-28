@@ -17,10 +17,13 @@ dashboardSidebar(
       menuItem("Data",       tabName = "data",       icon = icon("table")),
       menuItem("Parameters", tabName = "params",     icon = icon("sliders")),
       menuItem("Graph",      tabName = "graph",      icon = icon("eye")),
-      menuItem("Results",    tabName=  "resulttable",    icon = icon("bar-chart")),
+      # menuItem("Results",    tabName=  "resulttable",    icon = icon("bar-chart")),
       menuItem("Console",    tabName = "console",    icon = icon("terminal"))
+    ),
+    tags$div(align="center", style="position: absolute; bottom: 10%;
+    left:50%; margin-left:-25px;",
+      tags$img(src="http://cabs.msu.edu/toolkit/images/helmet/gif/Spartan-helmet-White-150-pxls.gif", height=50)
     )
-
   ),
   
 #############
@@ -114,6 +117,10 @@ dashboardBody(
               )
             ),
            column(width=2,
+              ## TODO add list of input parameters in smaller table    
+              box(uiOutput("gmParameters"), 
+                       title="Parameters", width=NULL, background="light-blue"),
+              
               valueBox(uiOutput("graphNodeCount"), 
                   subtitle="Nodes", icon = icon("circle-o"),
                   width=NULL, color="light-blue"),
@@ -146,8 +153,10 @@ dashboardBody(
               )
          )
          
-         ,bsModal("hypothesisTest", "KS Test", "runTest",size = "large",
-                  tableOutput("hypTestTable"))# end row
+         ,bsModal("hypothesisTest", "Hypothesis Testing of data in nodes by Group", "runTest",size = "large",
+                  tableOutput("hypTestTable"),
+                  tableOutput("varianceTable")
+                  ) # end row
       ),
       
       tabItem(tabName="console",
@@ -159,16 +168,17 @@ dashboardBody(
                     verbatimTextOutput("eval_output") )
               ),
               fluidRow(actionButton("eval", "Evaluate"))
-      ),
-      tabItem(tabName="resulttable",
-              p("")
+      )
+      #,
+      #tabItem(tabName="resulttable",
+      #        p("")
               #fluidRow(
               #  box(title="Hypothesis test",width=6,
               #      tableOutput("hypTestTable")),
               #  box(title="Group Data",width=6,
               #      tableOutput("varianceTable"))
               #)
-      )
+      #)
       
     ) # end of tabitems
     
