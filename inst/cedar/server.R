@@ -220,11 +220,11 @@ shinyServer(function(input, output, session) {
       return(kstable(gm))
             } )
   
-  output$hypTestTable <- renderTable({
-    testy()
-  }) 
+  output$hypTestTable <- renderTable({testy()}, caption=paste0("2-side Kolmogorov-Smirnov Test by node groups"),digits=7) 
   
-  output$varianceTable <- renderTable({varTable(gm)})
+  # TODO add reactivity to redraw when data changes..
+  
+  output$varianceTable <- renderTable({varTable(gm)}, caption=paste0("Std mean/variance of data in select nodes"),digits=4)
   
   ########### outputs
   output$dataname          <- renderText(input$dataSelection)
@@ -241,6 +241,14 @@ shinyServer(function(input, output, session) {
         input$runMapper
         gm$partition_count
         })
+
+  output$gmParameters  <- renderText({
+    input$runMapper
+    paste0("partitions: " , gm$partition_count, 
+           "<br/>overlap:", gm$overlap,
+           "<br/>bin count:", gm$bin_count)
+  })
+  
   output$gmOverlap   <- renderText({
               input$runMapper
               gm$overlap})
