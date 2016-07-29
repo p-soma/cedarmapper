@@ -161,7 +161,7 @@ shinyServer(function(input, output, session) {
     length(unlist(gm$groups[["2"]]))
   })
   
-  
+
 
   # graph widget, but only if the mapper object has been created via button
   output$cgplot <- renderCedarGraph({
@@ -189,7 +189,8 @@ shinyServer(function(input, output, session) {
     
     lense_fun <- lense.projection
     if(! is.null(input$lenseFunctionSelection)) {
-      fname = get(input$lenseFunctionSelection) 
+      # selected the string of function name, and 'get' the actual function identifier
+      fname = get(lenses[input$lenseFunctionSelection,]$fun)
       f = match.fun(fname)
       if (is.function(f)){ 
           lense_fun <- f
@@ -241,12 +242,18 @@ shinyServer(function(input, output, session) {
         gm$partition_count
         })
 
-  output$gmParameters  <- renderText({
+  # collect all the parameters into single HTML string for display and mapper is run
+  output$gmParameters  <- renderTable({
     input$runMapper
-    paste0("partitions: " , gm$partition_count, 
-           "<br/>overlap:", gm$overlap,
-           "<br/>bin count:", gm$bin_count,
-           "<br/>lense param:", gm$lenseparam)
+    data.frame( c(gm$partition_count, 
+                             gm$overlap,
+                             gm$bin_count,
+                             input$lenseFunctionSelection,
+                             gm$lenseparam,
+                             length(gm$nodes)),
+                row.names = c("partitions","overlap","bin count","filter","param","nodes")
+                )
+    
   })
   
   output$gmOverlap   <- renderText({
@@ -255,6 +262,29 @@ shinyServer(function(input, output, session) {
   
   output$gmBinCount <-  renderText({input$runMapper
                         gm$bin_count})
+  
+  
+  ### Lense/Filter parameter selection
+  # these functions lookup the info about the selected lense from global lense table, 
+  # which is built in the lense.functions file
+  # and creates custom input UI with labels based on lense table.  
+  # the 'renderUI' function is labelled as 'experimental' in the Shiny help 
+  
+  # reactively  look up the description of the lense functions when new function is selected
+  #lenseParamDescription <- reactive({
+  #  lenses[lenses$fun==input$lenseFunctionSelection,]$desc
+  # })
+  # build the textInput server side and send it to the UI
+  output$lenseParamInput <- renderUI(
+    # param_text = lenses[lenses$Name==input$lenseFunctionSelection,]$params
+    if( length(lenses[lenses$Name==input$lenseFunctionSelection,]$params)>0){
+          textInput("lenseParam", 
+              label = lenses[lenses$Name==input$lenseFunctionSelection,]$desc, 
+              placeholder=lenses[lenses$Name==input$lenseFunctionSelection,]$params)
+    } else {
+          p(lenses[lenses$Name==input$lenseFunctionSelection,]$desc)
+      }
+  )
   
   output$lensesigma <- renderText(input$lensesigma)
   # output from ACE code editor

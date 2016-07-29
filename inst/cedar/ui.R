@@ -64,13 +64,14 @@ dashboardBody(
                  h3("Data set:", textOutput("dataname",inline=TRUE),color="light-blue"),
                  selectInput("lenseFunctionSelection", label="Lense Function", 
                              choices = lenseChoices, selected = 1),
-                 conditionalPanel(condition = "input.lenseFunctionSelection == 'lense.projection'",
+                 
+                 conditionalPanel(condition = "input.lenseFunctionSelection == 'Projection'",
                         selectInput("filterVar", label = "Filtering Variable", 
                              choices = initVariableChoices, selected = 1)
                  ),
-                 conditionalPanel(condition = "input.lenseFunctionSelection != 'lense.projection'",
-                                  { p(lenses[lenses$fun=='lense.density',"params"])
-                                  textInput("lenseParam", label = "Filter Parameter")}
+                 conditionalPanel(condition = "input.lenseFunctionSelection != 'Projection'",
+                                   uiOutput("lenseParamInput") 
+                                  # textInput("lenseParam", label = lenses[input.lenseFunctionSelection,]$desc)}
                  ),
                  sliderInput("partitionCountSelection", label = "Number of Partitions", 
                              min=min(partitionCountChoices),max=max(partitionCountChoices), value=4,
@@ -121,9 +122,9 @@ dashboardBody(
               box(uiOutput("gmParameters"), 
                        title="Parameters", width=NULL, background="light-blue"),
               
-              valueBox(uiOutput("graphNodeCount"), 
-                  subtitle="Nodes", icon = icon("circle-o"),
-                  width=NULL, color="light-blue"),
+              #valueBox(uiOutput("graphNodeCount"), 
+              #    subtitle="Nodes", icon = icon("circle-o"),
+              #    width=NULL, color="light-blue"),
               
               valueBox(uiOutput("selectedNodeCount"), 
                   subtitle= "Selected Nodes", icon = icon("mouse-pointer"),

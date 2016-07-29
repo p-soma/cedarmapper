@@ -20,8 +20,8 @@ dataChoices           <- names(datasets)
 partitionCountChoices <- c(3:20)
 lenses = lense.table()
 
-lenseChoices <- lenses$fun
-names(lenseChoices) <- lenses$Name
+lenseChoices <- lenses$Name
+# names(lenseChoices) <- lenses$Name
 # <- c("single variable"="lense.projection","Density"="lense.density", "Eccentricity"="lense.eccentricity", "PCA"="lense.pca", "M distance"="lense.distance")
 
 # f = match.fun(lenses[1,"fun"])

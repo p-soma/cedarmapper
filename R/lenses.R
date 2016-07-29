@@ -13,7 +13,7 @@ lense.table <- function(){
       c("Name"="PCA",        "fun" =  "lense.pca", params="", desc="First principle Component"),
       c("Name"="Mahalanobis Distance", "fun" =  "lense.mahalanobis", params="", desc="Mahalanobis Distance"),
       c("Name"="Eccentricity", "fun" =  "lense.eccentricity", params="n = 1 or 2", desc="Eccentricity"), 
-      c("Name"="Density", "fun" =  "lense.density", params="sigma", desc="Topological Density of data points") 
+      c("Name"="Density", "fun" =  "lense.density", params="sigma=0.5 or 1", desc="Topological Density of data points") 
     )
   )
   
