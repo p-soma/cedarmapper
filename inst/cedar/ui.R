@@ -70,7 +70,7 @@ dashboardBody(
                  ),
                  conditionalPanel(condition = "input.lenseFunctionSelection != 'lense.projection'",
                                   { p(lenses[lenses$fun=='lense.density',"params"])
-                                  textInput("lenseParam", label = "")}
+                                  textInput("lenseParam", label = "Filter Parameter")}
                  ),
                  sliderInput("partitionCountSelection", label = "Number of Partitions", 
                              min=min(partitionCountChoices),max=max(partitionCountChoices), value=4,
@@ -162,12 +162,13 @@ dashboardBody(
       tabItem(tabName="console",
               fluidRow(
                 box(title="Enter R code",width=6,
+                    p(actionButton("eval", "Click to Evaluate")),
+                    hr(),
                     aceEditor("rcode", mode="r", value="names(gm)")
                     ),
                 box(title="R Output",width=6,
                     verbatimTextOutput("eval_output") )
-              ),
-              fluidRow(actionButton("eval", "Evaluate"))
+              )
       )
       #,
       #tabItem(tabName="resulttable",
