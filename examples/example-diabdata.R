@@ -15,10 +15,10 @@ lenseparam = 1.0
 
 gm  = graphmapper(dataset = chemdiab, 
                     lensefun = testlensefun, 
-                    partition_count=6, 
+                    partition_count=8, 
                     overlap = 0.5, 
                     lenseparam = lenseparam,
-                    bin_count=15 
+                    bin_count=20 
                   )
 
 # create distance matrix for all data manually
@@ -28,7 +28,7 @@ gm$clusters   = clusters.graphmapper(gm)
 gm$nodes      = nodes.graphmapper(gm)
 gm$adjmatrix  = adjacency.graphmapper(gm) 
 
-plot(graph.graphmapper(gm),main=paste0("Diabetes Data"))
+plot(graph.graphmapper(gm),main=paste0("Diabetes Data, Density function"),sub=paste0("paritions: ", gm$partition_count, ", overlap: ", gm$overlap))
 
 # select 2 disjoint  groups at random
 nodecount = length(gm$nodes)
