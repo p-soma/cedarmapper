@@ -113,12 +113,12 @@ lense.eccentricity <- function(gm, lenseparam=1){ # n = 1 or 2
 #' @family lenses
 #' @export
 lense.density <- function(gm, lenseparam=1.0){
-  #sigma <- lenseparam
-  sigma <- 1.0
+  sigma <- lenseparam
   d <- getdistance(gm)
   d.exp <- exp((-1 * (d^2)) / (2 * sigma^2))
   L <- (apply(as.matrix(d.exp),1,mean))
-  names(L) <- rownames(gm$d)
+
+  # names(L) <- rownames(gm$d)  # this is done in the partition function
   return(L)
 }
 
@@ -129,7 +129,7 @@ lense.density <- function(gm, lenseparam=1.0){
 # this is a stub currently that should save the distance matrix in the environment for re-reading
 #' @param gm
 #' @export
-getdistance <- function(gm,lenseparam=NULL) {
+getdistance <- function(gm) {
   if (is.null(gm[["distance"]])){
     return(dist(gm$d,method="euclidean", upper=FALSE))}
   else {
