@@ -73,6 +73,7 @@ dashboardBody(
                                    uiOutput("lenseParamInput") 
                                   # textInput("lenseParam", label = lenses[input.lenseFunctionSelection,]$desc)}
                  ),
+                 
                  sliderInput("partitionCountSelection", label = "Number of Partitions", 
                              min=min(partitionCountChoices),max=max(partitionCountChoices), value=4,
                              step=1),  

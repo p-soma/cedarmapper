@@ -10,8 +10,8 @@ lense.table <- function(){
   lenses = data.frame(
     rbind(
       c("Name"="Projection", "fun" =  "lense.projection", params="coordinate", desc="Selected Coordinate"), 
-      c("Name"="PCA",        "fun" =  "lense.pca", params="", desc="First principle Component"),
-      c("Name"="Mahalanobis Distance", "fun" =  "lense.mahalanobis", params="", desc="Mahalanobis Distance"),
+      c("Name"="PCA",        "fun" =  "lense.pca", params=NULL, desc="First principle Component"),
+      c("Name"="Mahalanobis Distance", "fun" =  "lense.mahalanobis", params=NULL, desc="Mahalanobis Distance"),
       c("Name"="Eccentricity", "fun" =  "lense.eccentricity", params="n = 1 or 2", desc="Eccentricity"), 
       c("Name"="Density", "fun" =  "lense.density", params="sigma=0.5 or 1", desc="Topological Density of data points") 
     )

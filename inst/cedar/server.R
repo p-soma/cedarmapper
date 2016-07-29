@@ -277,9 +277,9 @@ shinyServer(function(input, output, session) {
   # build the textInput server side and send it to the UI
   output$lenseParamInput <- renderUI(
     # param_text = lenses[lenses$Name==input$lenseFunctionSelection,]$params
-    if( length(lenses[lenses$Name==input$lenseFunctionSelection,]$params)>0){
+    if( length(lenses[input$lenseFunctionSelection,"params"])>0){
           textInput("lenseParam", 
-              label = lenses[lenses$Name==input$lenseFunctionSelection,]$desc, 
+              label = lenses[lenses$Name==input$lenseFunctionSelection,"desc"], 
               placeholder=lenses[lenses$Name==input$lenseFunctionSelection,]$params)
     } else {
           p(lenses[lenses$Name==input$lenseFunctionSelection,]$desc)
