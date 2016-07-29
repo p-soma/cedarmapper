@@ -18,30 +18,34 @@ library(cluster)
 
 #  single method to run all steps for graphmapper object
 #' @export
-makegraphmapper <- function(dataset, lensefun, partition_count=4, overlap = 0.5, cluster_method="single", lenseparam = NULL, bin_count=10, progressUpdater=NULL){
-  # create object with params 
-  gm = graphmapper(dataset, lensefun, partition_count, overlap, lenseparam, bin_count)
+makegraphmapper <- function(dataset, lensefun, partition_count=4, overlap = 0.5,  bin_count=10, lenseparam = NULL, progressUpdater=NULL){
+  # create object with the above params 
   
-  # for now, add the distance matrix to the object
-  # TODO replace with external data source
+  # default, TODO: determine if this is needed
+  cluster_method="single"
+  
+  gm <- graphmapper(dataset=dataset, 
+                    lensefun=lensefun, 
+                    partition_count=partition_count, 
+                    overlap = overlap, 
+                    cluster_method=cluster_method, 
+                    bin_count=bin_count, 
+                    lenseparam=lenseparam)
+  
+  # for now, add the entire distance matrix to the object
+  
   gm$distance = dist(gm$d,method="euclidean", upper=FALSE)
-  
-  # create partitions 
   gm$partitions = partition.graphmapper(gm)
-
-  # debug
-  # for(i in length(gm["partitions"])) {print(paste0("parition ", i, " sized ", length(gm["partitions"][[i]])))}
+  gm$clusters   = clusters.graphmapper(gm, cluster_method = cluster_method, shinyProgressFunction=progressUpdater ) 
+  gm$nodes      = nodes.graphmapper(gm)
+  gm$adjmatrix  = adjacency.graphmapper(gm) 
+  
+  
   
   # note, the progressUpdater construct is for ShinyApps and optional
-  gm[["clusters"]]   = clusters.graphmapper(gm, cluster_method = cluster_method, shinyProgressFunction=progressUpdater ) 
-  
-  # clusters.graphmapper<- function(gm, cluster_method = cluster_method, scaling=FALSE, shinyProgressFunction = NULL) {
-  
-  # create nodes from clusters 
-  gm[["nodes"]]     = nodes.graphmapper(gm)
-
-  # build links of overlapping nodes as an adjancy matrix
-  gm[["adjmatrix"]] = adjacency.graphmapper(gm) 
+  #gm[["clusters"]]   = 
+  #gm[["nodes"]]     = nodes.graphmapper(gm)    # create nodes from clusters 
+  # gm[["adjmatrix"]] = adjacency.graphmapper(gm) 
 
   return(gm)
   
@@ -150,6 +154,8 @@ partition.graphmapper <- function(gm) {
 #' @export
 clusters.graphmapper<- function(gm, cluster_method = "single", scaling=FALSE, shinyProgressFunction = NULL) {
   
+  # TODO: remove cluster_method param and use gm object variable; ensure gm object has this set...
+
   gmClusts = list() 
   npartition = length(gm$partitions)
   # loop through each partition
@@ -182,7 +188,7 @@ clusters.graphmapper<- function(gm, cluster_method = "single", scaling=FALSE, sh
     
     # if(DEBUG) {print(max(partition_dist))}
     # do standard clustering and cut 
-    partition_cluster <- hclust(partition_dist, method="single") 
+    partition_cluster <- hclust(partition_dist, method=cluster_method) 
     cluster_cutheight <- cut_function(partition_cluster$height,  max( partition_dist), gm$bin_count)
     gmClusts[[i]] <- cutree(partition_cluster, h=cluster_cutheight )
     
