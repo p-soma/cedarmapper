@@ -5,13 +5,9 @@ data(chemdiab)
 # current must remove the classification variable
 chemdiab  <- scale(subset(chemdiab, select = -c(cc)))
 
-#testlensefun = lense.density
-# lenseparam = 1.0
-
 # alternative, single var projection
-# testlensefun = simple_lense
+# lensefun = simple_lense,
 # lenseparam = names(chemdiab)[1]
-
 
 gm  <- makegraphmapper(dataset = chemdiab, 
                     lensefun = lense.density, 
@@ -20,13 +16,6 @@ gm  <- makegraphmapper(dataset = chemdiab,
                     lenseparam = 1.0,
                     bin_count=20 
                   )
-
-# create distance matrix for all data manually
-# gm$distance = dist(gm$d,method="euclidean", upper=FALSE)
-# gm$partitions = partition.graphmapper(gm)
-# gm$clusters   = clusters.graphmapper(gm)
-# gm$nodes      = nodes.graphmapper(gm)
-# gm$adjmatrix  = adjacency.graphmapper(gm) 
 
 plot(graph.graphmapper(gm),main=paste0("Diabetes Data, Density function"),sub=paste0("paritions: ", gm$partition_count, ", overlap: ", gm$overlap))
 

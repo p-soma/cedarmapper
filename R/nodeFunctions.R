@@ -31,22 +31,15 @@ makegraphmapper <- function(dataset, lensefun, partition_count=4, overlap = 0.5,
                     cluster_method=cluster_method, 
                     bin_count=bin_count, 
                     lenseparam=lenseparam)
-  
+  # notes:
   # for now, add the entire distance matrix to the object
+  # the progressUpdater construct is for ShinyApps and optional
+  gm$distance   <- dist(gm$d,method="euclidean", upper=FALSE)
+  gm$partitions <- partition.graphmapper(gm)
+  gm$clusters   <- clusters.graphmapper(gm, cluster_method = cluster_method, shinyProgressFunction=progressUpdater ) 
+  gm$nodes      <- nodes.graphmapper(gm)
+  gm$adjmatrix  <- adjacency.graphmapper(gm) 
   
-  gm$distance = dist(gm$d,method="euclidean", upper=FALSE)
-  gm$partitions = partition.graphmapper(gm)
-  gm$clusters   = clusters.graphmapper(gm, cluster_method = cluster_method, shinyProgressFunction=progressUpdater ) 
-  gm$nodes      = nodes.graphmapper(gm)
-  gm$adjmatrix  = adjacency.graphmapper(gm) 
-  
-  
-  
-  # note, the progressUpdater construct is for ShinyApps and optional
-  #gm[["clusters"]]   = 
-  #gm[["nodes"]]     = nodes.graphmapper(gm)    # create nodes from clusters 
-  # gm[["adjmatrix"]] = adjacency.graphmapper(gm) 
-
   return(gm)
   
 }
@@ -57,25 +50,22 @@ makegraphmapper <- function(dataset, lensefun, partition_count=4, overlap = 0.5,
 #' @export
 graphmapper <- function(dataset, lensefun, partition_count=4, overlap = 0.5, cluster_method="single", bin_count=10, lenseparam = NULL){
   # note: using as.numeric to convert arguments becuase Shiny inputs return strings
-  
-  
-  
   gm = structure(list(d = dataset, 
                       "partition_count"=as.numeric(partition_count), 
                       "overlap" = as.numeric(overlap),   # percent, o <= 1
                       "lensefun"=lensefun, 
                       "cluster_method"=cluster_method, 
-                      "lenseparam" = lenseparam,
+                      "lenseparam" = lenseparam,  # don't use as.numeric here, sometimes is variable name
                       "bin_count" = as.numeric(bin_count)),
                  class="graphmapper")
   
   rownames(dataset)<- 1:nrow(dataset)
-    gm$distance   = NULL
-    gm$partitions = NULL
-    gm$clusters   = NULL
-    gm$nodes      = NULL
-    gm$adjmatrix  = NULL
-    gm$groups     = list()
+    gm$distance   <- NULL
+    gm$partitions <- NULL
+    gm$clusters   <- NULL
+    gm$nodes      <- NULL
+    gm$adjmatrix  <- NULL
+    gm$groups     <- list()
     
   return(gm)
 }
