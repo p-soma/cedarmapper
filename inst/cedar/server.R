@@ -192,21 +192,20 @@ shinyServer(function(input, output, session) {
       fname = get(input$lenseFunctionSelection) 
       f = match.fun(fname)
       if (is.function(f)){ 
-        lense_fun <- f
-          if(input$lenseFunctionSelection == "lense.projection"){
-            lenseParam = input$filterVar
-        } else{
-            lenseParam = input$lenseParam
-        }
-          
-        }
+          lense_fun <- f
+          lenseParam <- as.numeric(input$lenseParam)
+          if(input$lenseFunctionSelection == "lense.projection"){lenseParam <- input$filterVar}
+      }
+      else {
+        # pop-up warning message; function doesn't exis
+        stop("error in filter function selection")
+      }
     }
     
-    partitionCount=as.numeric(input$partitionCountSelection)
     print(paste0("graphmapper param=",lenseParam," for ", input$lenseFunctionSelection))
     gm<<- makegraphmapper(dataset = d, 
                           lensefun = lense_fun, 
-                          partition_count=partitionCount,
+                          partition_count=as.numeric(input$partitionCountSelection),
                           overlap = as.numeric(input$overlapSelection)/100.0, 
                           lenseparam = lenseParam,
                           bin_count = as.numeric(input$binCountSelection),
@@ -246,7 +245,8 @@ shinyServer(function(input, output, session) {
     input$runMapper
     paste0("partitions: " , gm$partition_count, 
            "<br/>overlap:", gm$overlap,
-           "<br/>bin count:", gm$bin_count)
+           "<br/>bin count:", gm$bin_count,
+           "<br/>lense param:", gm$lenseparam)
   })
   
   output$gmOverlap   <- renderText({
