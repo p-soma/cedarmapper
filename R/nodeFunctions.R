@@ -86,40 +86,46 @@ graphmapper <- function(dataset, lensefun, partition_count=4, overlap = 0.5, clu
 partition.graphmapper <- function(gm) {
   if (class(gm) != "graphmapper") stop("partition: requires input of class graphmapper class")
   
-  # rename variables for readability
+  # rename parameters in ojbect for readability
   n <- gm$partition_count # num of partitions  
   o <- gm$overlap         # percent overlap
+
   
+  # apply the lense function and add names
   # L is vector of filtered values (1-d)
   # as a by product this may create the distance matrix ?
   # all we usually need is some way to obtain or calculate a distance matrix
-  L = gm$lensefun(gm, gm$lenseparam)
+  L <- gm$lensefun(gm, gm$lenseparam)
   
   # assume L is in same order as data, transfer row names to keep identity
   names(L) <- rownames(gm$d)
-
-  # partition length = linear distance
+  
+  
+  ### setup parameters for partitioning
   total_length = max(L) - min(L)
-  
+  # pl= partition length
   pl = total_length/(n - ((n-1)*o))
-  
-  # [0:(n-1)]
-  # pl 
   p0 = min(L)
-  partitions = list()
-  n = gm$partition_count
-  epsilon =  1e-15
-  # TODO: vectorise with plyr
-  for (i in 1:n) {
+
+  
+  ## get values for partition i; used by vectorized apply
+  partition_values = function(i){
     partition_start = p0 + (pl * (i - 1) * (1-o))  # offset== starting value is 1/2 partition size X parttion number
     partition_end   = partition_start + pl
-    partitions[[i]] = L[L >=  partition_start & L < partition_end ]
+    return(L[L >=  partition_start & L < partition_end ])
   }
   
+  ## test function used to remove empty partitions
+  non_empty = function(x) { length(x)>0}
+  
+  # TODO: parallelize with plyr
+  partitions = lapply(1:n,partition_values)
+
   # Note : here is a test that all rows have been included in at least one partition
   # if(nrow(gm$d) != length(unique(unlist(partitions)))) stop("partitioning does not include all rows")
   
-  return(partitions)
+  # return with all empty partitions returned
+  return(partitions[sapply(partitions, non_empty)])
 
 } 
 
