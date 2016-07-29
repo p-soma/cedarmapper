@@ -203,7 +203,7 @@ shinyServer(function(input, output, session) {
     }
     
     print(paste0("graphmapper param=",lenseParam," for ", input$lenseFunctionSelection))
-    gm<<- makegraphmapper(dataset = d, 
+    gm<<- makegraphmapper(dataset = scale(d), 
                           lensefun = lense_fun, 
                           partition_count=as.numeric(input$partitionCountSelection),
                           overlap = as.numeric(input$overlapSelection)/100.0, 

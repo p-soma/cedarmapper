@@ -131,7 +131,7 @@ lense.density <- function(gm, lenseparam=1.0){
 #' @export
 getdistance <- function(gm) {
   if (is.null(gm[["distance"]])){
-    return(dist(gm$d,method="euclidean", upper=FALSE))}
+    return(dist(scale(gm$d),method="euclidean", upper=FALSE))}
   else {
     return(gm$distance)
   }

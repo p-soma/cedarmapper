@@ -34,7 +34,7 @@ makegraphmapper <- function(dataset, lensefun, partition_count=4, overlap = 0.5,
   # notes:
   # for now, add the entire distance matrix to the object
   # the progressUpdater construct is for ShinyApps and optional
-  gm$distance   <- dist(gm$d,method="euclidean", upper=FALSE)
+  gm$distance   <- dist(scale(gm$d),method="euclidean", upper=FALSE)
   gm$partitions <- partition.graphmapper(gm)
   gm$clusters   <- clusters.graphmapper(gm, cluster_method = cluster_method, shinyProgressFunction=progressUpdater ) 
   gm$nodes      <- nodes.graphmapper(gm)
