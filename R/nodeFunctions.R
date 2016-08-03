@@ -377,9 +377,9 @@ is.varname <- function(gm, varname){
 guaranteedVarname <- function(gm,  varname=NULL){
   if(!is.graphmapper(gm)) return(NULL)
   
-  if (is.null(varname))   return(names(gm$d)[1])
+  if (is.null(varname))   return(colnames(gm$d)[1])
   
-  if( Reduce("&", (varname %in% names(gm$d)))) return(varname)
+  if( Reduce("&", (varname %in% colnames(gm$d)))) return(varname)
 
   return(names(gm$d)[1])
 }

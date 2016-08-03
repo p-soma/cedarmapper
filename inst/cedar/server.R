@@ -71,7 +71,7 @@ shinyServer(function(input, output, session) {
   
   # selectedVar ==> color and data exploration variable 
   selectedVar <- reactive({ 
-    if(is.null(input$selectedVar)){ v = names(selectedDataSet())[1]}
+    if(is.null(input$selectedVar)){ v = colnames(selectedDataSet())[1]}
     else{ v = input$selectedVar}
     return(v)
   })
@@ -83,8 +83,13 @@ shinyServer(function(input, output, session) {
   # there and the (D3.js) nodes are updated and recolored, etc
   observe({
     input$selectedVar
-    if (selectedVar() %in% names(gm$d)) {
+    print("var selected for node color")
+    print(selectedVar())
+    print(colnames(gm$d))
+    print(selectedVar() %in% colnames(gm$d))
+    if (selectedVar() %in% colnames(gm$d)) {
       vals =  nodePrep(gm, selectedVar())$values
+      print(vals)
       session$sendCustomMessage(type='nodevalues',message = vals)
     }
   })
@@ -176,6 +181,7 @@ shinyServer(function(input, output, session) {
   # button to create mapper, which takes a while
   observeEvent(input$runMapper, {
     updateTabItems(session, "tabs", selected = "graph")
+    
     progress <- shiny::Progress$new()
     progress$set(message = "Calculating Clustering", value = 0)
     on.exit(progress$close())
@@ -196,6 +202,8 @@ shinyServer(function(input, output, session) {
           lense_fun <- f
           lenseParam <- as.numeric(input$lenseParam)
           if(input$lenseFunctionSelection == "Projection"){lenseParam <- input$filterVar}
+          
+          # test for NA in lenseparam WHEN the lense needs a param
       }
       else {
         # pop-up warning message; function doesn't exis
