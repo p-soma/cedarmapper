@@ -7,15 +7,22 @@
 #' @export
 lense.table <- function(){
   options(stringsAsFactors = FALSE)
-  lenses = data.frame(
-    rbind(
-      c("Name"="Projection", "fun" =  "lense.projection", params="coordinate", desc="Selected Coordinate"), 
-      c("Name"="PCA",        "fun" =  "lense.pca", params=NULL, desc="First principle Component"),
-      c("Name"="Mahalanobis Distance", "fun" =  "lense.mahalanobis", params=NULL, desc="Mahalanobis Distance"),
-      c("Name"="Eccentricity", "fun" =  "lense.eccentricity", params="n = 1 or 2", desc="Eccentricity"), 
-      c("Name"="Density", "fun" =  "lense.density", params="sigma=0.5 or 1", desc="Topological Density of data points") 
-    )
+  lenses = data.frame("Name"="Projection", "fun" =  "lense.projection", params="coordinate", desc="Selected Coordinate")
+
+  lenses = data.frame(rbind(lenses,
+            data.frame("Name"="PCA",        "fun" =  "lense.pca", params="", desc="First principle Component"))
   )
+            
+  lenses = data.frame(rbind(lenses,
+            data.frame("Name"="Mahalanobis Distance", "fun" =  "lense.mahalanobis", params="", desc="Mahalanobis Distance"))
+  )
+  
+  lenses = data.frame(rbind(lenses,
+     data.frame("Name"="Eccentricity", "fun" =  "lense.eccentricity", params="n = 1 or 2", desc="Eccentricity")))
+  
+  lenses = data.frame(rbind(lenses,
+     data.frame("Name"="Density", "fun" =  "lense.density", params="sigma=0.5 or 1", desc="Topological Density of data points")))
+
   
   rownames(lenses) <- lenses[,"Name"]
 
@@ -76,7 +83,8 @@ lense.2dprojection <- function(gm,lenseparam=NULL ){
 #' @param none
 #' @export
 lense.pca <- function(gm,lenseparam=NULL) {
-  L = prcomp(d, retx=TRUE, center=TRUE, scale. = TRUE)
+  pca = prcomp(gm$d, retx=TRUE, center=TRUE, scale. = TRUE)
+  L = pca$x[,"PC1"]
   names(L) <- rownames(gm$d)
   return(L)
 }
