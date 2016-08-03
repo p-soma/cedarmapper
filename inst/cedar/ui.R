@@ -62,6 +62,8 @@ dashboardBody(
             column(width=4,
               box( title="Mapper Parameters", width=NULL, background ="light-blue",
                  h3("Data set:", textOutput("dataname",inline=TRUE),color="light-blue"),
+                 checkboxInput("normalizeOption", "Normalize Data?", value = TRUE, width = NULL),
+                 
                  selectInput("lenseFunctionSelection", label="Lense Function", 
                              choices = lenseChoices, selected = 1),
                  
@@ -127,38 +129,51 @@ dashboardBody(
               #    subtitle="Nodes", icon = icon("circle-o"),
               #    width=NULL, color="light-blue"),
               
-              valueBox(uiOutput("selectedNodeCount"), 
-                  subtitle= "Selected Nodes", icon = icon("mouse-pointer"),
-                  width=NULL, color="light-blue"),
-
               box(width=NULL,background="light-blue",
                   selectInput("selectedVar", label = "Color by:", 
-                            choices =  initVariableChoices)),
+                              choices =  initVariableChoices)
+                  
+              ),
               
+              box(uiOutput("selectedNodeCount"),
+                  actionButton("showHist", "Show selected"),
+                  title= "Selected Nodes",
+                  width=NULL, color="light-blue"),
               
-              box(width=NULL,background="light-blue",
-                  actionButton("grp1set",   "Set Group 1"),
-                  actionButton("grp1remove","Remove Nodes"),
-                  actionButton("grp1clear", "Reset"),
-                  p(textOutput("group1Count", inline = TRUE), " nodes")
-                  ),
-              
-              box(width=NULL,background="light-blue",
-                  actionButton("grp2set",   "Set Group 2"),
-                  actionButton("grp2remove","Remove Nodes"),
-                  actionButton("grp2clear", "Reset"),
-                  p(textOutput("group2Count", inline = TRUE), " nodes")
-                  ),
-              
-              box(width=NULL,background="black",
-                  actionButton("runTest", "Compare Groups"))
-              )
-         )
+              bsModal("valHist", "Histogram of Selected Nodes", "showHist", size = "large", plotOutput("nodeHist"))
+
+ 
+          )
+         ), # end of row1
+         fluidRow(
+           column(width=4,
+               box(width=NULL,background="light-blue",
+                   actionButton("grp1set",   "Set Group 1"),
+                   actionButton("grp1remove","Remove Nodes"),
+                   actionButton("grp1clear", "Reset"),
+                   p(textOutput("group1Count", inline = TRUE), " nodes")
+               )
+           ),
+           column(width=4,
+                  box(width=NULL,background="light-blue",
+                      div(style="display:inline-block",actionButton("grp2set",   "Set Group 2")),
+                      div(style="display:inline-block",actionButton("grp2remove","Remove Nodes")),
+                      div(style="display:inline-block",actionButton("grp2clear", "Reset")),
+                      p(textOutput("group2Count", inline = TRUE), " nodes")
+                 )
+           ),
+           column(width=2,
+             box(width=NULL,background="black",
+                 actionButton("runTest", "Compare Groups")
+                 )
+            )
+         
          
          ,bsModal("hypothesisTest", "Hypothesis Testing of data in nodes by Group", "runTest",size = "large",
                   tableOutput("hypTestTable"),
                   tableOutput("varianceTable")
-                  ) # end row
+                  )
+         ) # end row2
       ),
       
       tabItem(tabName="console",

@@ -18,7 +18,7 @@ library(cluster)
 
 #  single method to run all steps for graphmapper object
 #' @export
-makegraphmapper <- function(dataset, lensefun, partition_count=4, overlap = 0.5,  bin_count=10, cluster_method= 'single', lenseparam = NULL, progressUpdater=NULL){
+makegraphmapper <- function(dataset, lensefun, partition_count=4, overlap = 0.5,  bin_count=10, cluster_method= 'single', lenseparam = NULL, normalize_data=TRUE, progressUpdater=NULL){
   # create object with the above params 
 
   
@@ -28,11 +28,12 @@ makegraphmapper <- function(dataset, lensefun, partition_count=4, overlap = 0.5,
                     overlap = overlap, 
                     cluster_method=cluster_method, 
                     bin_count=bin_count, 
-                    lenseparam=lenseparam)
+                    lenseparam=lenseparam,
+                    normalize_data=normalize_data)
   # notes:
   # for now, add the entire distance matrix to the object
   # the progressUpdater construct is for ShinyApps and optional
-  gm$distance   <- dist(scale(gm$d),method="euclidean", upper=FALSE)
+  gm$distance   <- distance.graphmapper(gm,method="euclidean") # dist(scale(gm$d),method="euclidean", upper=FALSE)
   gm$partitions <- partition.graphmapper(gm)
   gm$clusters   <- clusters.graphmapper(gm, cluster_method = cluster_method, shinyProgressFunction=progressUpdater ) 
   gm$nodes      <- nodes.graphmapper(gm)
@@ -46,7 +47,7 @@ makegraphmapper <- function(dataset, lensefun, partition_count=4, overlap = 0.5,
 #' Constructor for graphmapper object to be used in mapper pipeline
 #' @return graphmapper object with all params needed for pipeline
 #' @export
-graphmapper <- function(dataset, lensefun, partition_count=4, overlap = 0.5, cluster_method="single", bin_count=10, lenseparam = NULL){
+graphmapper <- function(dataset, lensefun, partition_count=4, overlap = 0.5, cluster_method="single", bin_count=10, lenseparam = NULL,normalize_data=TRUE){
   # note: using as.numeric to convert arguments becuase Shiny inputs return strings
   gm = structure(list(d = dataset, 
                       "partition_count"=as.numeric(partition_count), 
@@ -54,7 +55,8 @@ graphmapper <- function(dataset, lensefun, partition_count=4, overlap = 0.5, clu
                       "lensefun"=lensefun, 
                       "cluster_method"=cluster_method, 
                       "lenseparam" = lenseparam,  # don't use as.numeric here, sometimes is variable name
-                      "bin_count" = as.numeric(bin_count)),
+                      "bin_count" = as.numeric(bin_count),
+                      "normalize_data" = normalize_data),
                  class="graphmapper")
   
   rownames(dataset)<- 1:nrow(dataset)
@@ -68,7 +70,18 @@ graphmapper <- function(dataset, lensefun, partition_count=4, overlap = 0.5, clu
   return(gm)
 }
 
-
+distance.graphmapper <- function(gm, method="euclidean") {
+  if ( gm$normalize_data ) {
+    d = scale(gm$d) 
+    }
+  else {
+    d = gm$d
+  }
+  
+  dist(d,method="euclidean", upper=FALSE)
+  
+}
+  
 #' partition a graphmapper object dataset by reducing dimensions via lense or filter function
 #' lense function must be defined in the graphmapper object, and must return vector with 
 #' rownames preserved

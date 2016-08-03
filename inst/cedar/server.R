@@ -83,16 +83,32 @@ shinyServer(function(input, output, session) {
   # there and the (D3.js) nodes are updated and recolored, etc
   observe({
     input$selectedVar
-    print("var selected for node color")
-    print(selectedVar())
-    print(colnames(gm$d))
     print(selectedVar() %in% colnames(gm$d))
     if (selectedVar() %in% colnames(gm$d)) {
-      vals =  nodePrep(gm, selectedVar())$values
-      print(vals)
+      vals = nodePrep(gm,selectedVar())$values
       session$sendCustomMessage(type='nodevalues',message = vals)
     }
   })
+  
+  histVals <- reactive({
+      input$showHist
+      if(!is.null(input$nodelist)){
+        nodedata(gm, as.numeric(input$nodelist), varname)
+      } else {
+        c(0)
+      }
+    })
+    
+    output$nodeHist <- renderPlot({
+
+          hist(
+               nodePrep(gm,selectedVar())$values, 
+              main="Data from Selected Nodes",
+              ylab="Frequency",
+              xlab=paste0("data for ",selectedVar() )
+              )
+    })
+
   
   # javascript => server
   # input$nodelist is created by the Javascript HTMLWidget on selection events
@@ -211,13 +227,14 @@ shinyServer(function(input, output, session) {
       }
     }
     
-    print(paste0("graphmapper param=",lenseParam," for ", input$lenseFunctionSelection))
+    print(paste0("graphmapper normalize=", input$normalizeOption, ", param=",lenseParam," for ", input$lenseFunctionSelection))
     gm<<- makegraphmapper(dataset = scale(d), 
                           lensefun = lense_fun, 
                           partition_count=as.numeric(input$partitionCountSelection),
                           overlap = as.numeric(input$overlapSelection)/100.0, 
                           lenseparam = lenseParam,
                           bin_count = as.numeric(input$binCountSelection),
+                          normalize_data = input$normalizeOption,
                           progressUpdater = NULL)  #updateProgress
     
     return(gm)
