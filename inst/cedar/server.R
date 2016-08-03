@@ -195,7 +195,7 @@ shinyServer(function(input, output, session) {
       if (is.function(f)){ 
           lense_fun <- f
           lenseParam <- as.numeric(input$lenseParam)
-          if(input$lenseFunctionSelection == "lense.projection"){lenseParam <- input$filterVar}
+          if(input$lenseFunctionSelection == "Projection"){lenseParam <- input$filterVar}
       }
       else {
         # pop-up warning message; function doesn't exis
@@ -245,7 +245,7 @@ shinyServer(function(input, output, session) {
   # collect all the parameters into single HTML string for display and mapper is run
   output$gmParameters  <- renderTable({
     input$runMapper
-    data.frame( c(gm$partition_count, 
+    data.frame( "P" = c(gm$partition_count, 
                              gm$overlap,
                              gm$bin_count,
                              input$lenseFunctionSelection,
@@ -254,7 +254,8 @@ shinyServer(function(input, output, session) {
                 row.names = c("partitions","overlap","bin count","filter","param","nodes")
                 )
     
-  })
+    
+  },include.colnames = FALSE)
   
   output$gmOverlap   <- renderText({
               input$runMapper
@@ -277,12 +278,13 @@ shinyServer(function(input, output, session) {
   # build the textInput server side and send it to the UI
   output$lenseParamInput <- renderUI(
     # param_text = lenses[lenses$Name==input$lenseFunctionSelection,]$params
-    if( length(lenses[input$lenseFunctionSelection,"params"])>0){
+
+    if( (lenses[input$lenseFunctionSelection,]$params)  != ""){
           textInput("lenseParam", 
               label = lenses[lenses$Name==input$lenseFunctionSelection,"desc"], 
               placeholder=lenses[lenses$Name==input$lenseFunctionSelection,]$params)
     } else {
-          p(lenses[lenses$Name==input$lenseFunctionSelection,]$desc)
+          p("No parameter needed")  # lenses[lenses$Name==input$lenseFunctionSelection,]$desc
       }
   )
   
