@@ -18,11 +18,9 @@ library(cluster)
 
 #  single method to run all steps for graphmapper object
 #' @export
-makegraphmapper <- function(dataset, lensefun, partition_count=4, overlap = 0.5,  bin_count=10, lenseparam = NULL, progressUpdater=NULL){
+makegraphmapper <- function(dataset, lensefun, partition_count=4, overlap = 0.5,  bin_count=10, cluster_method= 'single', lenseparam = NULL, progressUpdater=NULL){
   # create object with the above params 
-  
-  # default, TODO: determine if this is needed
-  cluster_method="single"
+
   
   gm <- graphmapper(dataset=dataset, 
                     lensefun=lensefun, 
@@ -170,6 +168,7 @@ clusters.graphmapper<- function(gm, cluster_method = "single", scaling=FALSE, sh
     
     # debug 
     # print(gm$partitions[[i]])
+
     rowset = gm$d[names(gm$partitions[[i]]),] 
     
     # calculate distance matrix for this partition
