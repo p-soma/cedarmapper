@@ -18,10 +18,10 @@ lense.table <- function(){
   )
   
   lenses = data.frame(rbind(lenses,
-     data.frame("Name"="Eccentricity", "fun" =  "lense.eccentricity", params="n = 1 or 2", desc="Eccentricity")))
+     data.frame("Name"="Eccentricity", "fun" =  "lense.eccentricity", params="a positive integer 1 or 2", desc="Exponent")))
   
   lenses = data.frame(rbind(lenses,
-     data.frame("Name"="Density", "fun" =  "lense.density", params="sigma=0.5 or 1", desc="Topological Density of data points")))
+     data.frame("Name"="Density", "fun" =  "lense.density", params="sigma=0.5 or 1", desc="Point-wise Gaussian kernel width")))
 
   
   rownames(lenses) <- lenses[,"Name"]
