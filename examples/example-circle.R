@@ -1,19 +1,26 @@
 #' Example of using graph mapper with synthetic circular data
 #' 
-circle.graphmapper<- function(npoints=100, randomize=FALSE) {
-  gm= makegraphmapper(circle_data(1, npoints,randomize=randomize), lensefun=lense.projection, lenseparam="X", partition_count=4, overlap = 0.5,bin_count=10)
+circle.graphmapper<- function(npoints=1000, randomize=TRUE) {
+  gm= graphmapper(circle_data(1, npoints,randomize=randomize), lensefun=lense.density, lenseparam=1, partition_count=6, overlap = 0.5,bin_count=10)
+  gm$distance   <- dist(scale(gm$d),method="euclidean", upper=FALSE)
+  gm$partitions <- partition.graphmapper(gm)
+  print ( gm$partitions)
+  gm$clusters   <- clusters.graphmapper(gm, cluster_method = cluster_method, shinyProgressFunction=progressUpdater ) 
+  gm$nodes      <- nodes.graphmapper(gm)
+  
+  gm$adjmatrix  <- adjacency.graphmapper(gm) 
   return(gm)
 }
 
 
 # example 1, 100 points
 gm = circle.graphmapper()
-plot(graph.graphmapper(gm), main = "Circle data, 100 points")
-
-cat ("Press [enter] to run Mapper on 1000 points")
-line <- readline()
-gm = circle.graphmapper(1000,randomize=TRUE)
 plot(graph.graphmapper(gm), main = "Circle data, 1000 points")
+
+#cat ("Press [enter] to run Mapper on 1000 points")
+#line <- readline()
+#gm = circle.graphmapper(1000,randomize=TRUE)
+#plot(graph.graphmapper(gm), main = "Circle data, 1000 points")
 
 
 

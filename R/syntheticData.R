@@ -6,11 +6,13 @@
 #' @export
 circle_data <- function(r=1, n=60, randomize=FALSE) {
   if (randomize){
-    angles = (runif(n, -1*r, 1*r)) * pi
+    angles = rnorm(n,0, sqrt(pi/2))
+    # angles = (runif(n, -1*r, 1*r)) * pi
   } else {
     # evenly spaced arcs
     angles = (0:(n-1))*2*(pi/n)    
   }
+  
   
   d = data.frame(X=cos(angles)*r, Y=sin(angles)*r)
   # add an ID number - obsoleted; use rownames instead
