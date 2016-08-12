@@ -14,7 +14,7 @@ lense.table <- function(){
   )
             
   lenses = data.frame(rbind(lenses,
-            data.frame("Name"="Mahalanobis Distance", "fun" =  "lense.mahalanobis", params="", desc="Mahalanobis Distance"))
+            data.frame("Name"="Mahalanobis Distance", "fun" =  "lense.mahalanobis", params="", desc=""))
   )
   
   lenses = data.frame(rbind(lenses,
@@ -23,11 +23,26 @@ lense.table <- function(){
   lenses = data.frame(rbind(lenses,
      data.frame("Name"="Density", "fun" =  "lense.density", params="sigma=0.5 or 1", desc="Point-wise Gaussian kernel width")))
 
+  lenses = data.frame(rbind(lenses,
+     data.frame("Name"="Constant", "fun" =  "lense.constant", params="", desc=" ")))
   
   rownames(lenses) <- lenses[,"Name"]
 
   return(lenses)
 }
+
+#' Mapper lense that returns a constant.  This not affect partitioning; all items go into the first partition
+#' @family lenses 
+#' @param none
+#' @returns constant 0
+#' @export
+lense.constant <- function(gm,lenseparam = NULL){
+  c <- 0
+  L <- rep(c,times = nrow(gm$d))
+  names(L) <- rownames(gm$d)
+  return(L)
+}
+
 
 #' Mapper lense using one or more colummns of data, e.g projection by coordinate(s)
 #' @family lenses
@@ -39,9 +54,9 @@ lense.projection <- function(gm,lenseparam=NULL ){
   # returns a vector variable, defaults to the first column
   if (is.null(coordinate)) { coordinate= names(gm$d)[1] }
   
-  if (! coordinate %in% colnames(gm$d)){
-    return(NULL)
-  }
+#  if (! coordinate %in% colnames(gm$d)){
+#    return(NULL)
+#  }
   
   # get single column
   L <- gm$d[,coordinate]
