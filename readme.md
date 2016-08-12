@@ -16,7 +16,7 @@ Clone and install both https://gitlab.msu.edu/billspat/cedargraph and  https://g
 
 Once cloned open each in R or R studio.   ( can use  *.Rproj files for R studio).    Then, for each, use 
 
-devtools::install()
+    devtools::install()
 
 To install the libraries.  
 
@@ -44,7 +44,7 @@ To run examples in R, open examples folder and run our source the examples.   Gr
 
 To run Cedar shiny application, and either use command 
 
-  shiny::runApp('inst/cedar')
+   shiny::runApp('inst/cedar')
   
 or open on of global.R, server.R or ui.R  in inst/cedar, and click the "run app" green triangle button in Rstudio.  Requires Rstudio to run.  
 
