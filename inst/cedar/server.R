@@ -49,7 +49,7 @@ shinyServer(function(input, output, session) {
     datasets[[dataName]] <<- newData
     dataChoices <<- names(datasets)
     updateSelectInput(session, inputId = "dataSelection",choices = names(datasets))
-    
+    updateCollapse(session, "uploadDataCollapse", close = "Click to Upload Data")
   })
   
   

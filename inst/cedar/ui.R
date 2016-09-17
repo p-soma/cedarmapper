@@ -39,7 +39,7 @@ dashboardBody(
             valueBox(width=2, subtitle="variables", value = textOutput("dataVarCount",inline=TRUE),color='black'),
             
             box(width=5, 
-            bsCollapse(id = "collapseExample", open = "Panel 1", 
+            bsCollapse(id = "uploadDataCollapse",  
             bsCollapsePanel("Click to Upload Data",
               box(                                                                   
             
