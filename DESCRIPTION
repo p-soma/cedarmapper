@@ -7,21 +7,22 @@ Authors@R: person("P", "Bills", email = "billspat@msu.edu", role = c("aut", "cre
 Description: visualization of topo data analysis
 License: file LICENSE
 Depends:
-    R (>= 2.15),
+    R (>= 3.3.0),
     cedargraph (>= 0.0.2),
     cluster (>= 2.0.0),
     NbClust (>= 3.0),
     plyr(>= 1.8.0),
     igraph(>= 1.0),
     ggplot2(>= 2.0),
-    gtable(>= 0.2.0)
+    gtable(>= 0.2.0),
     shiny (>= 0.13),
     shinydashboard (>= 0.5.1),
     htmlwidgets(>= 0.6), 
     V8(>= 1.0),
     DT(>= 0.1),
     shinyAce(>= 0.2.1),
-    shinyBS(>= 0.60)
+    shinyBS(>= 0.60),
+    yaml(>= 2.1)
 Suggests:
     fastcluster,
     knitr,
