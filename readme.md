@@ -68,17 +68,20 @@ During development some required libraries may not have been ommitted from the D
 Use
 ---
 
-Open the Cedar project folder in Rstudio, or open the cedar.Rproj file.    
+Open the Cedar project folder in Rstudio, or open the cedar.Rproj file which will open the project in Rstudio.    
 
 To run examples in R, open examples folder and run our source the examples.   Graphs are displayed using iGraph. 
 
-To run Cedar shiny application, and either use command 
+To run the Cedar shiny application, and either use command 
 
    shiny::runApp('inst/cedar')
   
-or open on of global.R, server.R or ui.R  in inst/cedar, and click the "run app" green triangle button in Rstudio.  Requires Rstudio to run.  
+or open one of the following files that are in the inst/cedar folder: global.R, server.R or ui.R, then when opened, click the "run app" green triangle button in Rstudio.  Requires Rstudio to run.  
+Note that the CedarGraph D3 javascript visualization code doesn't work in the internal Rstudio browswer.  The app will run but the graph won't display.   If you open in external browser (any of Firefox, Safari, or Chrome) the graph should display.   
 
-Common source of problems are libraries that have not been install.   Identifying those for new users will require more testing. 
+A Common source of problems is that the required libraries that have not been installed in your Rstudio.  If you get an error that a library is required, you may have to install it manually (using the pacakges feature of Rstudio).
+
+
 
 Data
 ----
