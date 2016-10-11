@@ -12,10 +12,6 @@ lense.table <- function(){
   lenses = data.frame(rbind(lenses,
             data.frame("Name"="PCA",        "fun" =  "lense.pca", params="", desc="First principle Component"))
   )
-            
-  lenses = data.frame(rbind(lenses,
-            data.frame("Name"="Mahalanobis Distance", "fun" =  "lense.mahalanobis", params="", desc=""))
-  )
   
   lenses = data.frame(rbind(lenses,
      data.frame("Name"="Eccentricity", "fun" =  "lense.eccentricity", params="a positive integer 1 or 2", desc="Exponent")))
@@ -103,17 +99,6 @@ lense.pca <- function(gm,lenseparam=NULL) {
   names(L) <- rownames(gm$d)
   return(L)
 }
-
-
-#' Mapper lense calculating the Mahalanobis distance'
-#' @param gm GraphMapper object
-#' @export
-lense.mahalanobis <- function(gm,lenseparam=NULL) {
-  L=mahalanobis( scale(gm$d, center=TRUE,scale=TRUE ), center=colMeans(gm$d), cov=cov(gm$d))
-  names(L) <- rownames(gm$d)
-  return(L)
-}
-
 
 
 #' Eccentrity value of each row of data
