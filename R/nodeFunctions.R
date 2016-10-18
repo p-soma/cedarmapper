@@ -441,7 +441,8 @@ adjacency.graphmapper<- function(gm) {
   # shorten the name
   nodes = gm$nodes
   
-  # no need to check for overlap if only one node
+  # special case if only one node, adjmat will always be 1x1 with value 0
+  # no need to check for overlap
   if (length(nodes) == 1){
     adjmat <- matrix(0)
   } else {

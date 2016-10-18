@@ -15,7 +15,7 @@ datasets[["Spiral"]] <- spiral_data(200)
 
 
 ####### starting values
-dataChoices <- names(datasets)
+dataChoices           <- names(datasets)
 
 # mapper 
 partitionCountChoices <- c(1:20)
