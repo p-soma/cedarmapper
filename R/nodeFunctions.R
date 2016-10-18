@@ -120,10 +120,10 @@ partition.graphmapper <- function(gm) {
   
   ### setup parameters for partitioning
   total_length = max(L) - min(L)
-  
+
   # special case if filter only contains one value for all points
   # create one partition to fill with all filter values
-  if (total_length == 0) {
+  if (total_length < 1e-15) {
     gm$partition_count = 1
     return(list(L))
   } else {
