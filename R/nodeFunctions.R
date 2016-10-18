@@ -120,6 +120,9 @@ partition.graphmapper <- function(gm) {
   
   ### setup parameters for partitioning
   total_length = max(L) - min(L)
+  
+  # special case if filter only contains one value for all points
+  # create one partition to fill with all filter values
   if (total_length == 0) {
     gm$partition_count = 1
     return(list(L))
@@ -434,24 +437,30 @@ adjacency.graphmapper<- function(gm) {
     # TODO: create an edge list instead and call it 
     # TODO: 
     # gm$edges <- findedges.graphmapper(gm)
-
+  
   # shorten the name
   nodes = gm$nodes
-  # function that tells if there is overlapping rows of data
-  detect_overlap <- function(a,b) { length(intersect(nodes[[a]], nodes[[b]])) }
   
-  adjmat <- matrix(0, ncol = length(nodes), nrow = length(nodes))
-  colnames(adjmat) <- rownames(adjmat) <- names(nodes)
-  for(i in 1:nrow(adjmat)) {
-    for(j in 1:ncol(adjmat)) {
-      if (i == j) {
-        adjmat[i,j] = 0
-      } else {adjmat[i,j] <- detect_overlap(i,j)}
+  # no need to check for overlap if only one node
+  if (length(nodes) == 1){
+    adjmat <- matrix(0)
+  } else {
+    # function that tells if there is overlapping rows of data
+    detect_overlap <- function(a,b) { length(intersect(nodes[[a]], nodes[[b]])) }
+    
+    adjmat <- matrix(0, ncol = length(nodes), nrow = length(nodes))
+    colnames(adjmat) <- rownames(adjmat) <- names(nodes)
+    for(i in 1:nrow(adjmat)) {
+      for(j in 1:ncol(adjmat)) {
+        if (i == j) {
+          adjmat[i,j] = 0
+        } else {adjmat[i,j] <- detect_overlap(i,j)}
+      }
     }
+    
+    # return only upper matrix (undirected graph)
+    adjmat[lower.tri(adjmat)] <- 0
   }
-  
-  # return only upper matrix (undirected graph)
-  adjmat[lower.tri(adjmat)] <- 0
   return(adjmat)
 }
 
