@@ -15,10 +15,10 @@ datasets[["Spiral"]] <- spiral_data(200)
 
 
 ####### starting values
-dataChoices           <- names(datasets)
+dataChoices <- names(datasets)
 
 # mapper 
-partitionCountChoices <- c(3:20)
+partitionCountChoices <- c(1:20)
 lenses = lense.table()
 
 lenseChoices <- lenses$Name

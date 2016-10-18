@@ -120,31 +120,36 @@ partition.graphmapper <- function(gm) {
   
   ### setup parameters for partitioning
   total_length = max(L) - min(L)
-  # pl= partition length
-  pl = total_length/(n - ((n-1)*o))
-  p0 = min(L)
+  if (total_length == 0) {
+    gm$partition_count = 1
+    return(list(L))
+  } else {
+    # pl= partition length
+    pl = total_length/(n - ((n-1)*o))
+    p0 = min(L)
   
+    
+    ## get values for partition i; used by vectorized apply
+    partition_values = function(i){
+      partition_start = p0 + (pl * (i - 1) * (1-o))  # offset== starting value is 1/2 partition size X parttion number
+      partition_end   = partition_start + pl
+      return(L[L >=  partition_start & L < partition_end ])
+    }
+    
+    ## test function used to remove empty partitions
+    non_empty = function(x) { length(x)>0}
+    
+    # TODO: parallelize with plyr llply?
+    partitions = lapply(1:n,partition_values)
   
-  ## get values for partition i; used by vectorized apply
-  partition_values = function(i){
-    partition_start = p0 + (pl * (i - 1) * (1-o))  # offset== starting value is 1/2 partition size X parttion number
-    partition_end   = partition_start + pl
-    return(L[L >=  partition_start & L < partition_end ])
-  }
-  
-  ## test function used to remove empty partitions
-  non_empty = function(x) { length(x)>0}
-  
-  # TODO: parallelize with plyr llply?
-  partitions = lapply(1:n,partition_values)
+    # Note : here is a test that all rows have been included in at least one partition
+    # if(nrow(gm$d) != length(unique(unlist(partitions)))) stop("partitioning does not include all rows")
+    
+    # return with all empty partitions returned
+    return(partitions[sapply(partitions, non_empty)])
 
-  # Note : here is a test that all rows have been included in at least one partition
-  # if(nrow(gm$d) != length(unique(unlist(partitions)))) stop("partitioning does not include all rows")
-  
-  # return with all empty partitions returned
-  return(partitions[sapply(partitions, non_empty)])
-
-} 
+  } 
+}
 
 partition2d.graphmapper <- function(gm) {
   if (class(gm) != "graphmapper") stop("partition: requires input of class graphmapper class")
