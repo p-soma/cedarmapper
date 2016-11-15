@@ -120,31 +120,39 @@ partition.graphmapper <- function(gm) {
   
   ### setup parameters for partitioning
   total_length = max(L) - min(L)
-  # pl= partition length
-  pl = total_length/(n - ((n-1)*o))
-  p0 = min(L)
-  
-  
-  ## get values for partition i; used by vectorized apply
-  partition_values = function(i){
-    partition_start = p0 + (pl * (i - 1) * (1-o))  # offset== starting value is 1/2 partition size X parttion number
-    partition_end   = partition_start + pl
-    return(L[L >=  partition_start & L < partition_end ])
-  }
-  
-  ## test function used to remove empty partitions
-  non_empty = function(x) { length(x)>0}
-  
-  # TODO: parallelize with plyr llply?
-  partitions = lapply(1:n,partition_values)
 
-  # Note : here is a test that all rows have been included in at least one partition
-  # if(nrow(gm$d) != length(unique(unlist(partitions)))) stop("partitioning does not include all rows")
+  # special case if filter only contains one value for all points
+  # create one partition to fill with all filter values
+  if (total_length < 1e-15) {
+    gm$partition_count = 1
+    return(list(L))
+  } else {
+    # pl= partition length
+    pl = total_length/(n - ((n-1)*o))
+    p0 = min(L)
   
-  # return with all empty partitions returned
-  return(partitions[sapply(partitions, non_empty)])
+    
+    ## get values for partition i; used by vectorized apply
+    partition_values = function(i){
+      partition_start = p0 + (pl * (i - 1) * (1-o))  # offset== starting value is 1/2 partition size X parttion number
+      partition_end   = partition_start + pl
+      return(L[L >=  partition_start & L < partition_end ])
+    }
+    
+    ## test function used to remove empty partitions
+    non_empty = function(x) { length(x)>0}
+    
+    # TODO: parallelize with plyr llply?
+    partitions = lapply(1:n,partition_values)
+  
+    # Note : here is a test that all rows have been included in at least one partition
+    # if(nrow(gm$d) != length(unique(unlist(partitions)))) stop("partitioning does not include all rows")
+    
+    # return with all empty partitions returned
+    return(partitions[sapply(partitions, non_empty)])
 
-} 
+  } 
+}
 
 partition2d.graphmapper <- function(gm) {
   if (class(gm) != "graphmapper") stop("partition: requires input of class graphmapper class")
@@ -429,24 +437,31 @@ adjacency.graphmapper<- function(gm) {
     # TODO: create an edge list instead and call it 
     # TODO: 
     # gm$edges <- findedges.graphmapper(gm)
-
+  
   # shorten the name
   nodes = gm$nodes
-  # function that tells if there is overlapping rows of data
-  detect_overlap <- function(a,b) { length(intersect(nodes[[a]], nodes[[b]])) }
   
-  adjmat <- matrix(0, ncol = length(nodes), nrow = length(nodes))
-  colnames(adjmat) <- rownames(adjmat) <- names(nodes)
-  for(i in 1:nrow(adjmat)) {
-    for(j in 1:ncol(adjmat)) {
-      if (i == j) {
-        adjmat[i,j] = 0
-      } else {adjmat[i,j] <- detect_overlap(i,j)}
+  # special case if only one node, adjmat will always be 1x1 with value 0
+  # no need to check for overlap
+  if (length(nodes) == 1){
+    adjmat <- matrix(0)
+  } else {
+    # function that tells if there is overlapping rows of data
+    detect_overlap <- function(a,b) { length(intersect(nodes[[a]], nodes[[b]])) }
+    
+    adjmat <- matrix(0, ncol = length(nodes), nrow = length(nodes))
+    colnames(adjmat) <- rownames(adjmat) <- names(nodes)
+    for(i in 1:nrow(adjmat)) {
+      for(j in 1:ncol(adjmat)) {
+        if (i == j) {
+          adjmat[i,j] = 0
+        } else {adjmat[i,j] <- detect_overlap(i,j)}
+      }
     }
+    
+    # return only upper matrix (undirected graph)
+    adjmat[lower.tri(adjmat)] <- 0
   }
-  
-  # return only upper matrix (undirected graph)
-  adjmat[lower.tri(adjmat)] <- 0
   return(adjmat)
 }
 

@@ -46,6 +46,7 @@ shinyServer(function(input, output, session) {
     dataName = input$newDataName
     newData <- read.csv(inFile$datapath, header = input$header,
              sep = input$sep, quote = input$quote, stringsAsFactors = FALSE)
+    
     datasets[[dataName]] <<- newData
     dataChoices <<- names(datasets)
     updateSelectInput(session, inputId = "dataSelection",choices = names(datasets))
@@ -228,7 +229,7 @@ shinyServer(function(input, output, session) {
     }
     
     print(paste0("graphmapper normalize=", input$normalizeOption, ", param=",lenseParam," for ", input$lenseFunctionSelection))
-    gm<<- makegraphmapper(dataset = scale(d), 
+    gm<<- makegraphmapper(dataset = as.data.frame(scale(d)), 
                           lensefun = lense_fun, 
                           partition_count=as.numeric(input$partitionCountSelection),
                           overlap = as.numeric(input$overlapSelection)/100.0, 
