@@ -269,8 +269,9 @@ shinyServer(function(input, output, session) {
         })
 
   # collect all the parameters into single HTML string for display and mapper is run
-  output$gmParameters  <- renderTable({
-    input$runMapper
+  output$gmParameters  <- renderTable(
+    # this is expression to render; include the input button here to trigger reactive
+    {input$runMapper
     data.frame( "P" = c(gm$partition_count, 
                              gm$overlap,
                              gm$bin_count,
@@ -278,10 +279,9 @@ shinyServer(function(input, output, session) {
                              gm$lenseparam,
                              length(gm$nodes)),
                 row.names = c("partitions","overlap","bin count","filter","param","nodes")
-                )
-    
-    
-  },include.colnames = FALSE)
+                )}, 
+    # parameters to renderTable to control what is output
+    colnames = FALSE,rowname = TRUE,align='l' )
   
   output$gmOverlap   <- renderText({
               input$runMapper
