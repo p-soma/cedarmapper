@@ -1,6 +1,8 @@
 # mapper.R
 # This is the main mapper object and  pipeline 
-
+# WORK IN PROGRESS lense object for dimensions > 1
+# notes: don't set the number of dimensions, instead simply run each lense in the 
+# list of lenses, so essentially dismensions= length(lenses)
 #' @import cluster
 
 #library(igraph)
@@ -14,56 +16,48 @@ library(cluster)
 # to install the above requires 'Hmisc' which requires binary install on Mac
 # see https://cran.r-project.org/web/packages/Hmisc/index.html 
 
-#  single method to run all steps for mapper object
+
+#' object structure for lenses (filters) to build dimensional cover, one lense per dimension
+#' @param lensefun A function to reduce dimensionality of dataframe
+#' @param partition_count A postive integer number of partitions to create
+#' @param overlap The percent the partitions overlap as decimal value, default 0.5
+#' @return lense object for a single dimension of the covering
 #' @export
-makemapper <- function(dataset, lensefun, partition_count=4, overlap = 0.5,  
-                            bin_count=10, cluster_method= 'single', lenseparam = NULL, 
-                            normalize_data=TRUE, dimensions = 1, progressUpdater=NULL){
-  # create object with the above params 
-
-  
-  gm <- mapper(dataset=dataset, 
-                    lensefun=lensefun, 
-                    partition_count=partition_count, 
-                    overlap = overlap, 
-                    cluster_method=cluster_method, 
-                    bin_count=bin_count, 
-                    lenseparam=lenseparam,
-                    normalize_data=normalize_data,
-                    dimensions = dimensions)
-  # notes:
-  # for now, add the entire distance matrix to the object
-  # the progressUpdater construct is for ShinyApps and optional
-  gm$distance   <- distance.mapper(gm,method="euclidean") # dist(scale(gm$d),method="euclidean", upper=FALSE)
-  gm$partitions <- partition.mapper(gm)
-  gm$clusters   <- clusters.mapper(gm, cluster_method = cluster_method, shinyProgressFunction=progressUpdater ) 
-  gm$nodes      <- nodes.mapper(gm)
-  gm$adjmatrix  <- adjacency.mapper(gm) 
-  
-  return(gm)
-  
+lense <- function(lensefun, lenseparam=NULL, partition_count=4, overlap = 0.5) {
+  # TODO validate partition_count > 0 integer
+  # TODO validate overlap  between 1 and 0
+  # the parameters sent here are simplified to p and o
+  L <- structure( list("lensefun"  = lensefun, 
+                       "lenseparam"= lenseparam, 
+                       "p"         = partition_count, 
+                       "o"         = overlap),
+                  class = "lense")
+  return(L)
 }
-
 
 #' Constructor for mapper object to be used in mapper pipeline
 #' @return mapper object with all params needed for pipeline
 #' @export
-mapper <- function(dataset, lensefun, partition_count=4, overlap = 0.5, 
-                        cluster_method="single", bin_count=10, lenseparam = NULL,
-                        normalize_data=TRUE, dimensions=1){
+mapper <- function(dataset, lenses, cluster_method="single", bin_count=10, normalize_data=TRUE){
+  # previous parameters used: lensefun, partition_count=4, overlap = 0.5,lenseparam = NULL
+  
+  # note: dimensions variable 
   # note: using as.numeric to convert arguments becuase Shiny inputs return strings
   ### TODO change default params to be lists to support n>1 dimension
   ## however, partition count should be a scalar, each partition having n dimensions
   
+#  "partition_count"=as.numeric(partition_count), 
+#  "overlap" = as.numeric(overlap),   # percent, o <= 1
+#  "lenseparam" = lenseparam,  # don't use as.numeric here, sometimes is variable name
   gm = structure(  list(d = dataset, 
-                      "partition_count"=as.numeric(partition_count), 
-                      "overlap" = as.numeric(overlap),   # percent, o <= 1
-                      "lensefun"=lensefun, 
+
+                      # lenses 
+                      "lenses"=lense, 
                       "cluster_method"=cluster_method, 
-                      "lenseparam" = lenseparam,  # don't use as.numeric here, sometimes is variable name
+                      
                       "bin_count" = as.numeric(bin_count),
                       "normalize_data" = normalize_data,
-                      "dimensions" = dimensions      ),
+                      "dimensions" = dimensions),
                  class="mapper")
   
   ### TODO ; remove all as.numeric conversions here as we need to allow lists
@@ -80,6 +74,38 @@ mapper <- function(dataset, lensefun, partition_count=4, overlap = 0.5,
   return(gm)
 }
 
+# single method to run all steps for mapper pipeline given a mapper object
+#' @export
+mapper.run <- function(gm){
+  gm$distance   <- distance.mapper(gm,method="euclidean") # dist(scale(gm$d),method="euclidean", upper=FALSE)
+  gm$partitions <- partition.mapper(gm)
+  gm$clusters   <- clusters.mapper(gm, cluster_method = cluster_method, shinyProgressFunction=progressUpdater ) 
+  gm$nodes      <- nodes.mapper(gm)
+  gm$adjmatrix  <- adjacency.mapper(gm) 
+  return(gm)
+
+}
+
+#  single method to collect parameters and then run all steps for 1D mapper object
+#  
+#' @export
+makemapper <- function(dataset, lensefun, partition_count=4, overlap = 0.5,  
+                       bin_count=10, cluster_method= 'single', lenseparam = NULL, 
+                       normalize_data=TRUE, progressUpdater=NULL){
+  # create objects with the above params
+  one_lense <- lense(lensefun, lenseparam, partition_count, overlap)
+  gm <- mapper(dataset=dataset, 
+               lenses=list(one_lense),
+               cluster_method=cluster_method, 
+               bin_count=bin_count, 
+               normalize_data=normalize_data)
+  return(run.mapper(gm))
+}
+
+#' calculate distance matrix of the existing data, scale if normalize data is checked
+#' @param gm A mapper object with d data member
+#' @param method A string method name used by the dist() function
+#' @return distance matrix of data element of mapper object gm$d
 distance.mapper <- function(gm, method="euclidean") {
   if ( gm$normalize_data ) {
     d = scale(gm$d) 
@@ -92,24 +118,43 @@ distance.mapper <- function(gm, method="euclidean") {
   
 }
   
+
 #' partition a mapper object dataset by reducing dimensions via lense or filter function
 #' lense function must be defined in the mapper object, and must return vector with 
 #' rownames preserved
+#' NOTES : lense objects now include all partitioning parameters (see above), and mapper object has list of lenses
+#' NOTES : WIP use just the first lense in the list for 1D case
+#'  par
+#'  p
 #' @param gm mapper object with dataset and lense function and lense parameters
 #' @return a list of vectors of rownames from the dataset, e.g. subsets or partitions 
 #' @export
-partition.mapper <- function(gm) {
+partition.mapper <- function(gm, dimension = 1) {
   if (class(gm) != "mapper") stop("partition: requires input of class mapper class")
   
-  # rename parameters in ojbect for readability
+  L = gm$lense
+  # These params should also be a list...
+  # Lense list of  for each dimension has  Lense = list(filter=function,partition_count=pc,overlap=om )
+  
   n <- gm$partition_count # num of partitions 
   o <- gm$overlap         # percent overlap
 
+  ### dimension > 1, means need to store n lense functions in gm object, vector of functions
+  lenseparam <- if (length(gm$lenseparam)>=dimension) unlist(gm$lenseparam[dimension]) else unlist(gm$lenseparam[1])
+  
+  if (is.function(gm$lensefun)) {
+    L <-gm$lensefun(gm, lenseparam)
+  } else {
+      if (length(gm$lensefun) >= dimension) { L <-gm$lensefun[[dimension]](gm, lenseparam) }
+      else { L <-gm$lensefun[[1]](gm, lenseparam)
+     }
+  }
   
   # apply the lense function and add names
   # L is vector of filtered values (1-d)
   # as a by product this may create the distance matrix ?
   # all we usually need is some way to obtain or calculate a distance matrix
+  
   L <- gm$lensefun(gm, gm$lenseparam)
   
   # assume L is in same order as data, transfer row names to keep identity
@@ -327,36 +372,6 @@ clusters2d.mapper<- function(gm, cluster_method = "single", scaling=FALSE, shiny
   return(gmClusts)
 }
 
-cut_function  <-  function(cluster_heights, maxdist, bin_count) {
-  # default cutoff is infinity, meaning 1 node
-  cutoff <- Inf
-  # if there  is one height value, then we have a single cluster
-  if (length(cluster_heights) == 1) { 
-    #if (cluster_heights == maxdist) {  # if this isn't true, then drop to code below 
-    #    cutoff <- Inf
-    #}
-    return(cutoff)
-  }
-  
-  minbin   = min(cluster_heights)
-  maxbin   = maxdist
-  binwidth = (maxbin - minbin)/bin_count
-  bin_breaks <- seq(from=minbin,to=maxbin, by=binwidth)
-  
-  #print("cluster cut")
-  #print(paste("seqparams=",minbin,maxbin,binwidth,sep=", "))
-  #print(paste("hist of ",minbin,maxdist,sep=", "))
-  #print(bin_breaks)
-  
-  height_hist <- hist(c(cluster_heights,maxdist), breaks=bin_breaks, plot=FALSE)
-  
-  z <- ( height_hist$counts == 0 )
-  if (sum(z) != 0) {
-    #  returns the indices of the logical vector (z == TRUE), min gives the smallest index
-    cutoff <- height_hist$mids[ min(which(z == TRUE)) ]
-  }
-  return(cutoff)
-}   
 
 
 #' histogram based cut function for single-linkage clusters
@@ -472,129 +487,7 @@ setgroup.mapper <-function(gm,node_ids,group_id = NULL) {
   return(g)
 }
 
-
-has.groups <- function(gm){
-  if(is.null(gm$groups)) return(FALSE)
-  if(length(gm$groups) < 2) return(FALSE)
-  return(TRUE)
-}
-
-# return a table of the variance for each variable for each group
-#' @export
-varTable <- function(gm, group_ids = c(1,2)){
-  if(! has.groups(gm)) {return(NULL)}
-  varFun <- function(varname){
-    d1 = groupdata(gm,group_ids[1],varname)
-    d2 = groupdata(gm,group_ids[2],varname)
-    return(data.frame("var"=varname, "mean group 1"=mean(d1),  "variance group 1" = var(d1), "mean group 2"=mean(d2), "variance group 2" = var(d2)))
-  }
-  vtable = ldply(colnames(gm$d), varFun)
-}
-
-# returns a table of ks results for each variable in gm$d
-#' @export
-kstable <- function(gm, group_ids = c(1,2)){
-  # requires the 'groups' of the gm object be set ahead of time
-  # could have more than 2 , allow to select 2 groups 
-  # if(!has.groups(gm)) stop("requires groups to run test") # raise exception need some groups!
-  
-  # inner function for apply
-  ksfun <- function(varname) {
-    # TODO this is duplicating the data in memory
-    d1 = groupdata(gm,group_ids[1],varname)
-    d2 = groupdata(gm,group_ids[2],varname)
-    # suppress the ks test warnings because we know there will be ties
-    kt = suppressWarnings(
-      ks.test(d1,d2, alternatives = "two.sided", exact = FALSE) 
-      )
-    return(data.frame("var"=varname, "pvalue" = kt$p.value, "kstatistic" = kt$statistic))
-  }
-  print('making table')
-  
-  vars = colnames(gm$d)
-  ktable = ldply(vars, ksfun)
-  
-  return(ktable[order(ktable$pvalue),])
-}
-
-
-# returns the data rows for a given group id
-groupdata <- function(gm, group_id, varname = NULL){
-  # TODO : add error testing
-  nodedata(gm, gm$nodes[gm$groups[[group_id]]], varname)
-}
-
-
-####### helpers
-
-is.mapper <- function(o){
-  return((class(o)=="mapper"))
-}
-
-is.varname <- function(gm, varname){
-  return( Reduce("&", (varname %in% names(gm$d))))
-}
-
-# this is dangerous practice
-# but returns a variable name in the data set no matter what is sent
-guaranteedVarname <- function(gm,  varname=NULL){
-  if(!is.mapper(gm)) return(NULL)
-  
-  if (is.null(varname))   return(colnames(gm$d)[1])
-  
-  if( Reduce("&", (varname %in% colnames(gm$d)))) return(varname)
-
-  return(names(gm$d)[1])
-}
-
-# return data rows by variable for given node
-# a node is a list of data row IDs from gm$d, note a node ID (node 3)
-#' @export
-nodedata <- function(gm, nodes, varname=NULL){
-  if(!is.mapper(gm)) return (NULL)
-
-  # unlisting potentially overlapping nodes, this works on single node, too
-  rowids = unique(unlist(nodes))
-
-  # if no variable name sent, return all columns
-  if(is.null(varname)){
-    return(gm$d[rowids,])
-  } 
-  else {
-    # return only column(s) requested in varname
-    # use reduce here to combine TRUES if varname is vector of names c("X", "Y")
-    if( Reduce("&", (varname %in% colnames(gm$d))))
-      return(gm$d[rowids,varname])
-  }
-  return()
-}
-
-# returns one or more columns of data as listed in one or more partitions
-#' @export
-partitiondata <- function(gm, p, varname = NULL){
-  if(!is.mapper(gm)) return (NULL)
-  
-  # convert list of partitions into single vector of row ids
-  p = unique(unlist(p))
-  
-  # if no varname param, return all columns
-  if(is.null(varname)){
-    return(gm$d[gm$partitions[[p]],])
-  } 
-  else {
-    # use reduce() here to allow a vector of column names
-    if (Reduce("&", (varname %in% names(gm$d))))
-        return(gm$d[gm$partitions[[p]],varname])
-  }
-  # bad variable name sent - error condition?
-  return(NULL)
-}
-
-
 ########## plotting
-
-
-
 plot.mapper <- function(gm){
   if(class(gm) != "mapper"){ stop("requires mapper object")}
   # create an edge list
@@ -625,18 +518,3 @@ plot_partitions <- function(gm,varx,vary)  {
   # d[d$ID %in% names(cl[[1]]),]
 # }
 
-##### TESTING
-circle.mapper<- function(npoints=100, randomize=FALSE) {
-  gm= mapper(circle_data(1, npoints,randomize=randomize), lensefun=lense.pca, lenseparam=1, 
-             partition_count=6, overlap = 0.5,bin_count=10, normalize_data = TRUE)
-  gm$distance   <- distance.mapper(gm)
-  gm$partitions <- partition.mapper(gm)
-  print ( gm$partitions)
-  gm$clusters   <- clusters.mapper(gm, cluster_method = "single", shinyProgressFunction=NULL ) 
-  gm$nodes      <- nodes.mapper(gm)
-  
-  gm$adjmatrix  <- adjacency.mapper(gm) 
-  plot(graph.mapper(gm), main = paste0("Circle data, ", nrow(gm$d), " points"))
-  
-  return(gm)
-}
