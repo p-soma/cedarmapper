@@ -32,4 +32,3 @@ initVariableChoices   <- names(datasets[[1]])
 d                     <- datasets[[1]]
 
 gm <- graphmapper(dataset=d, lensefun=lense.projection, partition_count=NULL, overlap=NULL,  lenseparam="rw")
-

@@ -18,7 +18,7 @@ library(cluster)
 
 #  single method to run all steps for graphmapper object
 #' @export
-makegraphmapper <- function(dataset, lensefun, partition_count=4, overlap = 0.5,  
+makegraphmapper <- function(dataset, lensefun, partition_count=4, overlap = 0.5, lensevals,  #coloring 
                             bin_count=10, cluster_method= 'single', lenseparam = NULL, 
                             normalize_data=TRUE, dimensions = 1, progressUpdater=NULL){
   # create object with the above params 
@@ -28,6 +28,7 @@ makegraphmapper <- function(dataset, lensefun, partition_count=4, overlap = 0.5,
                     lensefun=lensefun, 
                     partition_count=partition_count, 
                     overlap = overlap, 
+                    lensevals = lensevals, # lensevals coloring
                     cluster_method=cluster_method, 
                     bin_count=bin_count, 
                     lenseparam=lenseparam,
@@ -38,6 +39,7 @@ makegraphmapper <- function(dataset, lensefun, partition_count=4, overlap = 0.5,
   # the progressUpdater construct is for ShinyApps and optional
   gm$distance   <- distance.graphmapper(gm,method="euclidean") # dist(scale(gm$d),method="euclidean", upper=FALSE)
   gm$partitions <- partition.graphmapper(gm)
+  gm$lensevals  <- data.frame(gm$lensefun(gm, gm$lenseparam))
   gm$clusters   <- clusters.graphmapper(gm, cluster_method = cluster_method, shinyProgressFunction=progressUpdater ) 
   gm$nodes      <- nodes.graphmapper(gm)
   gm$adjmatrix  <- adjacency.graphmapper(gm) 
@@ -50,7 +52,7 @@ makegraphmapper <- function(dataset, lensefun, partition_count=4, overlap = 0.5,
 #' Constructor for graphmapper object to be used in mapper pipeline
 #' @return graphmapper object with all params needed for pipeline
 #' @export
-graphmapper <- function(dataset, lensefun, partition_count=4, overlap = 0.5, 
+graphmapper <- function(dataset, lensefun, partition_count=4, overlap = 0.5, lensevals=NULL,
                         cluster_method="single", bin_count=10, lenseparam = NULL,
                         normalize_data=TRUE, dimensions=1){
   # note: using as.numeric to convert arguments becuase Shiny inputs return strings
@@ -61,6 +63,7 @@ graphmapper <- function(dataset, lensefun, partition_count=4, overlap = 0.5,
                       "partition_count"=as.numeric(partition_count), 
                       "overlap" = as.numeric(overlap),   # percent, o <= 1
                       "lensefun"=lensefun, 
+                      "lensevals"=lensevals, #lense vals coloring
                       "cluster_method"=cluster_method, 
                       "lenseparam" = lenseparam,  # don't use as.numeric here, sometimes is variable name
                       "bin_count" = as.numeric(bin_count),
@@ -74,6 +77,7 @@ graphmapper <- function(dataset, lensefun, partition_count=4, overlap = 0.5,
   rownames(dataset)<- 1:nrow(dataset)
     gm$distance   <- NULL
     gm$partitions <- NULL
+    gm$lensevals  <- NULL #lense vals coloring
     gm$clusters   <- NULL
     gm$nodes      <- NULL
     gm$adjmatrix  <- NULL
@@ -112,12 +116,12 @@ partition.graphmapper <- function(gm) {
   # L is vector of filtered values (1-d)
   # as a by product this may create the distance matrix ?
   # all we usually need is some way to obtain or calculate a distance matrix
+  
   L <- gm$lensefun(gm, gm$lenseparam)
   
   # assume L is in same order as data, transfer row names to keep identity
   names(L) <- rownames(gm$d)
-  
-  
+
   ### setup parameters for partitioning
   total_length = max(L) - min(L)
 
@@ -571,6 +575,8 @@ guaranteedVarname <- function(gm,  varname=NULL){
   
   if( Reduce("&", (varname %in% colnames(gm$d)))) return(varname)
 
+  if (varname %in% lenseChoices) return(varname)
+
   return(names(gm$d)[1])
 }
 
@@ -582,7 +588,7 @@ nodedata <- function(gm, nodes, varname=NULL){
 
   # unlisting potentially overlapping nodes, this works on single node, too
   rowids = unique(unlist(nodes))
-
+  
   # if no variable name sent, return all columns
   if(is.null(varname)){
     return(gm$d[rowids,])
@@ -590,8 +596,11 @@ nodedata <- function(gm, nodes, varname=NULL){
   else {
     # return only column(s) requested in varname
     # use reduce here to combine TRUES if varname is vector of names c("X", "Y")
-    if( Reduce("&", (varname %in% colnames(gm$d))))
+    if( Reduce("&", (varname %in% colnames(gm$d)))){
       return(gm$d[rowids,varname])
+    } else if( (varname %in% lenseChoices)){
+      return(gm$lensevals[rowids,])
+    }
   }
   return()
 }

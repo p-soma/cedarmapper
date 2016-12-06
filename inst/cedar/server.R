@@ -84,11 +84,11 @@ shinyServer(function(input, output, session) {
   # there and the (D3.js) nodes are updated and recolored, etc
   observe({
     input$selectedVar
-    print(selectedVar() %in% colnames(gm$d))
-    if (selectedVar() %in% colnames(gm$d)) {
+    print(selectedVar() %in% c(colnames(gm$d),lenseChoices))
+    if (selectedVar() %in% c(colnames(gm$d),lenseChoices)) {
       vals = nodePrep(gm,selectedVar())$values
       session$sendCustomMessage(type='nodevalues',message = vals)
-    }
+    } 
   })
   
   histVals <- reactive({
@@ -199,6 +199,8 @@ shinyServer(function(input, output, session) {
   observeEvent(input$runMapper, {
     updateTabItems(session, "tabs", selected = "graph")
     
+    # add selected lense function to choices of coloring variable
+    updateSelectInput(session, inputId = "selectedVar", choices = c(names(d),input$lenseFunctionSelection))
     progress <- shiny::Progress$new()
     progress$set(message = "Calculating Clustering", value = 0)
     on.exit(progress$close())
@@ -234,6 +236,7 @@ shinyServer(function(input, output, session) {
                           partition_count=as.numeric(input$partitionCountSelection),
                           overlap = as.numeric(input$overlapSelection)/100.0, 
                           lenseparam = lenseParam,
+                          lensevals = data.frame(gm$lensefun(gm)), # new filter coloring
                           bin_count = as.numeric(input$binCountSelection),
                           normalize_data = input$normalizeOption,
                           progressUpdater = NULL)  #updateProgress
