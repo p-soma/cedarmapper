@@ -1,6 +1,7 @@
 # mapper.R
 # This is the main mapper object and  pipeline 
-# WORK IN PROGRESS lense object for dimensions > 1
+
+# UNFINSIHED WORK IN PROGRESS lense object for dimensions > 1
 # notes: don't set the number of dimensions, instead simply run each lense in the 
 # list of lenses, so essentially dismensions= length(lenses)
 #' @import cluster
@@ -107,14 +108,17 @@ makemapper <- function(dataset, lensefun, partition_count=4, overlap = 0.5,
 #' @param method A string method name used by the dist() function
 #' @return distance matrix of data element of mapper object gm$d
 distance.mapper <- function(gm, method="euclidean") {
-  if ( gm$normalize_data ) {
-    d = scale(gm$d) 
-    }
-  else {
-    d = gm$d
-  }
   
-  dist(d,method="euclidean", upper=FALSE)
+  # notes: lense functions currently assume distance matrix is pre-calculated and present in the gm object
+  # calculation should be done in a seperate routine that calculates regions on demand and in parallel
+  
+  # same method, just using scaled data or not
+  if ( gm$normalize_data ) 
+    { dist(scale(gm$d),method, upper=FALSE)  }
+  else 
+    { dist(gm$d,method, upper=FALSE) }
+  
+  
   
 }
   
@@ -127,142 +131,69 @@ distance.mapper <- function(gm, method="euclidean") {
 #'  par
 #'  p
 #' @param gm mapper object with dataset and lense function and lense parameters
-#' @return a list of vectors of rownames from the dataset, e.g. subsets or partitions 
+#' @return list of vectors of rownames from the dataset, e.g. subsets or partitions 
 #' @export
 partition.mapper <- function(gm, dimension = 1) {
   if (class(gm) != "mapper") stop("partition: requires input of class mapper class")
   
-  L = gm$lense
-  # These params should also be a list...
-  # Lense list of  for each dimension has  Lense = list(filter=function,partition_count=pc,overlap=om )
-  
-  n <- gm$partition_count # num of partitions 
-  o <- gm$overlap         # percent overlap
-
-  ### dimension > 1, means need to store n lense functions in gm object, vector of functions
-  lenseparam <- if (length(gm$lenseparam)>=dimension) unlist(gm$lenseparam[dimension]) else unlist(gm$lenseparam[1])
-  
-  if (is.function(gm$lensefun)) {
-    L <-gm$lensefun(gm, lenseparam)
-  } else {
-      if (length(gm$lensefun) >= dimension) { L <-gm$lensefun[[dimension]](gm, lenseparam) }
-      else { L <-gm$lensefun[[1]](gm, lenseparam)
-     }
+  # internal function used by apply
+  lense.calculate <- function(lense,d){
+    # notes: some lense filter functions require distance matrix of rows
+    # lense functions currently assume distance matrix is pre-calculated and present in the gm object
+    # calculation should be done in a seperate routine that calculates regions on demand and in parallel
+    # alternatively if there are n > 1 dimensions, could be stuck recalculating 
+    # distance for each dimension unless we track which distances have been calculated
+    # but then need to check that position.  
+    
+    if (class(lense) != "lense") stop ("partition function requires a lense object")
+    L <- lense$lensefun(gm$d, lense$lenseparam)
+    # L is 1D vector of values from the filter/lense function with same length as D
+    # copy names of rows e.g. rowids to L
+    names(L) <- rownames(d)
+    return (L)
   }
   
-  # apply the lense function and add names
-  # L is vector of filtered values (1-d)
-  # as a by product this may create the distance matrix ?
-  # all we usually need is some way to obtain or calculate a distance matrix
+  # create list of linear filter outputs for lense function (e.g. each dimension)
+  # require plyr library
+  L <- llply(gm$lenses,lense.calculate,gm$d)
   
-  L <- gm$lensefun(gm, gm$lenseparam)
+  
+  # n <- lense$partition_count # num of partitions 
+  # o <- lense$overlap         # percent overlap
   
   # assume L is in same order as data, transfer row names to keep identity
-  names(L) <- rownames(gm$d)
-  
-  
-  ### setup parameters for partitioning
-  total_length = max(L) - min(L)
-  # pl= partition length
-  pl = total_length/(n - ((n-1)*o))
-  p0 = min(L)
-  
-  
-  ## get values for partition i; used by vectorized apply
-  partition_values = function(i){
-    partition_start = p0 + (pl * (i - 1) * (1-o))  # offset== starting value is 1/2 partition size X parttion number
-    partition_end   = partition_start + pl
-    return(L[L >=  partition_start & L < partition_end ])
+
+  lense.paritition <- function(lense,d) {
+    if (class(lense) != "lense") stop ("partition function requires a lense object")
+    
+    L <- lense$lensefun(gm$d, lense$lenseparam)
+    # L is 1D vector of values from the filter/lense function with same length as D
+    # copy names of rows e.g. rowids to L
+    names(L) <- rownames(d)
+    
+    total_length = max(L) - min(L)
+    # pl= partition length
+    pl = total_length/(n - ((n-1)*o))
+    p0 = min(L)
+    ## get values for partition i; used by vectorized apply
+    partition_values = function(i){
+      partition_start = p0 + (pl * (i - 1) * (1-o))  # offset== starting value is 1/2 partition size X parttion number
+      partition_end   = partition_start + pl
+      return(L[L >=  partition_start & L < partition_end ])
+    }
   }
   
+  partitions = lapply(1:n,partition_values)
+  # Note : here is a test that all rows have been included in at least one partition
+  # if(nrow(gm$d) != length(unique(unlist(partitions)))) stop("partitioning does not include all rows")
+ 
   ## test function used to remove empty partitions
   non_empty = function(x) { length(x)>0}
   
-  # TODO: parallelize with plyr llply?
-  partitions = lapply(1:n,partition_values)
-
-  # Note : here is a test that all rows have been included in at least one partition
-  # if(nrow(gm$d) != length(unique(unlist(partitions)))) stop("partitioning does not include all rows")
+  # return list of partitions,removing empty ones
   
-  # return with all empty partitions returned
   return(partitions[sapply(partitions, non_empty)])
 
-} 
-
-partition2d.mapper <- function(gm) {
-  if (class(gm) != "mapper") stop("partition: requires input of class mapper class")
-  
-  ### for n>1 dimensions,e all params are lists 
-  
-  ### starting with creating explicit 2d variables
-  ## TODO: generalize all of this to use lists of any dimension
-  
-  # rename variables for readability
-  # TODO use unlist to convert to numeric vectors  ; which works on vectors and scalars too!
-  # n = unlist(gm$partition_count)
-  # o = unlist(gm$overlap)
-  
-  n_d1 <- gm$partition_count[[1]] # num of partitions 
-  n_d2 <- gm$partition_count[[2]] # num of partitions  
-  o_d1 <- gm$overlap[[1]]   # percent overlap
-  o_d2 <- gm$overlap[[2]]   # percent overlap
-  
-  # results of running the each of the lenses]
-  # note : each lense (dimension) comes back as a numeric vector
-  # TODO : use plyr to llply functions in gm listfun to gm$d and 
-  L1 = gm$lensefun[[1]](gm$d, gm$lenseparam[[1]])
-  L2 = gm$lensefun[[2]](gm$d, gm$lenseparam[[2]])
-  
-  # assume L is in same order as data, transfer row names to keep identity
-  names(L1) <- rownames(gm$d)
-  names(L2) <- rownames(gm$d)
-  
-  # partition length = linear distance
-  # TODO: vectorized version is unlist(lapply(L,max)) - unlist(lapply(L,min))
-
-  total_length_d1 = max(L1) - min(L1)
-  total_length_d2 = max(L2) - min(L2)
-  
-  pl_d1 = total_length_d1/(n_d1 - ((n_d1-1)*o_d1))
-  pl_d2 = total_length_d2/(n_d2 - ((n_d2-2)*o_d2))
-  
-  
-  # [0:(n-1)]
-  # pl 
-  p0_d1 = min(L1)
-  p0_d2 = min(L2)
-  
-  partitions = list()
-  partition_index = list()
-  index = 1
-  for (j in 1:n_d1) { 
-   
-    partition_start_d1 = p0_d1 + (pl_d1 * (j - 1) * (1-o_d1))  # offset== starting value is 1/2 partition size X parttion number
-    partition_end_d1   = partition_start_d1 + pl_d1
-    for (i in 1:n_d2) {
-      print(j)
-      partition_start_d2 = p0_d2 + (pl_d2 * (i - 1) * (1-o_d2))  # offset== starting value is 1/2 partition size X parttion number
-      partition_end_d2   = partition_start_d2 + pl_d2
-      ##L[L >=  partition_start_d1 & L < partition_end_d1,]
-      ## each partition is a list, one item for each dimension.   
-      ## rowset is intersection of rows that fit in both dimensions
-      ## the code below is incorrect
-      rowset = list(L1[L1 >=  partition_start_d1 & L1 < partition_end_d1], L2[L2 >=  partition_start_d2 & L2 < partition_end_d2] )
-      
-      ## TODO only add to partitions if non empty
-      partitions[[index]] = rowset
-      ## todo : store current (i,j) coordinates of this partition in seperate list
-      partition_index[[index]] = c(i,j)
-        ## list(L1[L1 >=  partition_start_d1 & L1 < partition_end_d1], L2[L2 >=  partition_start_d2 & L2 < partition_end_d2] )
-      index = index + 1
-      
-    }
-  }
-  # Note : here is a test that all rows have been included in at least one partition
-  # if(nrow(gm$d) != length(unique(unlist(partitions)))) stop("partitioning does not include all rows")
-  
-  return(partitions)
-  
 } 
 
 
@@ -457,6 +388,7 @@ adjacency.mapper<- function(gm) {
       } else {adjmat[i,j] <- detect_overlap(i,j)}
     }
   }
+
   
   # return only upper matrix (undirected graph)
   adjmat[lower.tri(adjmat)] <- 0
@@ -487,34 +419,4 @@ setgroup.mapper <-function(gm,node_ids,group_id = NULL) {
   return(g)
 }
 
-########## plotting
-plot.mapper <- function(gm){
-  if(class(gm) != "mapper"){ stop("requires mapper object")}
-  # create an edge list
-  adjmatrix = cedar.adj(gm)
-  cedar.graph(adjmatrix) 
-}
-
-plot_partitions <- function(gm,varx,vary)  {
-  partitions = gm$partitions
-  par(mfrow=c(2,2)) # set for 2X2 plot
-  for(i in 1:length(partitions)){ with(partitions[[i]], plot(gm$d[[varx]],gm$d[[vary]])) }
-  par(mfrow=c(1,1))
-  
-  par(mfrow=c(2,2))
-  
-  #for(p in partitions){ 
-    # remove the ID column,TODO remove hard coded col num
-     
-  #  print( eclust(gm$d[p,], FUNcluster="hclust", k.max = 5, stand =TRUE, B = 500, hc_metric="euclidean", hc_method="single"))
-  # }
-}    
-
-# TO DO: refactor to plot arbitrary columns
-# plot_cluster = function(gm, x, y, cnumber){
-#  cldata = cbind(rowid = gm$partitions[[cnumber]],clusterid = gm$clusters[[cnumber]])
-# SET X AND Y variables  FROM DATA
-#  plot(cldata$X, cldata$Y, col = c("red", "green", "blue")[rowid])
-  # d[d$ID %in% names(cl[[1]]),]
-# }
 
