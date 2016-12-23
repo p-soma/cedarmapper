@@ -1,7 +1,7 @@
 # mapper.R
 # This is the main mapper object and  pipeline 
 
-# UNFINSIHED WORK IN PROGRESS lense object for dimensions > 1
+# UNFINSIHED WORK IN PROGRESS lense object for n dimensions >= 1
 # notes: don't set the number of dimensions, instead simply run each lense in the 
 # list of lenses, so essentially dismensions= length(lenses)
 #' @import cluster
@@ -307,6 +307,9 @@ clusters2d.mapper<- function(gm, cluster_method = "single", scaling=FALSE, shiny
 
 #' histogram based cut function for single-linkage clusters
 #' @export
+#' @param cluster_heights heights of each cluster, height element from hclust output
+#' @param maxdist maximum distance from data
+#' @returns something 
 cut_function  <-  function(cluster_heights, maxdist, bin_count) {
   # default cutoff is infinity, meaning 1 node
   cutoff <- Inf
