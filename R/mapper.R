@@ -141,8 +141,10 @@ distance.mapper <- function(gm, method="euclidean") {
 partition.mapper <- function(gm, dimension = 1) {
   if (class(gm) != "mapper") stop("partition: requires input of class mapper class")
   
+  if (is.null(gm$distance)) { gm$distance = distance.mapper }  ## TODO this is not saved as pass by value
   # internal function used by apply
-  lense.calculate <- function(lense,d){
+  
+  lense.calculate <- function(L){
     # notes: some lense filter functions require distance matrix of rows
     # lense functions currently assume distance matrix is pre-calculated and present in the gm object
     # calculation should be done in a seperate routine that calculates regions on demand and in parallel
@@ -150,17 +152,17 @@ partition.mapper <- function(gm, dimension = 1) {
     # distance for each dimension unless we track which distances have been calculated
     # but then need to check that position.  
     
-    if (class(lense) != "lense") stop ("partition function requires a lense object")
-    L <- lense$lensefun(gm$d, lense$lenseparam)
+    if (class(L) != "lense") stop ("partition function requires a lense object")
+    Lvalues <- L$lensefun(gm$d, L$lenseparam,gm$distance)
     # L is 1D vector of values from the filter/lense function with same length as D
     # copy names of rows e.g. rowids to L
-    names(L) <- rownames(d)
-    return (L)
+    names(Lvalues) <- rownames(gm$d)
+    return (Lvalues)
   }
   
   # create list of linear filter outputs for lense function (e.g. each dimension)
   # require plyr library
-  L <- llply(gm$lenses,lense.calculate,gm$d)
+  L <- llply(gm$lenses,lense.calculate)
   
   
   # n <- lense$partition_count # num of partitions 
@@ -169,13 +171,13 @@ partition.mapper <- function(gm, dimension = 1) {
   # assume L is in same order as data, transfer row names to keep identity
   
   
-  lense.paritition <- function(lense,d) {
+  lense.paritition <- function(lense) {
     if (class(lense) != "lense") stop ("partition function requires a lense object")
-    
-    L <- lense$lensefun(gm$d, lense$lenseparam)
+    #### TODO this is duplicating code here
+    L <- lense$lensefun(gm$d, lense$lenseparam,gm$distance)
     # L is 1D vector of values from the filter/lense function with same length as D
     # copy names of rows e.g. rowids to L
-    names(L) <- rownames(d)
+    names(L) <- rownames(gm$d)
     
     p0 <- min(L)    
     total_length = max(L) - p0

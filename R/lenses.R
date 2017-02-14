@@ -1,5 +1,10 @@
 # lenseFunctions.R
 # CEDAR project
+
+#' TODO getdistance() function ALWAYS SCALES !  
+#' 
+#' 
+
 # collection of lense functions for use, all accept a data.frame with named rows, and return
 # a named vector of the same length
 
@@ -32,10 +37,10 @@ lense.table <- function(){
 #' @param none
 #' @returns constant 0
 #' @export
-lense.constant <- function(gm,lenseparam = NULL){
+lense.constant <- function(d,lenseparam = NULL,distmat=NULL){
   c <- 0
-  L <- rep(c,times = nrow(gm$d))
-  names(L) <- rownames(gm$d)
+  L <- rep(c,times = nrow(d))
+  # names(L) <- rownames(d)  # this is done in the partition function
   return(L)
 }
 
@@ -45,46 +50,46 @@ lense.constant <- function(gm,lenseparam = NULL){
 #' @param coordinate string name of column, or vector of column names for n-dimensional 
 #' @returns vector of same length as data, with rownames preserved
 #' @export
-lense.projection <- function(gm,lenseparam=NULL ){
+lense.projection <- function(d,lenseparam=NULL,distmat=NULL ){
   coordinate <- lenseparam
   # returns a vector variable, defaults to the first column
-  if (is.null(coordinate)) { coordinate= names(gm$d)[1] }
+  if (is.null(coordinate)) { coordinate= names(d)[1] }
   
-#  if (! coordinate %in% colnames(gm$d)){
+#  if (! coordinate %in% colnames(d)){
 #    return(NULL)
 #  }
   
   # get single column
-  L <- gm$d[,coordinate]
+  L <- d[,coordinate]
   # assign rownames
   if (is.null(dim(L))){
     # single dimension vector
-    names(L) <- rownames(gm$d)
+    names(L) <- rownames(d)
   } else {
     # multidimension vector use rownames
-    rownames(L) <- rownames(gm$d)  
+    rownames(L) <- rownames(d)  
   }
   return(L)
 }
 
-lense.2dprojection <- function(gm,lenseparam=NULL ){
+lense.2dprojection <- function(d,lenseparam=NULL,distmat=NULL ){
   coordinates <- lenseparam
   # returns a vector variable, defaults to the first column
-  if (is.null(coordinate)) { coordinate= names(gm$d)[1] }
+  if (is.null(coordinate)) { coordinate= names(d)[1] }
   
-  #if (! coordinate %in% colnames(gm$d)){
+  #if (! coordinate %in% colnames(d)){
   #  return(NULL)
   # }
   
   # get single column
-  L <- gm$d[,coordinate]
+  L <- d[,coordinate]
   # assign rownames
   if (is.null(dim(L))){
     # single dimension vector
-    names(L) <- rownames(gm$d)
+    names(L) <- rownames(d)
   } else {
     # multidimension vector use rownames
-    rownames(L) <- rownames(gm$d)  
+    rownames(L) <- rownames(d)  
   }
   return(L)
 }
@@ -93,10 +98,10 @@ lense.2dprojection <- function(gm,lenseparam=NULL ){
 #' @family lenses
 #' @param none
 #' @export
-lense.pca <- function(gm,lenseparam=NULL) {
-  pca = prcomp(gm$d, retx=TRUE, center=TRUE, scale. = TRUE)
+lense.pca <- function(d,lenseparam=NULL,distmat=NULL) {
+  pca = prcomp(d, retx=TRUE, center=TRUE, scale. = TRUE)
   L = pca$x[,"PC1"]
-  names(L) <- rownames(gm$d)
+  # names(L) <- rownames(d)  # this is done in the partition function
   return(L)
 }
 
@@ -105,28 +110,30 @@ lense.pca <- function(gm,lenseparam=NULL) {
 #' @family lenses
 #' @param n 1 or 2 exponent and divisor
 #' @export
-lense.eccentricity <- function(gm, lenseparam=1){ # n = 1 or 2
+lense.eccentricity <- function(d, lenseparam=1,distmat=NULL){ # n = 1 or 2
   n <- lenseparam
   n <- 1
-  d <- getdistance(gm)
-  L <- apply(as.matrix(d**n),1,mean)^(1/n)
-  names(L) <- rownames(gm$d)
+  if(is.null(distmat)) {
+    distmat <- getdistance(d)
+  }
+  L <- apply(as.matrix(distmat**n),1,mean)^(1/n)
+  # names(L) <- rownames(d) # this is done in the partition function
   return(L)
 }
-
-
 
 
 #' Mapper lense using Topological density  of each point
 #' @family lenses
 #' @export
-lense.density <- function(gm, lenseparam=1.0){
+lense.density <- function(d, lenseparam=1.0,distmat=NULL){
   sigma <- lenseparam
-  d <- getdistance(gm)
-  d.exp <- exp((-1 * (d^2)) / (2 * sigma^2))
+  if(is.null(distmat)) {
+    distmat <- getdistance(d)
+  }
+  d.exp <- exp((-1 * (distmat^2)) / (2 * sigma^2))
   L <- (apply(as.matrix(d.exp),1,mean))
 
-  # names(L) <- rownames(gm$d)  # this is done in the partition function
+  # names(L) <- rownames(d)  # this is done in the partition function
   return(L)
 }
 
@@ -135,12 +142,12 @@ lense.density <- function(gm, lenseparam=1.0){
 # several lense functions need a distance matrix, 
 # this checks if there is a distance matrix, and if not makes one
 # this is a stub currently that should save the distance matrix in the environment for re-reading
-#' @param gm
+#' @param d data.frame
+#' @return distance matrix
 #' @export
-getdistance <- function(gm) {
-  if (is.null(gm[["distance"]])){
-    return(dist(scale(gm$d),method="euclidean", upper=FALSE))}
-  else {
-    return(gm$distance)
-  }
+getdistance <- function(d) {
+    # to scale, or not to scale, that is the question
+    # and the answer is scale here by default, 
+    # to use non scaled or different kind of distance matrix, send as a parameter to lense function
+    return(dist(scale(d),method="euclidean", upper=FALSE))
 }
