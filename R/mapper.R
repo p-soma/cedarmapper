@@ -25,14 +25,16 @@ library(cluster)
 #' @return lense object for a single dimension of the covering
 #' @export
 lense <- function(lensefun, lenseparam=NULL, partition_count=4, overlap = 0.5) {
+  # note: using as.numeric to convert arguments becuase Shiny inputs return strings
+  L <- structure( list("lensefun"  = lensefun, 
+                       "lenseparam"= lenseparam,  # don't use as.numeric here, sometimes is variable name
+                       "p"         = as.numeric(partition_count),  # or should be n
+                       "o"         = as.numeric(overlap)),
+                  class = "lense")
+
   # TODO validate partition_count > 0 integer
   # TODO validate overlap  between 1 and 0
-  # the parameters sent here are simplified to p and o
-  L <- structure( list("lensefun"  = lensefun, 
-                       "lenseparam"= lenseparam, 
-                       "p"         = partition_count, 
-                       "o"         = overlap),
-                  class = "lense")
+  
   return(L)
 }
 
@@ -40,22 +42,16 @@ lense <- function(lensefun, lenseparam=NULL, partition_count=4, overlap = 0.5) {
 #' @return mapper object with all params needed for pipeline
 #' @export
 mapper <- function(dataset, lenses, cluster_method="single", bin_count=10, normalize_data=TRUE){
-  # previous parameters used: lensefun, partition_count=4, overlap = 0.5,lenseparam = NULL
+  # lenses have previous parameters used: lensefun, partition_count=4, overlap = 0.5,lenseparam = NULL
   
   # note: dimensions variable 
   # note: using as.numeric to convert arguments becuase Shiny inputs return strings
-  ### TODO change default params to be lists to support n>1 dimension
-  ## however, partition count should be a scalar, each partition having n dimensions
-  
-#  "partition_count"=as.numeric(partition_count), 
-#  "overlap" = as.numeric(overlap),   # percent, o <= 1
-#  "lenseparam" = lenseparam,  # don't use as.numeric here, sometimes is variable name
-  gm = structure(  list(d = dataset, 
-
-                      # lenses 
+    
+  #  "partition_count"=as.numeric(partition_count), 
+  #  "overlap" = as.numeric(overlap),   # percent, o <= 1
+   gm = structure(  list(d = dataset, 
                       "lenses"=lense, 
                       "cluster_method"=cluster_method, 
-                      
                       "bin_count" = as.numeric(bin_count),
                       "normalize_data" = normalize_data,
                       "dimensions" = dimensions),
@@ -75,9 +71,18 @@ mapper <- function(dataset, lenses, cluster_method="single", bin_count=10, norma
   return(gm)
 }
 
+#' return the dimension of a graph mapper object by counting lenses
+#' @param gm graphmapper object
+#' @return integer >1 or NA
+#' @export
+mapper.dimensions <-function(gm){
+  length(gm$lenses)
+}
+
 # single method to run all steps for mapper pipeline given a mapper object
 #' @export
 mapper.run <- function(gm){
+  
   gm$distance   <- distance.mapper(gm,method="euclidean") # dist(scale(gm$d),method="euclidean", upper=FALSE)
   gm$partitions <- partition.mapper(gm)
   gm$clusters   <- clusters.mapper(gm, cluster_method = cluster_method, shinyProgressFunction=progressUpdater ) 
@@ -162,7 +167,8 @@ partition.mapper <- function(gm, dimension = 1) {
   # o <- lense$overlap         # percent overlap
   
   # assume L is in same order as data, transfer row names to keep identity
-
+  
+  
   lense.paritition <- function(lense,d) {
     if (class(lense) != "lense") stop ("partition function requires a lense object")
     
@@ -171,14 +177,58 @@ partition.mapper <- function(gm, dimension = 1) {
     # copy names of rows e.g. rowids to L
     names(L) <- rownames(d)
     
-    total_length = max(L) - min(L)
+    p0 <- min(L)    
+    total_length = max(L) - p0
     # pl= partition length
-    pl = total_length/(n - ((n-1)*o))
-    p0 = min(L)
+    o  <- lense$o
+    n  <- lense$p
+    pl <- total_length/(n - ((n-1)*lense$o))
+
     ## get values for partition i; used by vectorized apply
+    partition_start <- function(i){
+      # global parameters p0, pl, o overlap
+      return( p0 + (pl * (i - 1) * (1-lense$o)) )
+             # offset== starting value is 1/2 partition size X parttion number
+    }
+    
+    # inverse of the above, given a paritition starting value, return the index
+    get_partition_index <- function(this_partition_start_value){
+      i = (  ((this_partition_start_value - p0) / pl) + (1-lense$o)) / (1-lense$o)    
+    }
+    
+    # given a value from a Lense, which partition is it in?
+    partition_index_for_l_value <- function(l_value){
+      # first use the index calculator on this l_value that's greater than the Partition start, so will have fractional part
+      index_plus_something = get_partition_index(l_value)
+      # the index is the nearest integer to this calculation
+      partition_1_index = floor(index_plus_something)
+      # given partitions overlap, does this Lense value fit in the lower partition?
+      # if it's more than the overlap away from parition value, it's past end of previous partition
+      distance_from_partition_start = index_plus_something - partition_1_index
+      if ( distance_from_partition_start < lense$o & partition_1_index > 1 ) { 
+        partition_2_index = partition_1_index - 1  
+      } else {
+        partition_2_index = NA
+        }
+      
+      # return the 2 indexes.  
+      return( c(partition_1_index, partition_3_index))
+      
+    }
+    
+    second_partition <- function(l_value) {
+      index_plus_something = et_partition_index(l_value)
+      
+    }
+  
+    partition_end <- function(i) {
+      return( partition_start(i) + pl )
+    }
+    
     partition_values = function(i){
       partition_start = p0 + (pl * (i - 1) * (1-o))  # offset== starting value is 1/2 partition size X parttion number
       partition_end   = partition_start + pl
+      
       return(L[L >=  partition_start & L < partition_end ])
     }
   }
