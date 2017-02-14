@@ -28,8 +28,10 @@ lense <- function(lensefun, lenseparam=NULL, partition_count=4, overlap = 0.5) {
   # note: using as.numeric to convert arguments becuase Shiny inputs return strings
   L <- structure( list("lensefun"  = lensefun, 
                        "lenseparam"= lenseparam,  # don't use as.numeric here, sometimes is variable name
-                       "p"         = as.numeric(partition_count),  # or should be n
+                       "n"         = as.numeric(partition_count),  # or should be n
                        "o"         = as.numeric(overlap)),
+                       "p0"        = NULL, # lower bound of lense values, filled in when L values calculated
+                       "pl"  = NULL,  # partition length
                   class = "lense")
 
   # TODO validate partition_count > 0 integer
@@ -84,7 +86,7 @@ mapper.dimensions <-function(gm){
 mapper.run <- function(gm){
   
   gm$distance   <- distance.mapper(gm,method="euclidean") # dist(scale(gm$d),method="euclidean", upper=FALSE)
-  gm$partitions <- partition.mapper(gm)
+  gm$partitions  <- partition.mapper(gm)
   gm$clusters   <- clusters.mapper(gm, cluster_method = cluster_method, shinyProgressFunction=progressUpdater ) 
   gm$nodes      <- nodes.mapper(gm)
   gm$adjmatrix  <- adjacency.mapper(gm) 
@@ -113,20 +115,75 @@ makemapper <- function(dataset, lensefun, partition_count=4, overlap = 0.5,
 #' @param method A string method name used by the dist() function
 #' @return distance matrix of data element of mapper object gm$d
 distance.mapper <- function(gm, method="euclidean") {
-  
-  # notes: lense functions currently assume distance matrix is pre-calculated and present in the gm object
-  # calculation should be done in a seperate routine that calculates regions on demand and in parallel
-  
   # same method, just using scaled data or not
   if ( gm$normalize_data ) 
     { dist(scale(gm$d),method, upper=FALSE)  }
   else 
     { dist(gm$d,method, upper=FALSE) }
-  
-  
-  
+
 }
   
+
+#"lensefun"  = lensefun, 
+#"lenseparam"= lenseparam,  # don't use as.numeric here, sometimes is variable name
+#"n"         = as.numeric(partition_count),  # or should be n
+#"o"         = as.numeric(overlap)),
+#"p0"        = NULL, # lower bound of lense values, filled in when L values calculated
+#"pl"  = NULL,  # partition length
+
+lense.calculate <- function(gm,dimension=1){
+  L <- gm$lense[[dimension]]
+  if (class(L) != "lense") stop ("partition function requires a lense object")
+  L$values <- L$lensefun(gm$d, L$lenseparam, gm$distance)
+  # L is 1D vector of values from the filter/lense function with same length as D
+  # copy names of rows e.g. rowids to L
+  names(L$values) <- rownames(gm$d)
+  L$p0 <- min(L$values)
+  total_length = max(L) - p0
+  L$pl <- total_length/(n - ((n-1)*lense$o))
+  return (L)
+}
+
+partition_start <- function(L,partition_index){
+  if (class(L) != "lense") stop ("partition function requires a lense object")
+  return( L$p0 + (L$pl * (partition_index - 1) * (1-L$o)) )
+  # offset== starting value is 1/2 partition size X parttion number
+}
+
+get_partition_index <- function(L,this_partition_start_value){
+  if (class(L) != "lense") stop ("partition function requires a lense object")
+  # L must have been 'calculated' to load these values
+  i = (  ((this_partition_start_value - L$p0) / L$pl) + (1-L$o)) / (1-L$o)    
+}
+
+partition_end <- function(L,i) {
+  return( partition_start(L,i) + L$pl )
+}
+
+
+
+# given a value from a Lense, which partition is it in?
+partition_index_for_l_value <- function(L,l_value){
+  if (class(L) != "lense") stop ("partition function requires a lense object")
+  # first use the index calculator on this l_value that's greater than the Partition start, so will have fractional part
+  index_plus_something = get_partition_index(l_value)
+  # the index is the nearest integer to this calculation
+  partition_1_index = floor(index_plus_something)
+  # given partitions overlap, does this Lense value fit in the lower partition?
+  # if it's more than the overlap away from parition value, it's past end of previous partition
+  distance_from_partition_start = index_plus_something - partition_1_index
+  if ( distance_from_partition_start < lense$o & partition_1_index > 1 ) { 
+    partition_2_index = partition_1_index - 1  
+  } else {
+    partition_2_index = NA
+  }
+  
+  # return the 2 indexes for when o < 0.5
+  # TODO add 3rd index when  o > .5 
+  return( c(partition_1_index, partition_2_index))
+  
+}
+
 
 #' partition a mapper object dataset by reducing dimensions via lense or filter function
 #' lense function must be defined in the mapper object, and must return vector with 
@@ -138,104 +195,31 @@ distance.mapper <- function(gm, method="euclidean") {
 #' @param gm mapper object with dataset and lense function and lense parameters
 #' @return list of vectors of rownames from the dataset, e.g. subsets or partitions 
 #' @export
-partition.mapper <- function(gm, dimension = 1) {
+partition.mapper <- function(gm) {
   if (class(gm) != "mapper") stop("partition: requires input of class mapper class")
+  # if (class(gm$lense[[1]]) != "lense") stop ("partition function requires a lense object")
+  if (is.null(gm$distance)) { gm$distance = distance.mapper }  ## TODO this is not saved as pass by value which is inefficient
   
-  if (is.null(gm$distance)) { gm$distance = distance.mapper }  ## TODO this is not saved as pass by value
-  # internal function used by apply
+  gm$partitions = list()  # list of dimenions, and partitions inside each dimensionl
   
-  lense.calculate <- function(L){
-    # notes: some lense filter functions require distance matrix of rows
-    # lense functions currently assume distance matrix is pre-calculated and present in the gm object
-    # calculation should be done in a seperate routine that calculates regions on demand and in parallel
-    # alternatively if there are n > 1 dimensions, could be stuck recalculating 
-    # distance for each dimension unless we track which distances have been calculated
-    # but then need to check that position.  
+  # global gm mapper object present
+  lense.partition <- function(gm, dimension = 1) {
+    # update list item in lense object with calculated values
+    gm$lense[[dimension]] <- lense.calculate(gm,dimension)
     
-    if (class(L) != "lense") stop ("partition function requires a lense object")
-    Lvalues <- L$lensefun(gm$d, L$lenseparam,gm$distance)
-    # L is 1D vector of values from the filter/lense function with same length as D
-    # copy names of rows e.g. rowids to L
-    names(Lvalues) <- rownames(gm$d)
-    return (Lvalues)
-  }
-  
-  # create list of linear filter outputs for lense function (e.g. each dimension)
-  # require plyr library
-  L <- llply(gm$lenses,lense.calculate)
-  
-  
-  # n <- lense$partition_count # num of partitions 
-  # o <- lense$overlap         # percent overlap
-  
-  # assume L is in same order as data, transfer row names to keep identity
-  
-  
-  lense.paritition <- function(lense) {
-    if (class(lense) != "lense") stop ("partition function requires a lense object")
-    #### TODO this is duplicating code here
-    L <- lense$lensefun(gm$d, lense$lenseparam,gm$distance)
-    # L is 1D vector of values from the filter/lense function with same length as D
-    # copy names of rows e.g. rowids to L
-    names(L) <- rownames(gm$d)
-    
-    p0 <- min(L)    
-    total_length = max(L) - p0
-    # pl= partition length
-    o  <- lense$o
-    n  <- lense$p
-    pl <- total_length/(n - ((n-1)*lense$o))
 
-    ## get values for partition i; used by vectorized apply
-    partition_start <- function(i){
-      # global parameters p0, pl, o overlap
-      return( p0 + (pl * (i - 1) * (1-lense$o)) )
-             # offset== starting value is 1/2 partition size X parttion number
-    }
-    
-    # inverse of the above, given a paritition starting value, return the index
-    get_partition_index <- function(this_partition_start_value){
-      i = (  ((this_partition_start_value - p0) / pl) + (1-lense$o)) / (1-lense$o)    
-    }
-    
-    # given a value from a Lense, which partition is it in?
-    partition_index_for_l_value <- function(l_value){
-      # first use the index calculator on this l_value that's greater than the Partition start, so will have fractional part
-      index_plus_something = get_partition_index(l_value)
-      # the index is the nearest integer to this calculation
-      partition_1_index = floor(index_plus_something)
-      # given partitions overlap, does this Lense value fit in the lower partition?
-      # if it's more than the overlap away from parition value, it's past end of previous partition
-      distance_from_partition_start = index_plus_something - partition_1_index
-      if ( distance_from_partition_start < lense$o & partition_1_index > 1 ) { 
-        partition_2_index = partition_1_index - 1  
-      } else {
-        partition_2_index = NA
-        }
-      
-      # return the 2 indexes.  
-      return( c(partition_1_index, partition_3_index))
-      
-    }
-    
-    second_partition <- function(l_value) {
-      index_plus_something = et_partition_index(l_value)
-      
-    }
-  
-    partition_end <- function(i) {
-      return( partition_start(i) + pl )
-    }
-    
+    ## inefficient way to assign values to a parition
     partition_values = function(i){
       partition_start = p0 + (pl * (i - 1) * (1-o))  # offset== starting value is 1/2 partition size X parttion number
       partition_end   = partition_start + pl
-      
+
       return(L[L >=  partition_start & L < partition_end ])
     }
   }
   
+  ## 
   partitions = lapply(1:n,partition_values)
+  
   # Note : here is a test that all rows have been included in at least one partition
   # if(nrow(gm$d) != length(unique(unlist(partitions)))) stop("partitioning does not include all rows")
  
