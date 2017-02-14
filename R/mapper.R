@@ -53,8 +53,8 @@ mapper <- function(dataset, lenses, cluster_method="single", bin_count=10, norma
                       "lenses"=lense, 
                       "cluster_method"=cluster_method, 
                       "bin_count" = as.numeric(bin_count),
-                      "normalize_data" = normalize_data,
-                      "dimensions" = dimensions),
+                      "normalize_data" = normalize_data
+                      ),
                  class="mapper")
   
   ### TODO ; remove all as.numeric conversions here as we need to allow lists
