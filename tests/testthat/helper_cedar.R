@@ -15,3 +15,12 @@ example_mapper <- function(){
          cluster_method="single", bin_count=10, normalize_data=TRUE)
 }
 
+example_mapper_2d <- function(){
+  d = circle_data()
+  l1 = lense(lense.projection, lenseparam="X", partition_count=4, overlap = 0.5) 
+  l2 = lense(lense.projection, lenseparam="Y", partition_count=4, overlap = 0.5) 
+  
+  mapper(dataset = d, 
+         lenses=list(l1,l2), 
+         cluster_method="single", bin_count=10, normalize_data=TRUE)
+}
