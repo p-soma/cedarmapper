@@ -201,24 +201,37 @@ partition.mapper <- function(gm) {
   if (is.null(gm$distance)) { gm$distance = distance.mapper }  ## TODO this is not saved as pass by value which is inefficient
   
   gm$partitions = list()  # list of dimenions, and partitions inside each dimensionl
-  
+
   # global gm mapper object present
-  lense.partition <- function(gm, dimension = 1) {
+  assign_partitions <- function(gm, dimension = 1) {
     # update list item in lense object with calculated values
     gm$lense[[dimension]] <- lense.calculate(gm,dimension)
+    L = gm$lense[[dimension]]
     
-
-    ## inefficient way to assign values to a parition
-    partition_values = function(i){
-      partition_start = p0 + (pl * (i - 1) * (1-o))  # offset== starting value is 1/2 partition size X parttion number
-      partition_end   = partition_start + pl
-
-      return(L[L >=  partition_start & L < partition_end ])
+    # n empty partitions to be filled with point IDs.  R idiom to create empty list n items
+    # partitions is a list, each item is a vector of rowids of rows belonging to the partition
+    partitions = vector("list", L$n)  
+    for(i in 1:length(L$lvalues)){
+      # get the partitions in which the value goes
+      
+      rowids = rownames(L$values[i])
+      # for each overlapping partition that the value is part of...append values rowid to partition list 
+      for(p in partition_index_for_l_value(L,L$values[i]) )
+          partitions[[ p ]] = c(partitions[[ p ]],rowids) 
+          }
     }
+    
+  
   }
   
-  ## 
-  partitions = lapply(1:n,partition_values)
+    ## inefficient way to assign values to a parition
+    # partition_values = function(i){
+    #  partition_start = p0 + (pl * (i - 1) * (1-o))  # offset== starting value is 1/2 partition size X parttion number
+    #  partition_end   = partition_start + pl
+    #
+    #  return(L[L >=  partition_start & L < partition_end ])
+    # }
+    # partitions = lapply(1:n,partition_values)
   
   # Note : here is a test that all rows have been included in at least one partition
   # if(nrow(gm$d) != length(unique(unlist(partitions)))) stop("partitioning does not include all rows")
@@ -227,7 +240,6 @@ partition.mapper <- function(gm) {
   non_empty = function(x) { length(x)>0}
   
   # return list of partitions,removing empty ones
-  
   return(partitions[sapply(partitions, non_empty)])
 
 } 
