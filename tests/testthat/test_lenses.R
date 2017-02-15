@@ -27,5 +27,5 @@ test_that("eccentricity of circle data is constant", {
   lvalues <- L$lensefun(d, L$lenseparam)
   expect_equal(round(var(lvalues)),0)
   # same number of values from function as rows of data
-  expect_equal(nrow(d),lenght(lvalues))
+  expect_equal(nrow(d),length(lvalues))
 })
