@@ -52,7 +52,7 @@ mapper <- function(dataset, lenses, cluster_method="single", bin_count=10, norma
   #  "partition_count"=as.numeric(partition_count), 
   #  "overlap" = as.numeric(overlap),   # percent, o <= 1
    gm = structure(  list(d = dataset, 
-                      "lenses"=lense, 
+                      "lenses"=lenses, 
                       "cluster_method"=cluster_method, 
                       "bin_count" = as.numeric(bin_count),
                       "normalize_data" = normalize_data
@@ -77,7 +77,7 @@ mapper <- function(dataset, lenses, cluster_method="single", bin_count=10, norma
 #' @param gm graphmapper object
 #' @return integer >1 or NA
 #' @export
-mapper.dimensions <-function(gm){
+mapper.dimensions <- function(gm){
   length(gm$lenses)
 }
 
@@ -86,7 +86,7 @@ mapper.dimensions <-function(gm){
 mapper.run <- function(gm){
   
   gm$distance   <- distance.mapper(gm,method="euclidean") # dist(scale(gm$d),method="euclidean", upper=FALSE)
-  gm$partitions  <- partition.mapper(gm)
+  gm$partitions <- partition.mapper(gm)
   gm$clusters   <- clusters.mapper(gm, cluster_method = cluster_method, shinyProgressFunction=progressUpdater ) 
   gm$nodes      <- nodes.mapper(gm)
   gm$adjmatrix  <- adjacency.mapper(gm) 
@@ -131,38 +131,50 @@ distance.mapper <- function(gm, method="euclidean") {
 #"p0"        = NULL, # lower bound of lense values, filled in when L values calculated
 #"pl"  = NULL,  # partition length
 
+#' calculate the lense function values and parameters needed for partitioning
+#' mapper object is needed for data and distance matrix only
+#' @export
+#' @param gm
+#' @return Lense object with values and stats
 lense.calculate <- function(gm,dimension=1){
-  L <- gm$lense[[dimension]]
+  L <- gm$lenses[[dimension]]
   if (class(L) != "lense") stop ("partition function requires a lense object")
+  
+  # fill up L member variables and return it
+  # L$values is 1D vector of values from the filter/lense function with same length as mapper data
   L$values <- L$lensefun(gm$d, L$lenseparam, gm$distance)
-  # L is 1D vector of values from the filter/lense function with same length as D
-  # copy names of rows e.g. rowids to L
   names(L$values) <- rownames(gm$d)
+  
+  # calc and store aspects of resulting vector
   L$p0 <- min(L$values)
   total_length = max(L) - p0
   L$pl <- total_length/(n - ((n-1)*lense$o))
   return (L)
 }
 
+# 'given a partition index, what is lower bound of that partition
 partition_start <- function(L,partition_index){
   if (class(L) != "lense") stop ("partition function requires a lense object")
   return( L$p0 + (L$pl * (partition_index - 1) * (1-L$o)) )
   # offset== starting value is 1/2 partition size X parttion number
 }
 
+# 'given a partition index, what is upper bound of that partition
+partition_end <- function(L,i) {
+  return( partition_start(L,i) + L$pl )
+}
+
+
+# 'given start value a partition, return the index of that partition
 get_partition_index <- function(L,this_partition_start_value){
   if (class(L) != "lense") stop ("partition function requires a lense object")
   # L must have been 'calculated' to load these values
   i = (  ((this_partition_start_value - L$p0) / L$pl) + (1-L$o)) / (1-L$o)    
 }
 
-partition_end <- function(L,i) {
-  return( partition_start(L,i) + L$pl )
-}
 
 
-
-# given a value from a Lense, which partition is it in?
+# given a value from a Lense, which partitions is it in?
 partition_index_for_l_value <- function(L,l_value){
   if (class(L) != "lense") stop ("partition function requires a lense object")
   # first use the index calculator on this l_value that's greater than the Partition start, so will have fractional part
@@ -185,6 +197,26 @@ partition_index_for_l_value <- function(L,l_value){
 }
 
 
+assign_partitions <- function( dimension, gm ) {
+  # update list item in lense object with calculated values
+  
+  L <- lense.calculate(gm,dimension)
+  # gm$lenses[[dimension]]
+  
+  # n empty partitions to be filled with point IDs.  R idiom to create empty list n items
+  # partitions is a list, each item is a vector of rowids of rows belonging to the partition
+  partitionset = vector("list", L$n)  
+  for(i in 1:length(L$lvalues)){
+    # get the partitions in which the value goes
+    
+    rowids = rownames(L$values[i])
+    # for each overlapping partition that the value is part of...append values rowid to partition list 
+    for(p in partition_index_for_l_value(L,L$values[i]) )
+      partitionset[[ p ]] = c(partitionsset[[ p ]],rowids) 
+  }
+  return(partitions1d)
+}
+
 #' partition a mapper object dataset by reducing dimensions via lense or filter function
 #' lense function must be defined in the mapper object, and must return vector with 
 #' rownames preserved
@@ -200,30 +232,9 @@ partition.mapper <- function(gm) {
   # if (class(gm$lense[[1]]) != "lense") stop ("partition function requires a lense object")
   if (is.null(gm$distance)) { gm$distance = distance.mapper }  ## TODO this is not saved as pass by value which is inefficient
   
-  gm$partitions = list()  # list of dimenions, and partitions inside each dimensionl
+  # great list of dimensional partitions
+  partitions = sapply(1: mapper.dimensions(gm),assign_partitions, gm, simplify = TRUE)
 
-  # global gm mapper object present
-  assign_partitions <- function(gm, dimension = 1) {
-    # update list item in lense object with calculated values
-    gm$lense[[dimension]] <- lense.calculate(gm,dimension)
-    L = gm$lense[[dimension]]
-    
-    # n empty partitions to be filled with point IDs.  R idiom to create empty list n items
-    # partitions is a list, each item is a vector of rowids of rows belonging to the partition
-    partitions = vector("list", L$n)  
-    for(i in 1:length(L$lvalues)){
-      # get the partitions in which the value goes
-      
-      rowids = rownames(L$values[i])
-      # for each overlapping partition that the value is part of...append values rowid to partition list 
-      for(p in partition_index_for_l_value(L,L$values[i]) )
-          partitions[[ p ]] = c(partitions[[ p ]],rowids) 
-          }
-    }
-    
-  
-  }
-  
     ## inefficient way to assign values to a parition
     # partition_values = function(i){
     #  partition_start = p0 + (pl * (i - 1) * (1-o))  # offset== starting value is 1/2 partition size X parttion number

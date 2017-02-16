@@ -1,6 +1,7 @@
 context("Mapper Object")
 
-### helper functions are in helper_mapper.R file
+### first  helper_mapper.R file sets example_mapper
+
 d = circle_data()
 ### tests
 test_that("Mapper is object", {
@@ -11,6 +12,27 @@ test_that("Mapper is object", {
 
 })
 
+test_that("2D Mapper can be created",{
+  
+  m<-example_mapper_2d()
+  expect_is(m, "mapper")
+  
+  for(d in 1:2) {
+    L <- m$lenses[[d]]
+    expect_is(L,"lense") 
+  }
+  
+  expect_equal(length(m$lenses),2)
+  expect_equal(mapper.dimensions(m),2)
+
+})
+
+test_that("2D Mapper can be partitioned",{
+  m<-example_mapper_2d()
+  m$distance    <- distance.mapper(m,method="euclidean")
+  m$partitions  <- partition.mapper(m)
+  # test partition structure
+})
 
 test_that("mapper distance calc",{
   m <- example_mapper()
