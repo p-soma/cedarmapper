@@ -136,19 +136,19 @@ distance.mapper <- function(gm, method="euclidean") {
 #' @export
 #' @param gm
 #' @return Lense object with values and stats
-lense.calculate <- function(gm,dimension=1){
-  L <- gm$lenses[[dimension]]
+mapper.lense.calculate <- function(m,dimension=1){
+  L <- m$lenses[[dimension]]
   if (class(L) != "lense") stop ("partition function requires a lense object")
   
   # fill up L member variables and return it
   # L$values is 1D vector of values from the filter/lense function with same length as mapper data
-  L$values <- L$lensefun(gm$d, L$lenseparam, gm$distance)
-  names(L$values) <- rownames(gm$d)
+  L$values <- L$lensefun(m$d, L$lenseparam, m$distance)
+  names(L$values) <- rownames(m$d)
   
   # calc and store aspects of resulting vector
   L$p0 <- min(L$values)
-  total_length = max(L) - p0
-  L$pl <- total_length/(n - ((n-1)*lense$o))
+  total_length = max(L$values) - L$p0
+  L$pl <- total_length/(L$n - ((L$n-1)*L$o))
   return (L)
 }
 
@@ -200,7 +200,7 @@ partition_index_for_l_value <- function(L,l_value){
 assign_partitions <- function( dimension, gm ) {
   # update list item in lense object with calculated values
   
-  L <- lense.calculate(gm,dimension)
+  L <- mapper.lense.calculate(gm,dimension)
   # gm$lenses[[dimension]]
   
   # n empty partitions to be filled with point IDs.  R idiom to create empty list n items
