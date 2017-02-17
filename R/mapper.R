@@ -138,7 +138,7 @@ distance.mapper <- function(gm, method="euclidean") {
 #' @return Lense object with values and stats
 mapper.lense.calculate <- function(m,dimension=1){
   L <- m$lenses[[dimension]]
-  if (class(L) != "lense") stop ("partition function requires a lense object")
+  if (class(L) != "lense") {stop ("partition function requires a lense object")}
   
   # fill up L member variables and return it
   # L$values is 1D vector of values from the filter/lense function with same length as mapper data
@@ -154,7 +154,7 @@ mapper.lense.calculate <- function(m,dimension=1){
 
 # 'given a partition index, what is lower bound of that partition
 partition_start <- function(L,partition_index){
-  if (class(L) != "lense") stop ("partition function requires a lense object")
+  if (class(L) != "lense") { stop ("partition function requires a lense object")}
   return( L$p0 + (L$pl * (partition_index - 1) * (1-L$o)) )
   # offset== starting value is 1/2 partition size X parttion number
 }
@@ -167,7 +167,7 @@ partition_end <- function(L,i) {
 
 # 'given start value a partition, return the index of that partition
 get_partition_index <- function(L,this_partition_start_value){
-  if (class(L) != "lense") stop ("partition function requires a lense object")
+  if (class(L) != "lense"){ stop("partition function requires a lense object")}
   # L must have been 'calculated' to load these values
   i = (  ((this_partition_start_value - L$p0) / L$pl) + (1-L$o)) / (1-L$o)    
 }
@@ -176,20 +176,21 @@ get_partition_index <- function(L,this_partition_start_value){
 
 # given a value from a Lense, which partitions is it in?
 partition_index_for_l_value <- function(L,l_value){
-  if (class(L) != "lense") stop ("partition function requires a lense object")
+  if (class(L) != "lense") {stop ("partition function requires a lense object")}
   # first use the index calculator on this l_value that's greater than the Partition start, so will have fractional part
-  index_plus_something = get_partition_index(l_value)
+  index_plus_something = get_partition_index(L,l_value)
   # the index is the nearest integer to this calculation
   partition_1_index = floor(index_plus_something)
   # given partitions overlap, does this Lense value fit in the lower partition?
   # if it's more than the overlap away from parition value, it's past end of previous partition
   distance_from_partition_start = index_plus_something - partition_1_index
-  if ( distance_from_partition_start < lense$o & partition_1_index > 1 ) { 
-    partition_2_index = partition_1_index - 1  
+  if ( distance_from_partition_start < L$o & partition_1_index > 1 ) { 
+    partition_2_index = partition_1_index - 1 
+    return( c(partition_1_index, partition_2_index))
   } else {
-    partition_2_index = NA
+    partition_2_index = NULL
   }
-  
+
   # return the 2 indexes for when o < 0.5
   # TODO add 3rd index when  o > .5 
   return( c(partition_1_index, partition_2_index))
@@ -197,22 +198,24 @@ partition_index_for_l_value <- function(L,l_value){
 }
 
 
-assign_partitions <- function( dimension, gm ) {
+assign_partitions <- function( dimension, m ) {
   # update list item in lense object with calculated values
-  
-  L <- mapper.lense.calculate(gm,dimension)
+
+  # L <- mapper.lense.calculate(m,dimension)
   # gm$lenses[[dimension]]
   
   # n empty partitions to be filled with point IDs.  R idiom to create empty list n items
   # partitions is a list, each item is a vector of rowids of rows belonging to the partition
   partitionset = vector("list", L$n)  
-  for(i in 1:length(L$lvalues)){
+  for(i in 1:length(L$values)){
     # get the partitions in which the value goes
-    
+
     rowids = rownames(L$values[i])
     # for each overlapping partition that the value is part of...append values rowid to partition list 
-    for(p in partition_index_for_l_value(L,L$values[i]) )
-      partitionset[[ p ]] = c(partitionsset[[ p ]],rowids) 
+    print(i, partition_index_for_l_value(L,L$values[i]))
+    for(p in partition_index_for_l_value(L,L$values[i]) ) {
+      if(!is.na(p)) {partitionset[[ p ]] = c(partitionset[[ p ]],rowids) }
+    }
   }
   return(partitions1d)
 }
@@ -227,27 +230,51 @@ assign_partitions <- function( dimension, gm ) {
 #' @param gm mapper object with dataset and lense function and lense parameters
 #' @return list of vectors of rownames from the dataset, e.g. subsets or partitions 
 #' @export
-partition.mapper <- function(gm) {
-  if (class(gm) != "mapper") stop("partition: requires input of class mapper class")
+partition.mapper <- function(m) {
+  if (class(m) != "mapper") stop("partition: requires input of class mapper class")
   # if (class(gm$lense[[1]]) != "lense") stop ("partition function requires a lense object")
-  if (is.null(gm$distance)) { gm$distance = distance.mapper }  ## TODO this is not saved as pass by value which is inefficient
+  if (is.null(m$distance)) { m$distance = distance.mapper }  ## TODO this is not saved as pass by value which is inefficient
+  
+  # calculate lense values and store back in lenses 
+  for(i in 1:length(m$lenses)){
+    m$lenses[[i]]= mapper.lense.calculate(m,i)
+  }
+  
+  
+  # determine partitions per row, for each dimension
+  # row_partition_list has one entry per data row, a vector of partition IDs for each dimension
+  
+  getpartlists <- function(d,i){
+      partition_index_for_l_value(m$lenses[[d]], m$lenses[[d]]$values[i])
+  }
+
+  accumulate_partlists <- function(i){
+      lapply(1:mapper.dimensions(m),getpartlists,i)
+  }
+  
+  partitioncrossproduct <- function(){
+    cp_df = expand.grid(pl)
+    cp_df$id<- names(pl[[1]])  #TODO assigns the row ID ; use names here instead
+    return(cp_df)
+  }
+  
+  partlists <- lapply(1:nrow(m$d),accumulate_partlists  )
+  cplists   <- lapply(partlists,partitioncrossproduct)
+  dfparts   <- plyr::rbind.fill(cplists)
+  dimension_columns = as.list(names(dfparts)[(0-length(dfparts))])  # this assumes ID is the LAST column
+  
+  mapper.partitions = split(dfparts,list(dfparts$Var1,dfparts$Var2),drop=TRUE)
+  # named list of data.frames
+  # names(mapper.partitions)
+  # [1] "1.1" "2.1" "1.3" "2.3" "3.3" "4.3" "5.3" "6.3" "4.5" "5.5" "4.6" "5.6"
+  # ' combines lists of numbers into data frame with column of id
+
   
   # great list of dimensional partitions
-  partitions = sapply(1: mapper.dimensions(gm),assign_partitions, gm, simplify = TRUE)
-
-    ## inefficient way to assign values to a parition
-    # partition_values = function(i){
-    #  partition_start = p0 + (pl * (i - 1) * (1-o))  # offset== starting value is 1/2 partition size X parttion number
-    #  partition_end   = partition_start + pl
-    #
-    #  return(L[L >=  partition_start & L < partition_end ])
-    # }
-    # partitions = lapply(1:n,partition_values)
+  # partitions = sapply(1: mapper.dimensions(gm),assign_partitions, gm, simplify = TRUE)
   
-  # Note : here is a test that all rows have been included in at least one partition
-  # if(nrow(gm$d) != length(unique(unlist(partitions)))) stop("partitioning does not include all rows")
- 
-  ## test function used to remove empty partitions
+  
+  
   non_empty = function(x) { length(x)>0}
   
   # return list of partitions,removing empty ones
