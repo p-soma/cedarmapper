@@ -231,54 +231,52 @@ assign_partitions <- function( dimension, m ) {
 #' @return list of vectors of rownames from the dataset, e.g. subsets or partitions 
 #' @export
 partition.mapper <- function(m) {
+  
   if (class(m) != "mapper") stop("partition: requires input of class mapper class")
   # if (class(gm$lense[[1]]) != "lense") stop ("partition function requires a lense object")
   if (is.null(m$distance)) { m$distance = distance.mapper }  ## TODO this is not saved as pass by value which is inefficient
   
-  # calculate lense values and store back in lenses 
+  # calculate lense values and store back in lense objects
   for(i in 1:length(m$lenses)){
     m$lenses[[i]]= mapper.lense.calculate(m,i)
   }
-  
-  
-  # determine partitions per row, for each dimension
-  # row_partition_list has one entry per data row, a vector of partition IDs for each dimension
-  
+
+  ## functions used by apply statements to generate lists
+  ## use local m mapper object
+  # get partition membership for one lense, one row
   getpartlists <- function(d,i){
       partition_index_for_l_value(m$lenses[[d]], m$lenses[[d]]$values[i])
   }
 
+  # determine paritition membership, for each lense/dimension
   accumulate_partlists <- function(i){
       lapply(1:mapper.dimensions(m),getpartlists,i)
   }
-  
+
+  # for each row, take cross product of all dimension partitions  
   partitioncrossproduct <- function(){
     cp_df = expand.grid(pl)
     cp_df$id<- names(pl[[1]])  #TODO assigns the row ID ; use names here instead
     return(cp_df)
   }
   
+  # list of all partitions, per dimension
   partlists <- lapply(1:nrow(m$d),accumulate_partlists  )
+  # list of dataframes of cross products for each row, same size as data
   cplists   <- lapply(partlists,partitioncrossproduct)
+  # list of 
   dfparts   <- plyr::rbind.fill(cplists)
   dimension_columns = as.list(names(dfparts)[(0-length(dfparts))])  # this assumes ID is the LAST column
+  partitions = split(dfparts$id,list(dfparts$Var1,dfparts$Var2),drop=TRUE)
   
-  mapper.partitions = split(dfparts,list(dfparts$Var1,dfparts$Var2),drop=TRUE)
-  # named list of data.frames
-  # names(mapper.partitions)
-  # [1] "1.1" "2.1" "1.3" "2.3" "3.3" "4.3" "5.3" "6.3" "4.5" "5.5" "4.6" "5.6"
-  # ' combines lists of numbers into data frame with column of id
-
-  
-  # great list of dimensional partitions
+  # creat list of dimensional partitions
   # partitions = sapply(1: mapper.dimensions(gm),assign_partitions, gm, simplify = TRUE)
-  
-  
-  
-  non_empty = function(x) { length(x)>0}
-  
-  # return list of partitions,removing empty ones
-  return(partitions[sapply(partitions, non_empty)])
+
+  ## TODO remove these functions 
+  ## no longer needed with new method for generating partitions
+  ## no empty partitions are created
+  # non_empty = function(x) { length(x)>0}
+  # return(partitions[sapply(partitions, non_empty)])
 
 } 
 
