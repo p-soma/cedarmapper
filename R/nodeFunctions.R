@@ -19,8 +19,9 @@ library(cluster)
 #  single method to run all steps for graphmapper object
 #' @export
 makegraphmapper <- function(dataset, lensefun, partition_count=4, overlap = 0.5, lensevals,  #coloring 
-                            bin_count=10, cluster_method= 'single', lenseparam = NULL, 
-                            normalize_data=TRUE, dimensions = 1, progressUpdater=NULL){
+                            bin_count=10, cluster_method= 'single', lenseparam = NULL, selectedCols = names(dataset),
+                         #   factorCols = NULL, 
+                           normalize_data=TRUE, dimensions = 1, progressUpdater=NULL){
   # create object with the above params 
 
   
@@ -29,6 +30,8 @@ makegraphmapper <- function(dataset, lensefun, partition_count=4, overlap = 0.5,
                     partition_count=partition_count, 
                     overlap = overlap, 
                     lensevals = lensevals, # lensevals coloring
+                    selectedCols = selectedCols,
+                #    factorCols = factorCols,
                     cluster_method=cluster_method, 
                     bin_count=bin_count, 
                     lenseparam=lenseparam,
@@ -40,6 +43,8 @@ makegraphmapper <- function(dataset, lensefun, partition_count=4, overlap = 0.5,
   gm$distance   <- distance.graphmapper(gm,method="euclidean") # dist(scale(gm$d),method="euclidean", upper=FALSE)
   gm$partitions <- partition.graphmapper(gm)
   gm$lensevals  <- data.frame(gm$lensefun(gm, gm$lenseparam))
+#  gm$selectedCols <- names(gm$d)
+ # gm$factorCols <- NULL
   gm$clusters   <- clusters.graphmapper(gm, cluster_method = cluster_method, shinyProgressFunction=progressUpdater ) 
   gm$nodes      <- nodes.graphmapper(gm)
   gm$adjmatrix  <- adjacency.graphmapper(gm) 
@@ -53,7 +58,8 @@ makegraphmapper <- function(dataset, lensefun, partition_count=4, overlap = 0.5,
 #' @return graphmapper object with all params needed for pipeline
 #' @export
 graphmapper <- function(dataset, lensefun, partition_count=4, overlap = 0.5, lensevals=NULL,
-                        cluster_method="single", bin_count=10, lenseparam = NULL,
+                        cluster_method="single", bin_count=10, lenseparam = NULL, selectedCols = names(dataset),
+                      #  factorCols = NULL, 
                         normalize_data=TRUE, dimensions=1){
   # note: using as.numeric to convert arguments becuase Shiny inputs return strings
   ### TODO change default params to be lists to support n>1 dimension
@@ -64,6 +70,8 @@ graphmapper <- function(dataset, lensefun, partition_count=4, overlap = 0.5, len
                       "overlap" = as.numeric(overlap),   # percent, o <= 1
                       "lensefun"=lensefun, 
                       "lensevals"=lensevals, #lense vals coloring
+                      "selectedCols"=selectedCols,
+                      #"factorCols"=factorCols,
                       "cluster_method"=cluster_method, 
                       "lenseparam" = lenseparam,  # don't use as.numeric here, sometimes is variable name
                       "bin_count" = as.numeric(bin_count),
@@ -88,12 +96,13 @@ graphmapper <- function(dataset, lensefun, partition_count=4, overlap = 0.5, len
 
 distance.graphmapper <- function(gm, method="euclidean") {
   if ( gm$normalize_data ) {
-    d = scale(gm$d) 
+    #print("NORMALIZE")
+    d = scale(gm$d[, gm$selectedCols])
     }
   else {
-    d = gm$d
+    d = gm$d[, gm$selectedCols]
   }
-  
+  #print(d)
   dist(d,method="euclidean", upper=FALSE)
   
 }
@@ -280,7 +289,7 @@ clusters.graphmapper<- function(gm, cluster_method = "single", scaling=FALSE, sh
     # debug 
     # print(gm$partitions[[i]])
 
-    rowset = gm$d[names(gm$partitions[[i]]),] 
+    rowset = gm$d[names(gm$partitions[[i]]), gm$selectedCols] 
     
     # calculate distance matrix for this partition
     # TODO: check if whole data set partition is present, and extract subset from that
@@ -519,7 +528,9 @@ varTable <- function(gm, group_ids = c(1,2)){
     d2 = groupdata(gm,group_ids[2],varname)
     return(data.frame("var"=varname, "mean group 1"=mean(d1),  "variance group 1" = var(d1), "mean group 2"=mean(d2), "variance group 2" = var(d2)))
   }
-  vtable = ldply(colnames(gm$d), varFun)
+ # vtable = ldply(colnames(gm$d), varFun)
+  vtable = ldply(gm$selectedCols, varFun)
+  
 }
 
 # returns a table of ks results for each variable in gm$d
@@ -542,10 +553,25 @@ kstable <- function(gm, group_ids = c(1,2)){
   }
   print('making table')
   
-  vars = colnames(gm$d)
+  #vars = colnames(gm$d) 
+  vars = gm$selectedCols 
+  
+ # print("vars")
+#  print(vars)
   ktable = ldply(vars, ksfun)
   
   return(ktable[order(ktable$pvalue),])
+}
+
+# returns a bar plot of a selected factor variable
+#' @export
+factorBarPlot <- function(gm, varname, group_id = 1){
+  x_label = varname
+  y_label = "Frequency"
+  d_group = groupdata(gm,group_id,varname)
+#  return(barplot(table(gm$d[varname]), xlab = x_label, ylab = y_label) )
+  return(barplot(table(d_group), xlab = x_label, ylab = y_label) )
+    
 }
 
 
