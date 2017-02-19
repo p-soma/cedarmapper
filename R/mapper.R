@@ -145,40 +145,58 @@ mapper.lense.calculate <- function(m,dimension=1){
   L$values <- L$lensefun(m$d, L$lenseparam, m$distance)
   names(L$values) <- rownames(m$d)
   
-  # calc and store aspects of resulting vector
-  L$p0 <- min(L$values)
-  total_length = max(L$values) - L$p0
-  L$pl <- total_length/(L$n - ((L$n-1)*L$o))
+  # calc and store aspects of resulting vector; could be expensive
+  L$p0 <- min(L$values)  
+  L$pmax <-max(L$values)
+  # partition length (e.g width in terms of L values)
+  L$pl <- (L$pmax - L$p0) / (L$n - ((L$n-1)*L$o))
   return (L)
+  
 }
 
 # 'given a partition index, what is lower bound of that partition
-partition_start <- function(L,partition_index){
+partition_start <- function(partition_index,L){
   if (class(L) != "lense") { stop ("partition function requires a lense object")}
+  if (is.n(L$p0)) { stop("error, did not calculate lense") }
+  
+  if (partition_index > L$n || partition_index < 1 ) { return(NA)}
   return( L$p0 + (L$pl * (partition_index - 1) * (1-L$o)) )
   # offset== starting value is 1/2 partition size X parttion number
 }
 
+# partition_starts <- Vectorize( partition_start, c("partition_index"))
+
 # 'given a partition index, what is upper bound of that partition
-partition_end <- function(L,i) {
-  return( partition_start(L,i) + L$pl )
+partition_end <- function(partition_index,L) {
+  return( partition_start(partition_index,L) + L$pl )
 }
 
 
 # 'given start value a partition, return the index of that partition
-get_partition_index <- function(L,this_partition_start_value){
-  if (class(L) != "lense"){ stop("partition function requires a lense object")}
+get_partition_index <- function(partition_start_value,L){
+  
+  if (class(L) != "lense")          { stop("partition function requires a lense object")}
+  if (is.null(L$p0) || is.na(L$po)) { stop("error, did not calculate lense") }
   # L must have been 'calculated' to load these values
-  i = (  ((this_partition_start_value - L$p0) / L$pl) + (1-L$o)) / (1-L$o)    
+  
+  # boundary conditions
+  if( partition_start_value < L$p0 ) { return(NA)}
+  if( partition_start_value > L$p0 + L$pl * L$n) {return(NA)}
+  
+  i = (  ((partition_start_value - L$p0) / L$pl) + (1-L$o)) / (1-L$o) 
+  if(i > L$n ) { i = NA }
+  return(i)
 }
 
-
+get_partition_indices <- Vectorize(get_partition_index)
 
 # given a value from a Lense, which partitions is it in?
-partition_index_for_l_value <- function(L,l_value){
+partition_index_for_l_value <- function(l_value,L){
   if (class(L) != "lense") {stop ("partition function requires a lense object")}
+  if (is.null(L$p0) || is.na(L$po)) { stop("error, did not calculate lense") }
+  
   # first use the index calculator on this l_value that's greater than the Partition start, so will have fractional part
-  index_plus_something = get_partition_index(L,l_value)
+  index_plus_something = get_partition_index(l_value,L)
   # the index is the nearest integer to this calculation
   partition_1_index = floor(index_plus_something)
   # given partitions overlap, does this Lense value fit in the lower partition?
@@ -233,7 +251,7 @@ assign_partitions <- function( dimension, m ) {
 partition.mapper <- function(m) {
   
   if (class(m) != "mapper") stop("partition: requires input of class mapper class")
-  # if (class(gm$lense[[1]]) != "lense") stop ("partition function requires a lense object")
+  if (class(m$lense[[1]]) != "lense") stop ("partition function requires a lense object")
   if (is.null(m$distance)) { m$distance = distance.mapper }  ## TODO this is not saved as pass by value which is inefficient
   
   # calculate lense values and store back in lense objects
@@ -269,9 +287,10 @@ partition.mapper <- function(m) {
   dimension_columns = as.list(names(dfparts)[(0-length(dfparts))])  # this assumes ID is the LAST column
   partitions = split(dfparts$id,list(dfparts$Var1,dfparts$Var2),drop=TRUE)
   
-  # creat list of dimensional partitions
-  # partitions = sapply(1: mapper.dimensions(gm),assign_partitions, gm, simplify = TRUE)
-
+  ## TODO either modify the structure above or next step in pipeline
+  # this is a list of vectors, each vector a set of rowids. 
+  # however it's not compatible with next clustering step. 
+  
   ## TODO remove these functions 
   ## no longer needed with new method for generating partitions
   ## no empty partitions are created
