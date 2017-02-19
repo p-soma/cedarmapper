@@ -9,8 +9,7 @@ test_that("can make a lense object", {
   expect_is(l, "lense")
   expect_equal(l$o,overlap)
   expect_equal(l$n,partition_count)
-  
-  
+
 })
 
 test_that("1D Lense can be calculated",{
