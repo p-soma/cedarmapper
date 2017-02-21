@@ -13,6 +13,13 @@ circle.graphmapper<- function(npoints=100, randomize=FALSE) {
   return(gm)
 }
 
+plot.circle.mapper<- function(npoints=100, randomize=FALSE) {
+  m <- circle_mapper(npoints,partition_count=4, overlap = 0.5)
+  m <- mapper.run(m)
+  plot(graph.mapper(m), main = paste0("Circle data"))
+  return(m)
+}
+
 
 # example 1, 100 points
 gm = circle.graphmapper()

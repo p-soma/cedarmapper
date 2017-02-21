@@ -72,6 +72,7 @@ lense.projection <- function(d,lenseparam=NULL,distmat=NULL ){
   return(L)
 }
 
+# TODO this is not needed, one lense per dimension
 lense.2dprojection <- function(d,lenseparam=NULL,distmat=NULL ){
   coordinates <- lenseparam
   # returns a vector variable, defaults to the first column

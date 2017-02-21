@@ -78,4 +78,9 @@ test_that("2D Mapper can be created",{
 
 
 
-
+test_that("2D Mapper can run ",{
+  m <- example_mapper_2d()
+  m <- mapper.run(m)
+   
+  })  
+  

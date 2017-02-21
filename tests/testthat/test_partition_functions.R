@@ -71,6 +71,6 @@ test_that("mapper partition calc works",{
 test_that("2D Mapper can be partitioned",{
   m<-example_mapper_2d()
   m$distance    <- distance.mapper(m,method="euclidean")
- # m$partitions  <- partition.mapper(m)
+  m$partitions  <- partition.mapper(m)
   # test partition structure
 })
