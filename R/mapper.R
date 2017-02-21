@@ -38,20 +38,22 @@ lense <- function(lensefun, lenseparam=NULL, partition_count=4, overlap = 0.5) {
 #' Constructor for mapper object to be used in mapper pipeline
 #' @return mapper object with all params needed for pipeline
 #' @export
-mapper <- function(dataset, lenses, lensevals=NULL, cluster_method="single", bin_count=10, normalize_data=TRUE, selected_cols=names(dataset)){
+mapper <- function(dataset, lenses, lensevals=NULL, cluster_method="single", bin_count=10, normalize_data=TRUE, selected_cols=NULL){
   # lenses have previous parameters used: lensefun, partition_count=4, overlap = 0.5,lenseparam = NULL
   
   # note: dimensions variable 
   # note: using as.numeric to convert arguments becuase Shiny inputs return strings
     
-  #  "partition_count"=as.numeric(partition_count), 
-  #  "overlap" = as.numeric(overlap),   # percent, o <= 1
-   gm = structure(  list(d = dataset, 
+  if(is.null(selected_cols)){ 
+    selected_cols = names(dataset)[sapply(dataset,is.numeric)]
+  }
+  
+   gm = structure(  list("d" = dataset, 
                       "lenses"=lenses, 
                       "cluster_method"=cluster_method, 
                       "bin_count" = as.numeric(bin_count),
                       "normalize_data" = normalize_data,
-                      "selected_cols" = names(d),
+                      "selected_cols" = selected_cols,
                       "lensevals"=lensevals
                       ),
                  class="mapper")
@@ -92,15 +94,26 @@ mapper.run <- function(m, progressUpdater = NULL){
   
 }
 
-#  single method to collect parameters and then run all steps for 1D mapper object
-#  
+#' single method to collect parameters and then run all steps for 1D mapper object
+#' this is for the 1D case, and currently structured to match shiny app that uses
+#' structure of old mapper object, but this mushes it into a 1D mapper 
 #' @export
 makemapper <- function(dataset, lensefun, lensevals=NULL, partition_count=4, overlap = 0.5,  
                        bin_count=10, cluster_method= 'single', lenseparam = NULL, 
-                       normalize_data=TRUE, progressUpdater=NULL, selected_cols=names(dataset)){
+                       normalize_data=TRUE, progressUpdater=NULL, selected_cols=NULL) {
+  
   # create objects with the above params
+  # if selected_cols is not sent (is NULL) then limit pipeline only numeric columns
+  #   -- otherwise calculations will error (distance matrix, etc)
+  if(is.null(selected_cols)){ 
+    selected_cols = names(dataset)[sapply(dataset,is.numeric)]
+    }
+  
+  #DEBUG!  remove
+  print(selected_cols)
+  
   one_lense <- lense(lensefun, lenseparam, partition_count, overlap)
-  gm <- mapper(dataset=dataset, 
+  m<- mapper(dataset=dataset, 
                lenses=list(one_lense),
                cluster_method=cluster_method, 
                bin_count=bin_count, 
@@ -108,8 +121,8 @@ makemapper <- function(dataset, lensefun, lensevals=NULL, partition_count=4, ove
                lensevals=lensevals,
                selected_cols=selected_cols
                )
-  gm <- mapper.run(gm)
-#  gm$lensevals
+  m <- mapper.run(m)
+
   return(gm)
 }
 
@@ -119,6 +132,7 @@ makemapper <- function(dataset, lensefun, lensevals=NULL, partition_count=4, ove
 #' @return distance matrix of data element of mapper object gm$d
 distance.mapper <- function(m, method="euclidean") {
   # same method, just using scaled data or not
+  print(m$selected_cols)
   if ( m$normalize_data ) 
     { dist(scale(m$d[, m$selected_cols]),method, upper=FALSE)  }
   else 
@@ -314,7 +328,8 @@ clusters.mapper<- function(m, shinyProgressFunction = NULL) {
   npartition = length(m$partitions)
   # loop through each partition
   for ( i in 1:npartition) {
-    print(paste0("analyzing partition ", i))
+    # debug
+    # print(paste0("analyzing partition ", i))
     
     # check for special case of only one datapoint, so no clustering necessary, break out of loop
     if(length(m$partitions[[i]]) < 2 ){
