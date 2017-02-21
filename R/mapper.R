@@ -1,15 +1,10 @@
 # mapper.R
-# This is the main mapper object and  pipeline 
+# This is the main object defs and  pipeline for n-lense mapper pipeline
 
-# UNFINSIHED WORK IN PROGRESS lense object for n dimensions >= 1
-# notes: don't set the number of dimensions, instead simply run each lense in the 
-# list of lenses, so essentially dismensions= length(lenses)
 #' @import cluster
-
-#library(igraph)
 library(cluster)
 
-# SETUP GLOBAL VAR for debugging
+# SETUP GLOBAL VAR for debugging when necessary
 # assign("DEBUG", FALSE,.GlobalEnv)
 
 # for gap and colored dendograms, optional, uncomment to for printing dendograms
@@ -59,8 +54,7 @@ mapper <- function(dataset, lenses, cluster_method="single", bin_count=10, norma
                       ),
                  class="mapper")
   
-  ### TODO ; remove all as.numeric conversions here as we need to allow lists
-  ## put all conversions inside the Shiny app 
+  ### TODO : ensure all as.numeric conversions of parameters inside the Shiny app 
   
   rownames(dataset)<- 1:nrow(dataset)
     gm$distance   <- NULL
@@ -83,15 +77,15 @@ mapper.dimensions <- function(gm){
 
 # single method to run all steps for mapper pipeline given a mapper object
 #' @export
-mapper.run <- function(gm){
+mapper.run <- function(m, progressUpdater = NULL){
+  # TODO : means to determine if data has changed, and if not, don't recalculate distance matrix
+  m$distance   <- distance.mapper(m,method="euclidean") # dist(scale(gm$d),method="euclidean", upper=FALSE)
+  m$partitions <- partition.mapper(m)
+  m$clusters   <- clusters.mapper(m, shinyProgressFunction=progressUpdater ) 
+  m$nodes      <- nodes.mapper(m)
+  m$adjmatrix  <- adjacency.mapper(m) 
+  return(m)
   
-  gm$distance   <- distance.mapper(gm,method="euclidean") # dist(scale(gm$d),method="euclidean", upper=FALSE)
-  gm$partitions <- partition.mapper(gm)
-  gm$clusters   <- clusters.mapper(gm, cluster_method = cluster_method, shinyProgressFunction=progressUpdater ) 
-  gm$nodes      <- nodes.mapper(gm)
-  gm$adjmatrix  <- adjacency.mapper(gm) 
-  return(gm)
-
 }
 
 #  single method to collect parameters and then run all steps for 1D mapper object
@@ -114,12 +108,12 @@ makemapper <- function(dataset, lensefun, partition_count=4, overlap = 0.5,
 #' @param gm A mapper object with d data member
 #' @param method A string method name used by the dist() function
 #' @return distance matrix of data element of mapper object gm$d
-distance.mapper <- function(gm, method="euclidean") {
+distance.mapper <- function(m, method="euclidean") {
   # same method, just using scaled data or not
-  if ( gm$normalize_data ) 
-    { dist(scale(gm$d),method, upper=FALSE)  }
+  if ( m$normalize_data ) 
+    { dist(scale(m$d),method, upper=FALSE)  }
   else 
-    { dist(gm$d,method, upper=FALSE) }
+    { dist(m$d,method, upper=FALSE) }
 
 }
   
@@ -327,20 +321,20 @@ partition.mapper <- function(m) {
 #' 2   1   2   2   2   2   2   1   2   3
 #' to be used by mapper node creation function
 #' @export
-clusters.mapper<- function(gm, cluster_method = "single", scaling=FALSE, shinyProgressFunction = NULL) {
+clusters.mapper<- function(m, shinyProgressFunction = NULL) {
   
   # TODO: remove cluster_method param and use gm object variable; ensure gm object has this set...
 
   gmClusts = list() 
-  npartition = length(gm$partitions)
+  npartition = length(m$partitions)
   # loop through each partition
   for ( i in 1:npartition) {
     print(paste0("analyzing partition ", i))
     
     # check for special case of only one datapoint, so no clustering necessary, break out of loop
-    if(length(gm$partitions[[i]]) < 2 ){
+    if(length(m$partitions[[i]]) < 2 ){
       gmClusts[[i]] = c(1)
-      names(gmClusts[[i]]) = rownames(gm$partitions[[i]])
+      names(gmClusts[[i]]) = rownames(m$partitions[[i]])
       next
     }
     
@@ -354,17 +348,21 @@ clusters.mapper<- function(gm, cluster_method = "single", scaling=FALSE, shinyPr
     
     # debug 
     # print(gm$partitions[[i]])
-
-    # rowset = gm$d[names(gm$partitions[[i]]),] 
-    rowset = gm$d[gm$partitions[[i]],]
+    
+    rowset = m$d[m$partitions[[i]],]  # partition is a set of rownames
     # calculate distance matrix for this partition
-    # TODO: check if whole data set partition is present, and extract subset from that
-    partition_dist =  dist(rowset,method="euclidean")
+    
+    # TODO: subset the full distance matrix instead of re-calculating here each time
+    method='euclidean'
+    if ( m$normalize_data ) 
+      { partition_dist <- dist(scale(rowset),method)  }
+    else 
+      { partition_dist <- dist(rowset, method) }
     
     # if(DEBUG) {print(max(partition_dist))}
     # do standard clustering and cut 
-    partition_cluster <- hclust(partition_dist, method=cluster_method) 
-    cluster_cutheight <- cut_function(partition_cluster$height,  max( partition_dist), gm$bin_count)
+    partition_cluster <- hclust(partition_dist, method=m$cluster_method) 
+    cluster_cutheight <- cut_function(partition_cluster$height,  max( partition_dist), m$bin_count)
     gmClusts[[i]] <- cutree(partition_cluster, h=cluster_cutheight )
     
     # note rowIDs are propagated in cluster$labels, so cutree returns groups labeled correctly
