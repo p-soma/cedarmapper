@@ -74,3 +74,18 @@ test_that("2D Mapper can be partitioned",{
   m$partitions  <- partition.mapper(m)
   # test partition structure
 })
+
+
+test_that("eccentricity with empty partitions doesn't crash mapper",{
+  # high partition count low point count -> empty partitions
+  l1  = lense(lense.eccentricity, lenseparam=1, partition_count=6, overlap = 0.5)
+  d = circle_data(r=1,n=10)
+  m <- mapper(dataset = d, 
+                lenses=list(l1), 
+                cluster_method="single", bin_count=10, normalize_data=FALSE)
+  m$distance   <- distance.mapper(m,method="euclidean") # dist(scale(gm$d),method="euclidean", upper=FALSE)
+  m$partitions <- partition.mapper(m)
+  
+  # crash! 
+  
+})

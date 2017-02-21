@@ -52,4 +52,21 @@ test_that("eccentricity of circle data is constant", {
   expect_equal(round(var(lvalues)),0)
   # same number of values from function as rows of data
   expect_equal(nrow(d),length(lvalues))
+
 })
+
+test_that("eccentricity on uniform circle doesn't crash mapper",{
+  l1  = lense(lense.eccentricity, lenseparam=1, partition_count=5, overlap = 0.5)
+  eccentricity_on_circle<- function(n=100){
+      d = circle_data(r=1,n=1000)
+      m <- mapper(dataset = d, 
+              lenses=list(l1), 
+              cluster_method="single", bin_count=10, normalize_data=FALSE)
+      mapper.run(m)
+  }
+  
+  ec <- eccentricity_on_circle(n=100)
+  expect_equal(length(ec$nodes),2)
+
+})
+
