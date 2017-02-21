@@ -38,7 +38,7 @@ lense <- function(lensefun, lenseparam=NULL, partition_count=4, overlap = 0.5) {
 #' Constructor for mapper object to be used in mapper pipeline
 #' @return mapper object with all params needed for pipeline
 #' @export
-mapper <- function(dataset, lenses, cluster_method="single", bin_count=10, normalize_data=TRUE){
+mapper <- function(dataset, lenses, lensevals, cluster_method="single", bin_count=10, normalize_data=TRUE, selected_cols=names(dataset)){
   # lenses have previous parameters used: lensefun, partition_count=4, overlap = 0.5,lenseparam = NULL
   
   # note: dimensions variable 
@@ -50,7 +50,9 @@ mapper <- function(dataset, lenses, cluster_method="single", bin_count=10, norma
                       "lenses"=lenses, 
                       "cluster_method"=cluster_method, 
                       "bin_count" = as.numeric(bin_count),
-                      "normalize_data" = normalize_data
+                      "normalize_data" = normalize_data,
+                      "selected_cols" = names(d),
+                      "lensevals"=lensevals
                       ),
                  class="mapper")
   
@@ -63,6 +65,7 @@ mapper <- function(dataset, lenses, cluster_method="single", bin_count=10, norma
     gm$nodes      <- NULL
     gm$adjmatrix  <- NULL
     gm$groups     <- list()
+    gm$lensevals  <- NULL
     
   return(gm)
 }
@@ -84,6 +87,7 @@ mapper.run <- function(m, progressUpdater = NULL){
   m$clusters   <- clusters.mapper(m, shinyProgressFunction=progressUpdater ) 
   m$nodes      <- nodes.mapper(m)
   m$adjmatrix  <- adjacency.mapper(m) 
+  m$lensevals  <- data.frame(gm, gm$lenses[[1]]$values)
   return(m)
   
 }
@@ -91,17 +95,20 @@ mapper.run <- function(m, progressUpdater = NULL){
 #  single method to collect parameters and then run all steps for 1D mapper object
 #  
 #' @export
-makemapper <- function(dataset, lensefun, partition_count=4, overlap = 0.5,  
+makemapper <- function(dataset, lensefun, lensevals=NULL, partition_count=4, overlap = 0.5,  
                        bin_count=10, cluster_method= 'single', lenseparam = NULL, 
-                       normalize_data=TRUE, progressUpdater=NULL){
+                       normalize_data=TRUE, progressUpdater=NULL, selected_cols=names(dataset)){
   # create objects with the above params
   one_lense <- lense(lensefun, lenseparam, partition_count, overlap)
   gm <- mapper(dataset=dataset, 
                lenses=list(one_lense),
                cluster_method=cluster_method, 
                bin_count=bin_count, 
-               normalize_data=normalize_data)
-  return(run.mapper(gm))
+               normalize_data=normalize_data,
+               lensevals=lensevals,
+               selected_cols=selected_cols
+               )
+  return(mapper.run(gm))
 }
 
 #' calculate distance matrix of the existing data, scale if normalize data is checked
@@ -111,10 +118,9 @@ makemapper <- function(dataset, lensefun, partition_count=4, overlap = 0.5,
 distance.mapper <- function(m, method="euclidean") {
   # same method, just using scaled data or not
   if ( m$normalize_data ) 
-    { dist(scale(m$d),method, upper=FALSE)  }
+    { dist(scale(m$d[, m$selected_cols]),method, upper=FALSE)  }
   else 
-    { dist(m$d,method, upper=FALSE) }
-
+    { dist(m$d[, m$selected_cols],method, upper=FALSE) }
 }
   
 
@@ -136,7 +142,7 @@ mapper.lense.calculate <- function(m,dimension=1){
   
   # fill up L member variables and return it
   # L$values is 1D vector of values from the filter/lense function with same length as mapper data
-  L$values <- L$lensefun(m$d, L$lenseparam, m$distance)
+  L$values <- L$lensefun(m$d[, m$selected_cols], L$lenseparam, m$distance)
   names(L$values) <- rownames(m$d)
   
   # calc and store aspects of resulting vector; could be expensive
@@ -311,7 +317,7 @@ clusters.mapper<- function(m, shinyProgressFunction = NULL) {
     # check for special case of only one datapoint, so no clustering necessary, break out of loop
     if(length(m$partitions[[i]]) < 2 ){
       gmClusts[[i]] = c(1)
-      names(gmClusts[[i]]) = rownames(m$partitions[[i]])
+      names(gmClusts[[i]]) = rownames(m$partitions[[i]], gm$selected_cols)
       next
     }
     

@@ -99,10 +99,11 @@ lense.2dprojection <- function(d,lenseparam=NULL,distmat=NULL ){
 #' @family lenses
 #' @param none
 #' @export
+
 lense.pca <- function(d,lenseparam=NULL,distmat=NULL) {
+ # pca = prcomp(gm$d[, gm$selectedCols], retx=TRUE, center=TRUE, scale. = TRUE)
   pca = prcomp(d, retx=TRUE, center=TRUE, scale. = TRUE)
   L = pca$x[,"PC1"]
-  # names(L) <- rownames(d)  # this is done in the partition function
   return(L)
 }
 

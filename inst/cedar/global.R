@@ -12,13 +12,14 @@ datasets[["CircleRandomize_Gaussian"]]<- circle_data(r=1, n=500, randomize=TRUE)
 datasets[["CircleSquishy"]]<- squishy_circle(r=1, n=500, squish=100)
 datasets[["Y data"]] <- y_data(n=100)
 datasets[["Spiral"]] <- spiral_data(200)
+datasets[["Iris"]] <- read.csv("~/Documents/msu/pa_cmse/mapper_practice/iris.csv")
 
 
 ####### starting values
 dataChoices           <- names(datasets)
 
 # mapper 
-partitionCountChoices <- c(3:20)
+partitionCountChoices <- c(1:20)
 lenses = lense.table()
 
 lenseChoices <- lenses$Name
@@ -32,4 +33,3 @@ initVariableChoices   <- names(datasets[[1]])
 d                     <- datasets[[1]]
 
 gm <- graphmapper(dataset=d, lensefun=lense.projection, partition_count=NULL, overlap=NULL,  lenseparam="rw")
-

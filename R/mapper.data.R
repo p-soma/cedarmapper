@@ -17,7 +17,7 @@ varTable <- function(gm, group_ids = c(1,2)){
     d2 = groupdata(gm,group_ids[2],varname)
     return(data.frame("var"=varname, "mean group 1"=mean(d1),  "variance group 1" = var(d1), "mean group 2"=mean(d2), "variance group 2" = var(d2)))
   }
-  vtable = ldply(colnames(gm$d), varFun)
+  vtable = ldply(gm$selectedCols, varFun)
 }
 
 # returns a table of ks results for each variable in gm$d
@@ -40,7 +40,7 @@ kstable <- function(gm, group_ids = c(1,2)){
   }
   print('making table')
   
-  vars = colnames(gm$d)
+  vars = gm$selectedCols 
   ktable = ldply(vars, ksfun)
   
   return(ktable[order(ktable$pvalue),])
@@ -92,8 +92,11 @@ nodedata <- function(gm, nodes, varname=NULL){
   else {
     # return only column(s) requested in varname
     # use reduce here to combine TRUES if varname is vector of names c("X", "Y")
-    if( Reduce("&", (varname %in% colnames(gm$d))))
+    if( Reduce("&", (varname %in% colnames(gm$d)))){
       return(gm$d[rowids,varname])
+    } else if( (varname %in% lenseChoices)){
+    return(gm$lensevals[rowids,])
+    }
   }
   return()
 }
@@ -108,7 +111,7 @@ partitiondata <- function(gm, p, varname = NULL){
   
   # if no varname param, return all columns
   if(is.null(varname)){
-    return(gm$d[gm$partitions[[p]],])
+    return(gm$d[gm$partitions[[p]], gm$selected_cols])
   } 
   else {
     # use reduce() here to allow a vector of column names
