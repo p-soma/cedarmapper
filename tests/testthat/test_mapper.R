@@ -77,10 +77,15 @@ test_that("2D Mapper can be created",{
 })
 
 
-
-test_that("2D Mapper can run ",{
-  m <- example_mapper_2d()
-  m <- mapper.run(m)
-   
+test_that("Square with 2 dims with 3 partitions has 9 nodes",{
+    d = square_data(n=1000,seed="10")
+    l1 = lense(lense.projection, "X", partition_count=3, overlap = 0.5) 
+    l2 = lense(lense.projection, "Y", partition_count=3, overlap = 0.5) 
+    m <- mapper(dataset = d, 
+           lenses=list(l1,l2), 
+           cluster_method="single", bin_count=10, normalize_data=TRUE)
+    m <- mapper.run(m)
+    expect_equal(length(m$nodes), 9)
+    
   })  
   
