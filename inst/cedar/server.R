@@ -244,20 +244,16 @@ shinyServer(function(input, output, session) {
     updateTabItems(session, "tabs", selected = "graph")
     
     #factor categorical data and save for later
-    factorVars <- list()
-    if(input$factorTextData == TRUE){
-        factorCols <- names(d[, ! sapply(d, is.numeric)])
-        d[factorCols] <- lapply(d[factorCols], factor)
-        factorCols <- c(names(d[, sapply(d, is.factor)]), names(d[, ! sapply(d, is.numeric)]))
-    }
-    print(d)
+
+    factorVars <- convertColsToFactors(gm$d)
+
   #  print(factorVars)
   #  print(factorCols)
  #   selectedCols <- setdiff(input$selectedColumns, factorVars)
-    selectedCols <- input$selectedColumns
-    print(selectedCols)
+    selected_cols <- input$selectedColumns
+    print(selected_cols)
     # add selected lense function to choices of coloring variable
-    updateSelectInput(session, inputId = "selectedVar", choices = c(selectedCols,input$lenseFunctionSelection))
+ #   updateSelectInput(session, inputId = "selectedVar", choices = c(selected_cols,input$lenseFunctionSelection))
     updateSelectInput(session, inputId = "selectedVar", choices = c(names(d),input$lenseFunctionSelection))
     
     progress <- shiny::Progress$new()
@@ -296,8 +292,7 @@ shinyServer(function(input, output, session) {
                           overlap = as.numeric(input$overlapSelection)/100.0, 
                           lenseparam = lenseParam,
                           lensevals = data.frame(gm$lensefun(gm)), # new filter coloring
-                          selectedCols = selectedCols,
-                         # factorCols = factorCols,
+                          selected_cols = selected_cols,
                           bin_count = as.numeric(input$binCountSelection),
                           normalize_data = input$normalizeOption,
                           progressUpdater = NULL)  #updateProgress

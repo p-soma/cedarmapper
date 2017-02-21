@@ -50,7 +50,8 @@ mapper <- function(dataset, lenses, cluster_method="single", bin_count=10, norma
                       "lenses"=lenses, 
                       "cluster_method"=cluster_method, 
                       "bin_count" = as.numeric(bin_count),
-                      "normalize_data" = normalize_data
+                      "normalize_data" = normalize_data,
+                      "selected_cols" = names(d)
                       ),
                  class="mapper")
   
@@ -93,14 +94,16 @@ mapper.run <- function(m, progressUpdater = NULL){
 #' @export
 makemapper <- function(dataset, lensefun, partition_count=4, overlap = 0.5,  
                        bin_count=10, cluster_method= 'single', lenseparam = NULL, 
-                       normalize_data=TRUE, progressUpdater=NULL){
+                       normalize_data=TRUE, progressUpdater=NULL, selected_cols=NULL{
   # create objects with the above params
   one_lense <- lense(lensefun, lenseparam, partition_count, overlap)
   gm <- mapper(dataset=dataset, 
                lenses=list(one_lense),
                cluster_method=cluster_method, 
                bin_count=bin_count, 
-               normalize_data=normalize_data)
+               normalize_data=normalize_data,
+               selected_cols=selected_cols
+               )
   return(run.mapper(gm))
 }
 
@@ -111,10 +114,9 @@ makemapper <- function(dataset, lensefun, partition_count=4, overlap = 0.5,
 distance.mapper <- function(m, method="euclidean") {
   # same method, just using scaled data or not
   if ( m$normalize_data ) 
-    { dist(scale(m$d),method, upper=FALSE)  }
+    { dist(scale(m$d[, m$selected_cols]),method, upper=FALSE)  }
   else 
-    { dist(m$d,method, upper=FALSE) }
-
+    { dist(m$d[, m$selected_cols],method, upper=FALSE) }
 }
   
 
@@ -136,7 +138,7 @@ mapper.lense.calculate <- function(m,dimension=1){
   
   # fill up L member variables and return it
   # L$values is 1D vector of values from the filter/lense function with same length as mapper data
-  L$values <- L$lensefun(m$d, L$lenseparam, m$distance)
+  L$values <- L$lensefun(m$d[, m$selected_cols], L$lenseparam, m$distance)
   names(L$values) <- rownames(m$d)
   
   # calc and store aspects of resulting vector; could be expensive

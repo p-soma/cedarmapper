@@ -101,7 +101,8 @@ lense.2dprojection <- function(d,lenseparam=NULL,distmat=NULL ){
 #' @export
 
 lense.pca <- function(d,lenseparam=NULL,distmat=NULL) {
-  pca = prcomp(gm$d[, gm$selectedCols], retx=TRUE, center=TRUE, scale. = TRUE)
+ # pca = prcomp(gm$d[, gm$selectedCols], retx=TRUE, center=TRUE, scale. = TRUE)
+  pca = prcomp(d, retx=TRUE, center=TRUE, scale. = TRUE)
   L = pca$x[,"PC1"]
   return(L)
 }
