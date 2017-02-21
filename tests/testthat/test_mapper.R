@@ -28,9 +28,12 @@ test_that("pipeline works for 1d projection lense on circle data",{
   clusters_in_partition<-function(i){ length(unique(m$clusters[[i]])) }
   
   m <- circle_mapper(npoints=60,partition_count=4, overlap = 0.5)
+  m$normalize_data <- TRUE
+  m$cluster_method = 'single'
+  
   m$distance <-  distance.mapper(m,method="euclidean")
   m$partitions <- partition.mapper(m)
-  m$clusters   <- clusters.mapper(m, cluster_method = "single", shinyProgressFunction=NULL ) 
+  m$clusters   <- clusters.mapper(m, shinyProgressFunction=NULL ) 
   m$nodes      <- nodes.mapper(m)
   
   expect_equal(round(m$distance[1] - 0.1467897,7),0)
@@ -47,6 +50,15 @@ test_that("pipeline works for 1d projection lense on circle data",{
   expect_equal(length(m$nodes[[6]]),27)
   
   # TODO test edge count
+  
+})
+
+test_that("mapper.run function works",{
+  m <- circle_mapper(npoints=60,partition_count=4, overlap = 0.5)
+  m <- mapper.run(m)
+  expect_equal(length(m$nodes), 6)
+  # spot check node # 6
+  expect_equal(length(m$nodes[[6]]),27)
   
 })
 
