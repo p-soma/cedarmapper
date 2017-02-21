@@ -54,3 +54,15 @@ spiral_data <- function(n=200){
   rownames(d) = 1:nrow(d)
   return(d)
 }
+
+#' Synthetic uniform square data
+#' @export
+square_data <- function(n=1000, seed = "1"){
+  set.seed(seed)
+  x <- runif(n, min=0, max=1)
+  y <- runif(n, min=0, max=1)
+  d = data.frame("X"=x, "Y"=y )
+  rownames(d) = 1:nrow(d)
+  return(d)
+}
+

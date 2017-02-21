@@ -225,28 +225,6 @@ partition_index_for_l_value <- function(l_value,L){
 }
 
 
-# assign_partitions <- function( dimension, m ) {
-  # update list item in lense object with calculated values
-
-#  L <- mapper.lense.calculate(m,dimension)
-  # gm$lenses[[dimension]]
-  
-  # n empty partitions to be filled with point IDs.  R idiom to create empty list n items
-  # partitions is a list, each item is a vector of rowids of rows belonging to the partition
-#  partitionset = vector("list", L$n)  
-#  for(i in 1:length(L$values)){
-    # get the partitions in which the value goes
-
-#    rowids = rownames(L$values[i])
-    # for each overlapping partition that the value is part of...append values rowid to partition list 
-#    print(i, partition_index_for_l_value(L,L$values[i]))
-#    for(p in partition_index_for_l_value(L,L$values[i]) ) {
-#      if(!is.na(p)) {partitionset[[ p ]] = c(partitionset[[ p ]],rowids) }
-#    }
-#  }
-#  return(partitions1d)
-# }
-
 #' partition a mapper object dataset by reducing dimensions via lense or filter function
 #' lense function must be defined in the mapper object, and must return vector with 
 #' rownames preserved
@@ -298,12 +276,11 @@ partition.mapper <- function(m) {
   ## TODO either modify the structure above or next step in pipeline
   # this is a list of vectors, each vector a set of rowids. 
   # however it's not compatible with next clustering step. 
-  
-  ## TODO remove these functions 
-  ## no longer needed with new method for generating partitions
-  ## no empty partitions are created
-  # non_empty = function(x) { length(x)>0}
-  # return(partitions[sapply(partitions, non_empty)])
+
+  # remove empty partitions
+  for(p in names(partitions)){ 
+    if(length(partitions[[p]]) == 0 ) { partitions[[p]] <- NULL}
+  }
   
   return(partitions)
 
@@ -538,5 +515,4 @@ setgroup.mapper <-function(gm,node_ids,group_id = NULL) {
   
   return(g)
 }
-
 
