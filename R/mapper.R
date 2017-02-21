@@ -38,7 +38,7 @@ lense <- function(lensefun, lenseparam=NULL, partition_count=4, overlap = 0.5) {
 #' Constructor for mapper object to be used in mapper pipeline
 #' @return mapper object with all params needed for pipeline
 #' @export
-mapper <- function(dataset, lenses, lensevals, cluster_method="single", bin_count=10, normalize_data=TRUE, selected_cols=names(dataset)){
+mapper <- function(dataset, lenses, lensevals=NULL, cluster_method="single", bin_count=10, normalize_data=TRUE, selected_cols=names(dataset)){
   # lenses have previous parameters used: lensefun, partition_count=4, overlap = 0.5,lenseparam = NULL
   
   # note: dimensions variable 
@@ -87,7 +87,7 @@ mapper.run <- function(m, progressUpdater = NULL){
   m$clusters   <- clusters.mapper(m, shinyProgressFunction=progressUpdater ) 
   m$nodes      <- nodes.mapper(m)
   m$adjmatrix  <- adjacency.mapper(m) 
-  m$lensevals  <- data.frame(gm, gm$lenses[[1]]$values)
+  m$lensevals  <- data.frame(mapper.lense.calculate(m)$values)
   return(m)
   
 }
@@ -108,7 +108,9 @@ makemapper <- function(dataset, lensefun, lensevals=NULL, partition_count=4, ove
                lensevals=lensevals,
                selected_cols=selected_cols
                )
-  return(mapper.run(gm))
+  gm <- mapper.run(gm)
+#  gm$lensevals
+  return(gm)
 }
 
 #' calculate distance matrix of the existing data, scale if normalize data is checked

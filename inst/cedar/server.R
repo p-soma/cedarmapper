@@ -295,7 +295,7 @@ shinyServer(function(input, output, session) {
                           partition_count=as.numeric(input$partitionCountSelection),
                           overlap = as.numeric(input$overlapSelection)/100.0, 
                           lenseparam = lenseParam,
-                          lensevals = data.frame(gm$lensefun(gm)), # new filter coloring
+                         # lensevals = data.frame(mapper.lense.calculate(gm)$values), #data.frame(gm$lensefun(gm)), # new filter coloring
                           selected_cols = selected_cols,
                           bin_count = as.numeric(input$binCountSelection),
                           normalize_data = input$normalizeOption,
