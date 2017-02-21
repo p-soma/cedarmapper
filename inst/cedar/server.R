@@ -21,7 +21,7 @@ options(shiny.maxRequestSize = 50*1024^2)
 # see the file global.R, which creates starting values for each new session of this shiny app 
 # TODO : put this in global.R?
 
-# gm <- graphmapper(x=d, lensefun=simple_lense, partition_count=NULL, overlap=NULL, partition_method="single", index_method="gap", lenseparam="rw")
+# gm <- mapper(x=d, lensefun=simple_lense, partition_count=NULL, overlap=NULL, partition_method="single", index_method="gap", lenseparam="rw")
 
 ####### server
 shinyServer(function(input, output, session) {
@@ -164,13 +164,13 @@ shinyServer(function(input, output, session) {
   # when group 1 button is clicked, 
   # send javascript message to cedargraph widget 
   # then get the currently selected nodes
-  # and store (Or add to ) the list in the graphmapper object 
+  # and store (Or add to ) the list in the mapper object 
   observeEvent(input$grp1set,{
     if(!is.null(input$nodelist)) {
         session$sendCustomMessage(type='setgroup1',message=array(input$nodelist) )
         group_id <- "1"
         # combine the list of nodes with any that may be present
-        gm[["groups"]] <<- setgroup.graphmapper(gm, as.numeric(input$nodelist),group_id)
+        gm[["groups"]] <<- setgroup.mapper(gm, as.numeric(input$nodelist),group_id)
     }    
       
   })
@@ -182,13 +182,13 @@ shinyServer(function(input, output, session) {
   })
   
   # when 'group 2' button is clicked, return currently selected nodes
-  # and store the list in the graphmapper object 
+  # and store the list in the mapper object 
   observeEvent(input$grp2set,{
     if(!is.null(input$nodelist)) {
       session$sendCustomMessage(type='setgroup2',message=array(input$nodelist) )
       group_id <- "2"
       # combine the list of nodes with any that may be present
-      gm[["groups"]] <<- setgroup.graphmapper(gm, as.numeric(input$nodelist),group_id)
+      gm[["groups"]] <<- setgroup.mapper(gm, as.numeric(input$nodelist),group_id)
     }
   })
   
@@ -245,7 +245,11 @@ shinyServer(function(input, output, session) {
     
     #factor categorical data and save for later
 
-    factorVars <- convertColsToFactors(gm$d)
+    #factorVars <- convertColsToFactors(gm$d)
+    factorCols <- list()
+    factorCols <- names(d[, ! sapply(d, is.numeric)])
+    d[factorCols] <- lapply(d[factorCols], factor)
+    factorCols <- c(names(d[, sapply(d, is.factor)]), names(d[, ! sapply(d, is.numeric)]))
 
   #  print(factorVars)
   #  print(factorCols)
@@ -253,8 +257,8 @@ shinyServer(function(input, output, session) {
     selected_cols <- input$selectedColumns
     print(selected_cols)
     # add selected lense function to choices of coloring variable
- #   updateSelectInput(session, inputId = "selectedVar", choices = c(selected_cols,input$lenseFunctionSelection))
-    updateSelectInput(session, inputId = "selectedVar", choices = c(names(d),input$lenseFunctionSelection))
+    updateSelectInput(session, inputId = "selectedVar", choices = c(selected_cols,input$lenseFunctionSelection))
+ #   updateSelectInput(session, inputId = "selectedVar", choices = c(names(d),input$lenseFunctionSelection))
     
     progress <- shiny::Progress$new()
     progress$set(message = "Calculating Clustering", value = 0)
@@ -285,8 +289,8 @@ shinyServer(function(input, output, session) {
       }
     }
     
-    print(paste0("graphmapper normalize=", input$normalizeOption, ", param=",lenseParam," for ", input$lenseFunctionSelection))
-    gm<<- makegraphmapper(dataset = as.data.frame(d), 
+    print(paste0("mapper normalize=", input$normalizeOption, ", param=",lenseParam," for ", input$lenseFunctionSelection))
+    gm<<- makemapper(dataset = as.data.frame(d), 
                           lensefun = lense_fun, 
                           partition_count=as.numeric(input$partitionCountSelection),
                           overlap = as.numeric(input$overlapSelection)/100.0, 
@@ -296,7 +300,6 @@ shinyServer(function(input, output, session) {
                           bin_count = as.numeric(input$binCountSelection),
                           normalize_data = input$normalizeOption,
                           progressUpdater = NULL)  #updateProgress
-    
     return(gm)
   })
   
