@@ -4,6 +4,7 @@
 library(cedar)
 datasets = list()
 data(chemdiab)
+data("iris")
 chemdiab  <- subset(chemdiab, select = -c(cc))
 
 datasets[["Diabetes"]] <- chemdiab
@@ -12,7 +13,7 @@ datasets[["CircleRandomize_Gaussian"]]<- circle_data(r=1, n=500, randomize=TRUE)
 datasets[["CircleSquishy"]]<- squishy_circle(r=1, n=500, squish=100)
 datasets[["Y data"]] <- y_data(n=100)
 datasets[["Spiral"]] <- spiral_data(200)
-datasets[["Iris"]] <- data("iris")
+datasets[["Iris"]] <- iris
 
 
 ####### starting values
