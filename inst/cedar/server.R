@@ -333,11 +333,11 @@ shinyServer(function(input, output, session) {
   # collect all the parameters into single HTML string for display and mapper is run
   output$gmParameters  <- renderTable({
     input$runMapper
-    data.frame( "P" = c(gm$partition_count, 
-                             gm$overlap,
+    data.frame( "P" = c(gm$lenses[[1]]$n, 
+                             gm$lenses[[1]]$o,
                              gm$bin_count,
                              input$lenseFunctionSelection,
-                             gm$lenseparam,
+                             gm$lenses[[1]]$lenseparam,
                              length(gm$nodes)),
                 row.names = c("partitions","overlap","bin count","filter","param","nodes")
                 )
