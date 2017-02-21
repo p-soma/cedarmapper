@@ -10,7 +10,7 @@ dashboardPage(
 dashboardHeader(title = "CEDAR"),
   
 ################
-dashboardSidebar(
+dashboardSidebar( 
     
     sidebarMenu(
       id = "tabs",
@@ -54,6 +54,8 @@ dashboardBody(
             ),# end of upload box 
             style = "primary") 
           ))),
+          checkboxInput('factorTextData', 'Factor non-numeric data', FALSE),
+          checkboxGroupInput("selectedColumns", label = "Select columns to use", choices=initVariableChoices, selected = initVariableChoices, inline = TRUE), 
           dataTableOutput('dataset')
       ),
       # First tab content
@@ -102,10 +104,7 @@ dashboardBody(
             column(width=4,
                    box(title="Cluster Info",width=NULL,"")
                        # selectInput("dataSelection", label = "Select Dataset", choices = dataChoices, selected = 1)),
-                       
-                       
-                   )
-                   
+                  )
             )# end row
       ),
       
@@ -140,7 +139,9 @@ dashboardBody(
                   title= "Selected Nodes",
                   width=NULL, color="light-blue"),
               
-              bsModal("valHist", "Histogram of Selected Nodes", "showHist", size = "large", plotOutput("nodeHist"))
+              bsModal("valHist", "Histogram of Selected Nodes", "showHist", size = "large", plotOutput("nodeHist1"))
+                     # plotOutput("nodeHist2"))
+                 
 
  
           )

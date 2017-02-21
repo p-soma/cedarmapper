@@ -33,11 +33,24 @@ shinyServer(function(input, output, session) {
       d <<- datasets[[1]] }
     else {
       d <<- datasets[[input$dataSelection]] }
-    
+    updateCheckboxGroupInput(session, inputId = "selectedColumns", choices = names(d), selected = names(d), inline=TRUE)
     updateSelectInput(session, inputId = "selectedVar",choices = names(d))
     updateSelectInput(session, inputId = "filterVar",  choices = names(d))
     return(d)
   })
+  
+  #select columns to analyze
+  observe({
+    input$selectedColumns
+    updateSelectInput(session, inputId = "filterVar",  choices = input$selectedColumns)
+  })
+  
+  observe({
+    input$factorTextData
+    if( input$factorTextData){
+      updateCheckboxGroupInput(session, inputId = "selectedColumns", choices = names(d), selected = names(d[, sapply(d, is.numeric)]), inline=TRUE)
+    }
+   })
   
   newData <- observeEvent(input$uploadDataAction,{
     inFile <- input$file1
@@ -47,11 +60,14 @@ shinyServer(function(input, output, session) {
     newData <- read.csv(inFile$datapath, header = input$header,
              sep = input$sep, quote = input$quote, stringsAsFactors = FALSE)
     
+
+    
     datasets[[dataName]] <<- newData
     dataChoices <<- names(datasets)
     updateSelectInput(session, inputId = "dataSelection",choices = names(datasets))
     updateCollapse(session, "uploadDataCollapse", close = "Click to Upload Data")
   })
+  
   
   
   output$downloadMapper <- downloadHandler(
@@ -84,11 +100,11 @@ shinyServer(function(input, output, session) {
   # there and the (D3.js) nodes are updated and recolored, etc
   observe({
     input$selectedVar
-    print(selectedVar() %in% colnames(gm$d))
-    if (selectedVar() %in% colnames(gm$d)) {
+    print(selectedVar() %in% c(colnames(gm$d),lenseChoices))
+    if (selectedVar() %in% c(colnames(gm$d),lenseChoices)) {
       vals = nodePrep(gm,selectedVar())$values
       session$sendCustomMessage(type='nodevalues',message = vals)
-    }
+    } 
   })
   
   histVals <- reactive({
@@ -98,17 +114,45 @@ shinyServer(function(input, output, session) {
       } else {
         c(0)
       }
+      b1 <- factorBarPlot(gm, selectedVar(), group_id = 1)
+      # below is for plotting bar plot of node group 2, not functional
+    #  b2 <- factorBarPlot(gm, selectedVar(), group_id = 2)
+     # barPlotList <- list(b1,b2)
+    #  return(barPlotList)
+      return(b1)
+    
     })
     
-    output$nodeHist <- renderPlot({
+  output$nodeHist1 <- renderPlot({histVals()[1]})
+  #showBarPlot <- eventReactive(input$showHist,{ 
 
-          hist(
-               nodePrep(gm,selectedVar())$values, 
-              main="Data from Selected Nodes",
-              ylab="Frequency",
-              xlab=paste0("data for ",selectedVar() )
-              )
-    })
+     #barplot, compatible with factors
+      #return(factorBarPlot(gm, selectedVar()))
+  #    factorBarPlot(gm, selectedVar(), group_id = 1)
+
+         # hist(
+        #       nodePrep(gm,selectedVar())$values, 
+       #       main="Data from Selected Nodes",
+       #       ylab="Frequency",
+       #       xlab=paste0("data for ",selectedVar() )
+         #     )
+
+ #   })
+#  output$nodeHist2 <- renderPlot({histVals()[2]})
+    #showBarPlot <- eventReactive(input$showHist,{ 
+    
+    #barplot, compatible with factors
+    #return(factorBarPlot(gm, selectedVar()))
+  #  factorBarPlot(gm, selectedVar(), group_id = 2)
+    
+    # hist(
+    #       nodePrep(gm,selectedVar())$values, 
+    #       main="Data from Selected Nodes",
+    #       ylab="Frequency",
+    #       xlab=paste0("data for ",selectedVar() )
+    #     )
+    
+#  })
 
   
   # javascript => server
@@ -199,6 +243,23 @@ shinyServer(function(input, output, session) {
   observeEvent(input$runMapper, {
     updateTabItems(session, "tabs", selected = "graph")
     
+    #factor categorical data and save for later
+    factorVars <- list()
+    if(input$factorTextData == TRUE){
+        factorCols <- names(d[, ! sapply(d, is.numeric)])
+        d[factorCols] <- lapply(d[factorCols], factor)
+        factorCols <- c(names(d[, sapply(d, is.factor)]), names(d[, ! sapply(d, is.numeric)]))
+    }
+    print(d)
+  #  print(factorVars)
+  #  print(factorCols)
+ #   selectedCols <- setdiff(input$selectedColumns, factorVars)
+    selectedCols <- input$selectedColumns
+    print(selectedCols)
+    # add selected lense function to choices of coloring variable
+    updateSelectInput(session, inputId = "selectedVar", choices = c(selectedCols,input$lenseFunctionSelection))
+    updateSelectInput(session, inputId = "selectedVar", choices = c(names(d),input$lenseFunctionSelection))
+    
     progress <- shiny::Progress$new()
     progress$set(message = "Calculating Clustering", value = 0)
     on.exit(progress$close())
@@ -229,11 +290,14 @@ shinyServer(function(input, output, session) {
     }
     
     print(paste0("graphmapper normalize=", input$normalizeOption, ", param=",lenseParam," for ", input$lenseFunctionSelection))
-    gm<<- makegraphmapper(dataset = as.data.frame(scale(d)), 
+    gm<<- makegraphmapper(dataset = as.data.frame(d), 
                           lensefun = lense_fun, 
                           partition_count=as.numeric(input$partitionCountSelection),
                           overlap = as.numeric(input$overlapSelection)/100.0, 
                           lenseparam = lenseParam,
+                          lensevals = data.frame(gm$lensefun(gm)), # new filter coloring
+                          selectedCols = selectedCols,
+                         # factorCols = factorCols,
                           bin_count = as.numeric(input$binCountSelection),
                           normalize_data = input$normalizeOption,
                           progressUpdater = NULL)  #updateProgress
@@ -323,5 +387,4 @@ shinyServer(function(input, output, session) {
   }) 
   
   # output$sessionInfo <- renderPrint({ session })
-  
 })

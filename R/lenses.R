@@ -94,7 +94,9 @@ lense.2dprojection <- function(gm,lenseparam=NULL ){
 #' @param none
 #' @export
 lense.pca <- function(gm,lenseparam=NULL) {
-  pca = prcomp(gm$d, retx=TRUE, center=TRUE, scale. = TRUE)
+ # pca = prcomp(gm$d, retx=TRUE, center=TRUE, scale. = TRUE)
+  
+  pca = prcomp(gm$d[, gm$selectedCols], retx=TRUE, center=TRUE, scale. = TRUE)
   L = pca$x[,"PC1"]
   names(L) <- rownames(gm$d)
   return(L)
