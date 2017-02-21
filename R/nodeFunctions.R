@@ -18,9 +18,10 @@ library(cluster)
 
 #  single method to run all steps for graphmapper object
 #' @export
-makegraphmapper <- function(dataset, lensefun, partition_count=4, overlap = 0.5,  
-                            bin_count=10, cluster_method= 'single', lenseparam = NULL, 
-                            normalize_data=TRUE, dimensions = 1, progressUpdater=NULL){
+makegraphmapper <- function(dataset, lensefun, partition_count=4, overlap = 0.5, lensevals,  #coloring 
+                            bin_count=10, cluster_method= 'single', lenseparam = NULL, selectedCols = names(dataset),
+                         #   factorCols = NULL, 
+                           normalize_data=TRUE, dimensions = 1, progressUpdater=NULL){
   # create object with the above params 
 
   
@@ -28,6 +29,9 @@ makegraphmapper <- function(dataset, lensefun, partition_count=4, overlap = 0.5,
                     lensefun=lensefun, 
                     partition_count=partition_count, 
                     overlap = overlap, 
+                    lensevals = lensevals, # lensevals coloring
+                    selectedCols = selectedCols,
+                #    factorCols = factorCols,
                     cluster_method=cluster_method, 
                     bin_count=bin_count, 
                     lenseparam=lenseparam,
@@ -38,6 +42,9 @@ makegraphmapper <- function(dataset, lensefun, partition_count=4, overlap = 0.5,
   # the progressUpdater construct is for ShinyApps and optional
   gm$distance   <- distance.graphmapper(gm,method="euclidean") # dist(scale(gm$d),method="euclidean", upper=FALSE)
   gm$partitions <- partition.graphmapper(gm)
+  gm$lensevals  <- data.frame(gm$lensefun(gm, gm$lenseparam))
+#  gm$selectedCols <- names(gm$d)
+ # gm$factorCols <- NULL
   gm$clusters   <- clusters.graphmapper(gm, cluster_method = cluster_method, shinyProgressFunction=progressUpdater ) 
   gm$nodes      <- nodes.graphmapper(gm)
   gm$adjmatrix  <- adjacency.graphmapper(gm) 
@@ -50,8 +57,9 @@ makegraphmapper <- function(dataset, lensefun, partition_count=4, overlap = 0.5,
 #' Constructor for graphmapper object to be used in mapper pipeline
 #' @return graphmapper object with all params needed for pipeline
 #' @export
-graphmapper <- function(dataset, lensefun, partition_count=4, overlap = 0.5, 
-                        cluster_method="single", bin_count=10, lenseparam = NULL,
+graphmapper <- function(dataset, lensefun, partition_count=4, overlap = 0.5, lensevals=NULL,
+                        cluster_method="single", bin_count=10, lenseparam = NULL, selectedCols = names(dataset),
+                      #  factorCols = NULL, 
                         normalize_data=TRUE, dimensions=1){
   # note: using as.numeric to convert arguments becuase Shiny inputs return strings
   ### TODO change default params to be lists to support n>1 dimension
@@ -61,6 +69,9 @@ graphmapper <- function(dataset, lensefun, partition_count=4, overlap = 0.5,
                       "partition_count"=as.numeric(partition_count), 
                       "overlap" = as.numeric(overlap),   # percent, o <= 1
                       "lensefun"=lensefun, 
+                      "lensevals"=lensevals, #lense vals coloring
+                      "selectedCols"=selectedCols,
+                      #"factorCols"=factorCols,
                       "cluster_method"=cluster_method, 
                       "lenseparam" = lenseparam,  # don't use as.numeric here, sometimes is variable name
                       "bin_count" = as.numeric(bin_count),
@@ -74,6 +85,7 @@ graphmapper <- function(dataset, lensefun, partition_count=4, overlap = 0.5,
   rownames(dataset)<- 1:nrow(dataset)
     gm$distance   <- NULL
     gm$partitions <- NULL
+    gm$lensevals  <- NULL #lense vals coloring
     gm$clusters   <- NULL
     gm$nodes      <- NULL
     gm$adjmatrix  <- NULL
@@ -84,12 +96,13 @@ graphmapper <- function(dataset, lensefun, partition_count=4, overlap = 0.5,
 
 distance.graphmapper <- function(gm, method="euclidean") {
   if ( gm$normalize_data ) {
-    d = scale(gm$d) 
+    #print("NORMALIZE")
+    d = scale(gm$d[, gm$selectedCols])
     }
   else {
-    d = gm$d
+    d = gm$d[, gm$selectedCols]
   }
-  
+  #print(d)
   dist(d,method="euclidean", upper=FALSE)
   
 }
@@ -112,39 +125,47 @@ partition.graphmapper <- function(gm) {
   # L is vector of filtered values (1-d)
   # as a by product this may create the distance matrix ?
   # all we usually need is some way to obtain or calculate a distance matrix
+  
   L <- gm$lensefun(gm, gm$lenseparam)
   
   # assume L is in same order as data, transfer row names to keep identity
   names(L) <- rownames(gm$d)
-  
-  
+
   ### setup parameters for partitioning
   total_length = max(L) - min(L)
-  # pl= partition length
-  pl = total_length/(n - ((n-1)*o))
-  p0 = min(L)
-  
-  
-  ## get values for partition i; used by vectorized apply
-  partition_values = function(i){
-    partition_start = p0 + (pl * (i - 1) * (1-o))  # offset== starting value is 1/2 partition size X parttion number
-    partition_end   = partition_start + pl
-    return(L[L >=  partition_start & L < partition_end ])
-  }
-  
-  ## test function used to remove empty partitions
-  non_empty = function(x) { length(x)>0}
-  
-  # TODO: parallelize with plyr llply?
-  partitions = lapply(1:n,partition_values)
 
-  # Note : here is a test that all rows have been included in at least one partition
-  # if(nrow(gm$d) != length(unique(unlist(partitions)))) stop("partitioning does not include all rows")
+  # special case if filter only contains one value for all points
+  # create one partition to fill with all filter values
+  if (total_length < 1e-15) {
+    gm$partition_count = 1
+    return(list(L))
+  } else {
+    # pl= partition length
+    pl = total_length/(n - ((n-1)*o))
+    p0 = min(L)
   
-  # return with all empty partitions returned
-  return(partitions[sapply(partitions, non_empty)])
+    
+    ## get values for partition i; used by vectorized apply
+    partition_values = function(i){
+      partition_start = p0 + (pl * (i - 1) * (1-o))  # offset== starting value is 1/2 partition size X parttion number
+      partition_end   = partition_start + pl
+      return(L[L >=  partition_start & L < partition_end ])
+    }
+    
+    ## test function used to remove empty partitions
+    non_empty = function(x) { length(x)>0}
+    
+    # TODO: parallelize with plyr llply?
+    partitions = lapply(1:n,partition_values)
+  
+    # Note : here is a test that all rows have been included in at least one partition
+    # if(nrow(gm$d) != length(unique(unlist(partitions)))) stop("partitioning does not include all rows")
+    
+    # return with all empty partitions returned
+    return(partitions[sapply(partitions, non_empty)])
 
-} 
+  } 
+}
 
 partition2d.graphmapper <- function(gm) {
   if (class(gm) != "graphmapper") stop("partition: requires input of class graphmapper class")
@@ -268,7 +289,7 @@ clusters.graphmapper<- function(gm, cluster_method = "single", scaling=FALSE, sh
     # debug 
     # print(gm$partitions[[i]])
 
-    rowset = gm$d[names(gm$partitions[[i]]),] 
+    rowset = gm$d[names(gm$partitions[[i]]), gm$selectedCols] 
     
     # calculate distance matrix for this partition
     # TODO: check if whole data set partition is present, and extract subset from that
@@ -429,24 +450,31 @@ adjacency.graphmapper<- function(gm) {
     # TODO: create an edge list instead and call it 
     # TODO: 
     # gm$edges <- findedges.graphmapper(gm)
-
+  
   # shorten the name
   nodes = gm$nodes
-  # function that tells if there is overlapping rows of data
-  detect_overlap <- function(a,b) { length(intersect(nodes[[a]], nodes[[b]])) }
   
-  adjmat <- matrix(0, ncol = length(nodes), nrow = length(nodes))
-  colnames(adjmat) <- rownames(adjmat) <- names(nodes)
-  for(i in 1:nrow(adjmat)) {
-    for(j in 1:ncol(adjmat)) {
-      if (i == j) {
-        adjmat[i,j] = 0
-      } else {adjmat[i,j] <- detect_overlap(i,j)}
+  # special case if only one node, adjmat will always be 1x1 with value 0
+  # no need to check for overlap
+  if (length(nodes) == 1){
+    adjmat <- matrix(0)
+  } else {
+    # function that tells if there is overlapping rows of data
+    detect_overlap <- function(a,b) { length(intersect(nodes[[a]], nodes[[b]])) }
+    
+    adjmat <- matrix(0, ncol = length(nodes), nrow = length(nodes))
+    colnames(adjmat) <- rownames(adjmat) <- names(nodes)
+    for(i in 1:nrow(adjmat)) {
+      for(j in 1:ncol(adjmat)) {
+        if (i == j) {
+          adjmat[i,j] = 0
+        } else {adjmat[i,j] <- detect_overlap(i,j)}
+      }
     }
+    
+    # return only upper matrix (undirected graph)
+    adjmat[lower.tri(adjmat)] <- 0
   }
-  
-  # return only upper matrix (undirected graph)
-  adjmat[lower.tri(adjmat)] <- 0
   return(adjmat)
 }
 
@@ -500,7 +528,9 @@ varTable <- function(gm, group_ids = c(1,2)){
     d2 = groupdata(gm,group_ids[2],varname)
     return(data.frame("var"=varname, "mean group 1"=mean(d1),  "variance group 1" = var(d1), "mean group 2"=mean(d2), "variance group 2" = var(d2)))
   }
-  vtable = ldply(colnames(gm$d), varFun)
+ # vtable = ldply(colnames(gm$d), varFun)
+  vtable = ldply(gm$selectedCols, varFun)
+  
 }
 
 # returns a table of ks results for each variable in gm$d
@@ -523,10 +553,25 @@ kstable <- function(gm, group_ids = c(1,2)){
   }
   print('making table')
   
-  vars = colnames(gm$d)
+  #vars = colnames(gm$d) 
+  vars = gm$selectedCols 
+  
+ # print("vars")
+#  print(vars)
   ktable = ldply(vars, ksfun)
   
   return(ktable[order(ktable$pvalue),])
+}
+
+# returns a bar plot of a selected factor variable
+#' @export
+factorBarPlot <- function(gm, varname, group_id = 1){
+  x_label = varname
+  y_label = "Frequency"
+  d_group = groupdata(gm,group_id,varname)
+#  return(barplot(table(gm$d[varname]), xlab = x_label, ylab = y_label) )
+  return(barplot(table(d_group), xlab = x_label, ylab = y_label) )
+    
 }
 
 
@@ -556,6 +601,8 @@ guaranteedVarname <- function(gm,  varname=NULL){
   
   if( Reduce("&", (varname %in% colnames(gm$d)))) return(varname)
 
+  if (varname %in% lenseChoices) return(varname)
+
   return(names(gm$d)[1])
 }
 
@@ -567,7 +614,7 @@ nodedata <- function(gm, nodes, varname=NULL){
 
   # unlisting potentially overlapping nodes, this works on single node, too
   rowids = unique(unlist(nodes))
-
+  
   # if no variable name sent, return all columns
   if(is.null(varname)){
     return(gm$d[rowids,])
@@ -575,8 +622,11 @@ nodedata <- function(gm, nodes, varname=NULL){
   else {
     # return only column(s) requested in varname
     # use reduce here to combine TRUES if varname is vector of names c("X", "Y")
-    if( Reduce("&", (varname %in% colnames(gm$d))))
+    if( Reduce("&", (varname %in% colnames(gm$d)))){
       return(gm$d[rowids,varname])
+    } else if( (varname %in% lenseChoices)){
+      return(gm$lensevals[rowids,])
+    }
   }
   return()
 }
