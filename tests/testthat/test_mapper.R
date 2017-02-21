@@ -88,4 +88,16 @@ test_that("Square with 2 dims with 3 partitions has 9 nodes",{
     expect_equal(length(m$nodes), 9)
     
   })  
+
+test_that("circle with 2 dims with 3 partitions",{
+  d = circle_data(r=1, n=1000, randomize=FALSE)
+  l1 = lense(lense.projection, "X", partition_count=3, overlap = 0.5) 
+  l2 = lense(lense.projection, "Y", partition_count=3, overlap = 0.5) 
+  m <- mapper(dataset = d, 
+              lenses=list(l1,l2), 
+              cluster_method="single", bin_count=10, normalize_data=TRUE)
+  m <- mapper.run(m)
+  for(nodeset in m$nodes) { expect_gt(length(nodeset),0)}
+  
+})  
   
