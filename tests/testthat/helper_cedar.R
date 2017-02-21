@@ -5,6 +5,14 @@ example_lense  <- function(){
   lense(lense.constant, lenseparam=NULL, partition_count=4, overlap = 0.5)
 }
 
+circle_mapper <- function(npoints=60,partition_count=4, overlap = 0.5){
+  d = circle_data(r=1,n=npoints)
+  lenseparam = "X"
+  l = lense(lense.projection, lenseparam, partition_count, overlap) 
+  mapper(dataset = d, 
+         lenses=list(l), 
+         cluster_method="single", bin_count=10, normalize_data=TRUE)
+}
 
 
 example_mapper <- function(){
