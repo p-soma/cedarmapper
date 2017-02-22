@@ -121,3 +121,14 @@ partitiondata <- function(gm, p, varname = NULL){
   # bad variable name sent - error condition?
   return(NULL)
 }
+
+#' returns bar plot
+#' @export 
+#' 
+factorBarPlot <- function(gm, varname, group_id = 1){
+  x_label = varname
+  y_label = "Frequency"
+  d_group = groupdata(gm,group_id,varname)
+  #  return(barplot(table(gm$d[varname]), xlab = x_label, ylab = y_label) )
+  return(barplot(table(d_group), xlab = x_label, ylab = y_label) )
+}

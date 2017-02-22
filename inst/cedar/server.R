@@ -254,8 +254,8 @@ shinyServer(function(input, output, session) {
     selected_cols <- input$selectedColumns
     print(selected_cols)
     # add selected lense function to choices of coloring variable
-    updateSelectInput(session, inputId = "selectedVar", choices = c(selected_cols,input$lenseFunctionSelection))
- #   updateSelectInput(session, inputId = "selectedVar", choices = c(names(d),input$lenseFunctionSelection))
+ #   updateSelectInput(session, inputId = "selectedVar", choices = c(selected_cols,input$lenseFunctionSelection))
+    updateSelectInput(session, inputId = "selectedVar", choices = c(names(d),input$lenseFunctionSelection))
     
     progress <- shiny::Progress$new()
     progress$set(message = "Calculating Clustering", value = 0)
