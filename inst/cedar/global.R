@@ -13,6 +13,7 @@ datasets[["CircleSquishy"]]<- squishy_circle(r=1, n=500, squish=100)
 datasets[["Y data"]] <- y_data(n=100)
 datasets[["Spiral"]] <- spiral_data(200)
 datasets[["Iris"]] <- iris
+datasets[["Uniform Square"]] <- square_data(seed = NULL)
 
 
 ####### starting values
