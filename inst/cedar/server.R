@@ -100,17 +100,20 @@ shinyServer(function(input, output, session) {
   # there and the (D3.js) nodes are updated and recolored, etc
   observe({
     input$selectedVar
-    print(selectedVar() %in% c(colnames(gm$d),lenseChoices))
+    # DEBUG
+    # print(selectedVar() %in% c(colnames(gm$d),lenseChoices))
     if (selectedVar() %in% c(colnames(gm$d),lenseChoices)) {
       vals = nodePrep(gm,selectedVar())$values
       session$sendCustomMessage(type='nodevalues',message = vals)
     } 
   })
   
+  ####TODO error obj varname not found
   histVals <- reactive({
       input$showHist
       if(!is.null(input$nodelist)){
-        nodedata(gm, as.numeric(input$nodelist), varname)
+        varname = selectedVar()
+        nodedata(gm, as.numeric(input$nodelist),varname)
       } else {
         c(0)
       }

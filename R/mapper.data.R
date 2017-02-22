@@ -29,6 +29,9 @@ kstable <- function(gm, group_ids = c(1,2)){
   
   # inner function for apply
   ksfun <- function(varname) {
+    # DEBUG 
+    print(varname)
+    
     # TODO this is duplicating the data in memory
     d1 = groupdata(gm,group_ids[1],varname)
     d2 = groupdata(gm,group_ids[2],varname)
@@ -38,10 +41,15 @@ kstable <- function(gm, group_ids = c(1,2)){
     )
     return(data.frame("var"=varname, "pvalue" = kt$p.value, "kstatistic" = kt$statistic))
   }
-  print('making table')
   
-  vars = gm$selectedCols 
-  ktable = ldply(vars, ksfun)
+  print('making table for cols ')
+  print(gm$selected_cols)
+  
+  if(is.null(gm$selected_cols) || length(gm$selected_cols) == 0 ) { 
+    ktable = "No valid columns selected"
+  } else { 
+    ktable = ldply(gm$selected_cols , ksfun)
+  }
   
   return(ktable[order(ktable$pvalue),])
 }
@@ -80,6 +88,11 @@ guaranteedVarname <- function(gm,  varname=NULL){
 # a node is a list of data row IDs from gm$d, note a node ID (node 3)
 #' @export
 nodedata <- function(gm, nodes, varname=NULL){
+  # DEBUG
+  # print("node data")
+  # print(nodes)
+  # print(varname)
+  
   if(!is.mapper(gm)) return (NULL)
   
   # unlisting potentially overlapping nodes, this works on single node, too
@@ -120,4 +133,15 @@ partitiondata <- function(gm, p, varname = NULL){
   }
   # bad variable name sent - error condition?
   return(NULL)
+}
+
+# # returns a bar plot of a selected factor variable
+# #' @export
+factorBarPlot <- function(gm, varname, group_id = 1){
+  x_label = varname
+  y_label = "Frequency"
+  d_group = groupdata(gm,group_id,varname)
+  #  return(barplot(table(gm$d[varname]), xlab = x_label, ylab = y_label) )
+  return(barplot(table(d_group), xlab = x_label, ylab = y_label) )
+
 }
