@@ -60,12 +60,28 @@ dashboardBody(
       ),
       # First tab content
       tabItem(tabName = "params",
+              
+          fluidRow( # all mapper params
+            column(width=4,
+            box( title="Mapper Parameters", width=NULL, background ="light-blue",
+              h3("Data set:", textOutput("dataname",inline=TRUE),color="light-blue"),
+              checkboxInput("normalizeOption", "Normalize Data?", value = TRUE, width = NULL),
+              sliderInput("binCountSelection", label = "Cluster Bin Count", 
+                          min=min(3),max=max(50), value=10,
+                          step=1)  
+              )
+            ),
+            column(width=4,
+              box(width=NULL, title="Mapper", 
+                  actionButton("runMapper", "Calculate Mapper"))
+            )
+              
+          
+          ),
+          
           fluidRow(
             column(width=4,
-              box( title="Mapper Parameters", width=NULL, background ="light-blue",
-                 h3("Data set:", textOutput("dataname",inline=TRUE),color="light-blue"),
-                 checkboxInput("normalizeOption", "Normalize Data?", value = TRUE, width = NULL),
-                 
+              box( title="Dimension 1 Parameters", width=NULL, background ="navy",
                  selectInput("lenseFunctionSelection", label="Lense Function", 
                              choices = lenseChoices, selected = 1),
                  
@@ -82,15 +98,35 @@ dashboardBody(
                              min=min(partitionCountChoices),max=max(partitionCountChoices), value=4,
                              step=1),  
                  selectInput("overlapSelection", label = "Partition Overlap (percent)", 
-                             choices = c(0:13) * 5  + 10, selected = 50),
-                 sliderInput("binCountSelection", label = "Cluster Bin Count", 
-                             min=min(3),max=max(50), value=10,
-                             step=1)  
+                             choices = c(0:13) * 5  + 10, selected = 50)
+                 
               )
             ),
+            
             column(width=4,
-                   box(width=NULL, title="Mapper", 
-                   actionButton("runMapper", "Calculate Mapper")),
+              box(title="Dimension 2 Parameters", width=NULL, background ="navy", 
+                  selectInput("lense2FunctionSelection", label="Lense Function", 
+                             choices = lenseChoices, selected = NULL),
+                  
+                  conditionalPanel(condition = "input.lenseFunctionSelection == 'Projection'",
+                                   selectInput("lense2filterVar", label = "Filtering Variable", 
+                                               choices = initVariableChoices, selected = 1)
+                  ),
+                  conditionalPanel(condition = "input.lenseFunctionSelection != 'Projection'",
+                                   uiOutput("lense2ParamInput") 
+                                   # textInput("lenseParam", label = lenses[input.lenseFunctionSelection,]$desc)}
+                  ),
+                  
+                  sliderInput("lense2partitionCountSelection", label = "Number of Partitions", 
+                              min=min(partitionCountChoices),max=max(partitionCountChoices), value=4,
+                              step=1),  
+                  selectInput("lense2overlapSelection", label = "Partition Overlap (percent)", 
+                              choices = c(0:13) * 5  + 10, selected = 50)
+                  
+                  )
+            ),
+            column(width=4,
+                  
                    box(width=NULL, title="Current Parameters",
                       valueBox(width=NULL, subtitle = "Partitions",     value=textOutput("gmPartitionCount",inline=TRUE),  color="black"),
                       valueBox(width=NULL, subtitle = "Percent Overlap",value=textOutput("gmOverlap",inline=TRUE),  color="black"),
@@ -100,12 +136,8 @@ dashboardBody(
 
                    )
 
-            ),
-            column(width=4,
-                   box(title="Cluster Info",width=NULL,"")
-                       # selectInput("dataSelection", label = "Select Dataset", choices = dataChoices, selected = 1)),
-                  )
-            )# end row
+            )
+          )# end row
       ),
       
 

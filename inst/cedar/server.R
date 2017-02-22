@@ -257,8 +257,9 @@ shinyServer(function(input, output, session) {
     selected_cols <- input$selectedColumns
     print(selected_cols)
     # add selected lense function to choices of coloring variable
-    updateSelectInput(session, inputId = "selectedVar", choices = c(selected_cols,input$lenseFunctionSelection))
- #   updateSelectInput(session, inputId = "selectedVar", choices = c(names(d),input$lenseFunctionSelection))
+    # DISABLE THIS for now
+    # updateSelectInput(session, inputId = "selectedVar", choices = c(selected_cols,input$lenseFunctionSelection))
+    updateSelectInput(session, inputId = "selectedVar", choices = c(names(d),input$lenseFunctionSelection))
     
     progress <- shiny::Progress$new()
     progress$set(message = "Calculating Clustering", value = 0)
@@ -282,6 +283,23 @@ shinyServer(function(input, output, session) {
           if(input$lenseFunctionSelection == "Projection"){lenseParam <- input$filterVar}
           
           # test for NA in lenseparam WHEN the lense needs a param
+      }
+      else {
+        # pop-up warning message; function doesn't exis
+        stop("error in filter function selection")
+      }
+    }
+    
+    if(! is.null(input$lense2FunctionSelection)) {
+      # selected the string of function name, and 'get' the actual function identifier
+      fname = get(lenses[input$lenseFunctionSelection,]$fun)
+      f = match.fun(fname)
+      if (is.function(f)){ 
+        lense2_fun <- f
+        lense2Param <- as.numeric(input$lenseParam)
+        if(input$lense2FunctionSelection == "Projection"){lense2Param <- input$lense2filterVar}
+        
+        # test for NA in lenseparam WHEN the lense needs a param
       }
       else {
         # pop-up warning message; function doesn't exis
@@ -374,6 +392,18 @@ shinyServer(function(input, output, session) {
     } else {
           p("No parameter needed")  # lenses[lenses$Name==input$lenseFunctionSelection,]$desc
       }
+  )
+  
+  output$lense2ParamInput <- renderUI(
+    # param_text = lenses[lenses$Name==input$lenseFunctionSelection,]$params
+    
+    if( (lenses[input$lense2FunctionSelection,]$params)  != ""){
+      textInput("lense2Param", 
+                label = lenses[lenses$Name==input$lense2FunctionSelection,"desc"], 
+                placeholder=lenses[lenses$Name==input$lense2FunctionSelection,]$params)
+    } else {
+      p("No parameter needed")  # lenses[lenses$Name==input$lenseFunctionSelection,]$desc
+    }
   )
   
   output$lensesigma <- renderText(input$lensesigma)
