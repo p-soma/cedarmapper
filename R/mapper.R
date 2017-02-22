@@ -102,9 +102,11 @@ mapper.run <- function(m, progressUpdater = NULL){
 #' this is for the 1D case, and currently structured to match shiny app that uses
 #' structure of old mapper object, but this mushes it into a 1D mapper 
 #' @export
-makemapper <- function(dataset, lensefun, partition_count=4, overlap = 0.5,  
-                       bin_count=10, cluster_method= 'single', lenseparam = NULL, 
-                       normalize_data=TRUE, progressUpdater=NULL, selected_cols=NULL) {
+makemapper <- function(dataset, 
+              lensefun, partition_count=4, overlap = 0.5, lenseparam = NULL,
+              lense2fun = NULL, lense2partition_count=NULL,lense2overlap = 0.0,lense2param = NULL,
+              bin_count=10, cluster_method= 'single', normalize_data=TRUE, 
+              progressUpdater=NULL, selected_cols=NULL) {
   
   # create objects with the above params
   # if selected_cols is not sent (is NULL) then limit pipeline only numeric columns
@@ -112,13 +114,20 @@ makemapper <- function(dataset, lensefun, partition_count=4, overlap = 0.5,
   if(is.null(selected_cols)){ 
     selected_cols = names(dataset)[sapply(dataset,is.numeric)]
     }
+
+  print("lense 2 params: param, pcount, overlap")
+  print(lense2param)
+  print(lense2partition_count)
+  print(lense2overlap)
   
-  #DEBUG!  remove
-  print(selected_cols)
+  # create one or 2 lenses
+  lense_list <- list("1" = lense(lensefun, lenseparam, partition_count, overlap))
+  if(!is.null(lense2fun)) {
+      lense_list[["2"]]  <- lense(lense2fun, lense2param, lense2partition_count, lense2overlap)
+  }
   
-  one_lense <- lense(lensefun, lenseparam, partition_count, overlap)
   m<- mapper(dataset=dataset, 
-               lenses=list(one_lense),
+               lenses=lense_list,
                cluster_method=cluster_method, 
                bin_count=bin_count, 
                normalize_data=normalize_data,

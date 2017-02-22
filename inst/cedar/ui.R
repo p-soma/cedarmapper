@@ -106,7 +106,7 @@ dashboardBody(
             column(width=4,
               box(title="Dimension 2 Parameters", width=NULL, background ="navy", 
                   selectInput("lense2FunctionSelection", label="Lense Function", 
-                             choices = lenseChoices, selected = NULL),
+                             choices = lenseChoices, selected = 1),
                   
                   conditionalPanel(condition = "input.lense2FunctionSelection == 'Projection'",
                                    selectInput("lense2filterVar", label = "Filtering Variable", 

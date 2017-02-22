@@ -36,6 +36,7 @@ shinyServer(function(input, output, session) {
     updateCheckboxGroupInput(session, inputId = "selectedColumns", choices = names(d), selected = names(d), inline=TRUE)
     updateSelectInput(session, inputId = "selectedVar",choices = names(d))
     updateSelectInput(session, inputId = "filterVar",  choices = names(d))
+    updateSelectInput(session, inputId = "lense2filterVar",  choices = names(d))
     return(d)
   })
   
@@ -296,7 +297,7 @@ shinyServer(function(input, output, session) {
       f = match.fun(fname)
       if (is.function(f)){ 
         lense2_fun <- f
-        lense2Param <- as.numeric(input$lenseParam)
+        lense2Param <- as.numeric(input$lense2Param)
         if(input$lense2FunctionSelection == "Projection"){lense2Param <- input$lense2filterVar}
         
         # test for NA in lenseparam WHEN the lense needs a param
@@ -308,11 +309,17 @@ shinyServer(function(input, output, session) {
     }
     
     print(paste0("mapper normalize=", input$normalizeOption, ", param=",lenseParam," for ", input$lenseFunctionSelection))
+    print(paste0("mapper normalize=", input$normalizeOption, ", param2=",lense2Param," for ", input$lense2FunctionSelection))
+    
     gm<<- makemapper(dataset = as.data.frame(d), 
                           lensefun = lense_fun, 
                           partition_count=as.numeric(input$partitionCountSelection),
                           overlap = as.numeric(input$overlapSelection)/100.0, 
                           lenseparam = lenseParam,
+                          lense2fun = lense2_fun, 
+                          lense2partition_count=as.numeric(input$lense2partitionCountSelection),
+                          lense2overlap = as.numeric(input$lense2overlapSelection)/100.0, 
+                          lense2param = lense2Param,
                          # lensevals = data.frame(mapper.lense.calculate(gm)$values), #data.frame(gm$lensefun(gm)), # new filter coloring
                           selected_cols = selected_cols,
                           bin_count = as.numeric(input$binCountSelection),
