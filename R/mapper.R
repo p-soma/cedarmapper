@@ -38,7 +38,7 @@ lense <- function(lensefun, lenseparam=NULL, partition_count=4, overlap = 0.5) {
 #' Constructor for mapper object to be used in mapper pipeline
 #' @return mapper object with all params needed for pipeline
 #' @export
-mapper <- function(dataset, lenses, lensevals=NULL, cluster_method="single", bin_count=10, normalize_data=TRUE, selected_cols=names(dataset)){
+mapper <- function(dataset, lenses, cluster_method="single", bin_count=10, normalize_data=TRUE, selected_cols=names(dataset)){
   # lenses have previous parameters used: lensefun, partition_count=4, overlap = 0.5,lenseparam = NULL
   
   # note: dimensions variable 
@@ -51,8 +51,7 @@ mapper <- function(dataset, lenses, lensevals=NULL, cluster_method="single", bin
                       "cluster_method"=cluster_method, 
                       "bin_count" = as.numeric(bin_count),
                       "normalize_data" = normalize_data,
-                      "selected_cols" = names(d),
-                      "lensevals"=lensevals
+                      "selected_cols" = selected_cols
                       ),
                  class="mapper")
   
@@ -65,7 +64,6 @@ mapper <- function(dataset, lenses, lensevals=NULL, cluster_method="single", bin
     gm$nodes      <- NULL
     gm$adjmatrix  <- NULL
     gm$groups     <- list()
-    gm$lensevals  <- NULL
     
   return(gm)
 }
@@ -87,7 +85,6 @@ mapper.run <- function(m, progressUpdater = NULL){
   m$clusters   <- clusters.mapper(m, shinyProgressFunction=progressUpdater ) 
   m$nodes      <- nodes.mapper(m)
   m$adjmatrix  <- adjacency.mapper(m) 
-  m$lensevals  <- data.frame(mapper.lense.calculate(m)$values)
   return(m)
   
 }
@@ -95,7 +92,7 @@ mapper.run <- function(m, progressUpdater = NULL){
 #  single method to collect parameters and then run all steps for 1D mapper object
 #  
 #' @export
-makemapper <- function(dataset, lensefun, lensevals=NULL, partition_count=4, overlap = 0.5,  
+makemapper <- function(dataset, lensefun, partition_count=4, overlap = 0.5,  
                        bin_count=10, cluster_method= 'single', lenseparam = NULL, 
                        normalize_data=TRUE, progressUpdater=NULL, selected_cols=names(dataset)){
   # create objects with the above params
@@ -105,11 +102,9 @@ makemapper <- function(dataset, lensefun, lensevals=NULL, partition_count=4, ove
                cluster_method=cluster_method, 
                bin_count=bin_count, 
                normalize_data=normalize_data,
-               lensevals=lensevals,
                selected_cols=selected_cols
                )
   gm <- mapper.run(gm)
-#  gm$lensevals
   return(gm)
 }
 
@@ -119,10 +114,11 @@ makemapper <- function(dataset, lensefun, lensevals=NULL, partition_count=4, ove
 #' @return distance matrix of data element of mapper object gm$d
 distance.mapper <- function(m, method="euclidean") {
   # same method, just using scaled data or not
+  d <- m$d[, m$selected_cols]
   if ( m$normalize_data ) 
-    { dist(scale(m$d[, m$selected_cols]),method, upper=FALSE)  }
+    { dist(scale(d),method, upper=FALSE)  }
   else 
-    { dist(m$d[, m$selected_cols],method, upper=FALSE) }
+    { dist(d,method, upper=FALSE) }
 }
   
 
@@ -319,7 +315,7 @@ clusters.mapper<- function(m, shinyProgressFunction = NULL) {
     # check for special case of only one datapoint, so no clustering necessary, break out of loop
     if(length(m$partitions[[i]]) < 2 ){
       gmClusts[[i]] = c(1)
-      names(gmClusts[[i]]) = rownames(m$partitions[[i]], gm$selected_cols)
+      names(gmClusts[[i]]) = rownames(m$partitions[[i]], m$selected_cols)
       next
     }
     
@@ -334,7 +330,7 @@ clusters.mapper<- function(m, shinyProgressFunction = NULL) {
     # debug 
     # print(gm$partitions[[i]])
     
-    rowset = m$d[m$partitions[[i]],]  # partition is a set of rownames
+    rowset = m$d[m$partitions[[i]], m$selected_cols]  # partition is a set of rownames
     # calculate distance matrix for this partition
     
     # TODO: subset the full distance matrix instead of re-calculating here each time
@@ -382,7 +378,7 @@ clusters2d.mapper<- function(gm, cluster_method = "single", scaling=FALSE, shiny
     
     # debug 
     # print(gm$partitions[[i]])
-    rowset = gm$d[rownames(gm$partitions[[i]]),] 
+    rowset = gm$d[rownames(gm$partitions[[i]]), gm$selected_cols] 
     
     # calculate distance matrix for this partition
     # TODO: check if whole data set partition is present, and extract subset from that

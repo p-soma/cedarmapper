@@ -251,9 +251,6 @@ shinyServer(function(input, output, session) {
     d[factorCols] <- lapply(d[factorCols], factor)
     factorCols <- c(names(d[, sapply(d, is.factor)]), names(d[, ! sapply(d, is.numeric)]))
 
-  #  print(factorVars)
-  #  print(factorCols)
- #   selectedCols <- setdiff(input$selectedColumns, factorVars)
     selected_cols <- input$selectedColumns
     print(selected_cols)
     # add selected lense function to choices of coloring variable
