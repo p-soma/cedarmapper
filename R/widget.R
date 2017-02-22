@@ -5,7 +5,7 @@
 # cedarGraph(linkPrep(gm), nodePrep(gm))
 
 # TODO: replace "name" attribute of nodes as "nodeid" here AND In all javascript
-source("R/nodeFunctions.R")
+source("R/mapper.R")
 
 #'@import htmlwidgets
 
@@ -52,7 +52,7 @@ linkPrep <- function(gm){
   ## get link data for js widget
 
   # create a graph object
-  g = graph.graphmapper(gm)
+  g = graph.mapper(gm)
   links = get.data.frame(g)
   # make it work for javascript zero-based indexing
   links_prepped = data.frame(source=as.numeric(links$from) - 1, target = as.numeric(links$to) - 1 , weight = links$weight)

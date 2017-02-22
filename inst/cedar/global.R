@@ -33,4 +33,4 @@ initVariableChoices   <- names(datasets[[1]])
 # starting value for dataset d
 d                     <- datasets[[1]]
 
-gm <- graphmapper(dataset=d, lensefun=lense.projection, partition_count=NULL, overlap=NULL,  lenseparam="rw")
+gm <<- mapper(dataset=d, lenses=list(lense(lense.constant)) )  # simple mapper with all defaults
