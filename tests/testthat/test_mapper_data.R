@@ -12,8 +12,7 @@ test_that("1d Mapper with iris data", {
   m <- mapper(dataset = d, 
               lenses=list(l1), 
               cluster_method="single", bin_count=10, normalize_data=TRUE, 
-              "selected_cols" =  names(d)[sapply(d,is.numeric),progressUpdater = NULL]
-              )
+              "selected_cols" =  names(d)[sapply(d,is.numeric)])
   
 
   m <- mapper.run(m)

@@ -38,7 +38,8 @@ lense <- function(lensefun, lenseparam=NULL, partition_count=4, overlap = 0.5) {
 #' Constructor for mapper object to be used in mapper pipeline
 #' @return mapper object with all params needed for pipeline
 #' @export
-mapper <- function(dataset, lenses, lensevals=NULL, cluster_method="single", bin_count=10, normalize_data=TRUE, selected_cols=NULL){
+
+mapper <- function(dataset, lenses, cluster_method="single", bin_count=10, normalize_data=TRUE, selected_cols=NULL){
   # lenses have previous parameters used: lensefun, partition_count=4, overlap = 0.5,lenseparam = NULL
   
   # note: dimensions variable 
@@ -48,28 +49,27 @@ mapper <- function(dataset, lenses, lensevals=NULL, cluster_method="single", bin
     selected_cols = names(dataset)[sapply(dataset,is.numeric)]
   }
   
-   gm = structure(  list("d" = dataset, 
+  rownames(dataset)<- 1:nrow(dataset)
+  m = structure(  list("d" = dataset, 
                       "lenses"=lenses, 
                       "cluster_method"=cluster_method, 
                       "bin_count" = as.numeric(bin_count),
                       "normalize_data" = normalize_data,
-                      "selected_cols" = selected_cols,
-                      "lensevals"=lensevals
+                      "selected_cols" = selected_cols
                       ),
                  class="mapper")
   
   ### TODO : ensure all as.numeric conversions of parameters inside the Shiny app 
-  
-  rownames(dataset)<- 1:nrow(dataset)
-    gm$distance   <- NULL
-    gm$partitions <- NULL
-    gm$clusters   <- NULL
-    gm$nodes      <- NULL
-    gm$adjmatrix  <- NULL
-    gm$groups     <- list()
-    gm$lensevals  <- NULL
+
+  m$distance   <- NULL
+  m$partitions <- NULL
+  m$lensevals  <- NULL
+  m$clusters   <- NULL
+  m$nodes      <- NULL
+  m$adjmatrix  <- NULL
+  m$groups     <- list()
     
-  return(gm)
+  return(m)
 }
 
 #' return the dimension of a graph mapper object by counting lenses
@@ -85,20 +85,24 @@ mapper.dimensions <- function(gm){
 mapper.run <- function(m, progressUpdater = NULL){
   # TODO : means to determine if data has changed, and if not, don't recalculate distance matrix
   m$distance   <- distance.mapper(m,method="euclidean") # dist(scale(gm$d),method="euclidean", upper=FALSE)
+  # TODO add seperate step to calculate and replace lenses which adds nrow * dimensions elements to data structure
+  # m$lenses   <- lensecalc.mapper(m) something like this
   m$partitions <- partition.mapper(m)
   m$clusters   <- clusters.mapper(m, shinyProgressFunction=progressUpdater ) 
   m$nodes      <- nodes.mapper(m)
   m$adjmatrix  <- adjacency.mapper(m) 
-  m$lensevals  <- data.frame(mapper.lense.calculate(m)$values)
-  return(m)
+  # hack to add the lense values here
   
+  m$lensevals  <- mapper.lense.calculate(m,1)$values
+  return(m)
+
 }
 
 #' single method to collect parameters and then run all steps for 1D mapper object
 #' this is for the 1D case, and currently structured to match shiny app that uses
 #' structure of old mapper object, but this mushes it into a 1D mapper 
 #' @export
-makemapper <- function(dataset, lensefun, lensevals=NULL, partition_count=4, overlap = 0.5,  
+makemapper <- function(dataset, lensefun, partition_count=4, overlap = 0.5,  
                        bin_count=10, cluster_method= 'single', lenseparam = NULL, 
                        normalize_data=TRUE, progressUpdater=NULL, selected_cols=NULL) {
   
@@ -118,12 +122,10 @@ makemapper <- function(dataset, lensefun, lensevals=NULL, partition_count=4, ove
                cluster_method=cluster_method, 
                bin_count=bin_count, 
                normalize_data=normalize_data,
-               lensevals=lensevals,
                selected_cols=selected_cols
                )
   m <- mapper.run(m)
 
-  return(gm)
 }
 
 #' calculate distance matrix of the existing data, scale if normalize data is checked
@@ -132,11 +134,12 @@ makemapper <- function(dataset, lensefun, lensevals=NULL, partition_count=4, ove
 #' @return distance matrix of data element of mapper object gm$d
 distance.mapper <- function(m, method="euclidean") {
   # same method, just using scaled data or not
-  print(m$selected_cols)
+  
+  d <- m$d[, m$selected_cols]
   if ( m$normalize_data ) 
-    { dist(scale(m$d[, m$selected_cols]),method, upper=FALSE)  }
+    { dist(scale(d),method, upper=FALSE)  }
   else 
-    { dist(m$d[, m$selected_cols],method, upper=FALSE) }
+    { dist(d,method, upper=FALSE) }
 }
   
 
@@ -156,9 +159,15 @@ mapper.lense.calculate <- function(m,dimension=1){
   L <- m$lenses[[dimension]]
   if (class(L) != "lense") {stop ("partition function requires a lense object")}
   
+  ## this shouldn't be necessary, but make sure selected_cols is a thing
+  ## limits to numeric columns every time
+  if(is.null(m$selected_cols)) {
+    m$selected_cols = names(m$d)[sapply(m$d,is.numeric)]
+  }
+
   # fill up L member variables and return it
   # L$values is 1D vector of values from the filter/lense function with same length as mapper data
-  L$values <- L$lensefun(m$d[, m$selected_cols], L$lenseparam, m$distance)
+  L$values <- L$lensefun(m$d[m$selected_cols], L$lenseparam, m$distance)
   names(L$values) <- rownames(m$d)
   
   # calc and store aspects of resulting vector; could be expensive
@@ -193,10 +202,14 @@ get_partition_index <- function(partition_start_value,L){
   
   if (class(L) != "lense")          { stop("partition function requires a lense object")}
   if (is.null(L$p0) || is.na(L$p0)) { stop("error, did not calculate lense") }
+  
+  # boundary condition where the is one partition and width is zero (e.g. all same eccentricity value)
+  if( L$pl == 0) { return(1) }
+  
   # L must have been 'calculated' to load these values
   
   # boundary conditions
-  if( partition_start_value < L$p0 && partition_start_value > L$pmax ) { return(NA)}
+  if( partition_start_value < L$p0 || partition_start_value > L$pmax ) { return(NA)}
   # if( partition_start_value > (L$p0 + (L$pl * L$n))) {return(NA)}
   
   i = (  (( partition_start_value - L$p0 ) / L$pl ) + (1-L$o)) / (1-L$o) 
@@ -334,7 +347,7 @@ clusters.mapper<- function(m, shinyProgressFunction = NULL) {
     # check for special case of only one datapoint, so no clustering necessary, break out of loop
     if(length(m$partitions[[i]]) < 2 ){
       gmClusts[[i]] = c(1)
-      names(gmClusts[[i]]) = rownames(m$partitions[[i]], gm$selected_cols)
+      names(gmClusts[[i]]) = rownames(m$partitions[[i]], m$selected_cols)
       next
     }
     
@@ -349,7 +362,7 @@ clusters.mapper<- function(m, shinyProgressFunction = NULL) {
     # debug 
     # print(gm$partitions[[i]])
     
-    rowset = m$d[m$partitions[[i]],]  # partition is a set of rownames
+    rowset = m$d[m$partitions[[i]], m$selected_cols]  # partition is a set of rownames
     # calculate distance matrix for this partition
     
     # TODO: subset the full distance matrix instead of re-calculating here each time
@@ -397,7 +410,7 @@ clusters2d.mapper<- function(gm, cluster_method = "single", scaling=FALSE, shiny
     
     # debug 
     # print(gm$partitions[[i]])
-    rowset = gm$d[rownames(gm$partitions[[i]]),] 
+    rowset = gm$d[rownames(gm$partitions[[i]]), gm$selected_cols] 
     
     # calculate distance matrix for this partition
     # TODO: check if whole data set partition is present, and extract subset from that
