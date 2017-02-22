@@ -108,11 +108,11 @@ dashboardBody(
                   selectInput("lense2FunctionSelection", label="Lense Function", 
                              choices = lenseChoices, selected = NULL),
                   
-                  conditionalPanel(condition = "input.lenseFunctionSelection == 'Projection'",
+                  conditionalPanel(condition = "input.lense2FunctionSelection == 'Projection'",
                                    selectInput("lense2filterVar", label = "Filtering Variable", 
                                                choices = initVariableChoices, selected = 1)
                   ),
-                  conditionalPanel(condition = "input.lenseFunctionSelection != 'Projection'",
+                  conditionalPanel(condition = "input.lense2FunctionSelection != 'Projection'",
                                    uiOutput("lense2ParamInput") 
                                    # textInput("lenseParam", label = lenses[input.lenseFunctionSelection,]$desc)}
                   ),
@@ -124,18 +124,6 @@ dashboardBody(
                               choices = c(0:13) * 5  + 10, selected = 50)
                   
                   )
-            ),
-            column(width=4,
-                  
-                   box(width=NULL, title="Current Parameters",
-                      valueBox(width=NULL, subtitle = "Partitions",     value=textOutput("gmPartitionCount",inline=TRUE),  color="black"),
-                      valueBox(width=NULL, subtitle = "Percent Overlap",value=textOutput("gmOverlap",inline=TRUE),  color="black"),
-                      valueBox(width=NULL ,subtitle = "Clustering Bins",  value=textOutput("gmBinCount",inline=TRUE),  color="black"),
-                      valueBox(width=NULL ,subtitle = "Nodes",          value=textOutput("nodeCount",inline=TRUE),  color="black"),
-                      downloadButton('downloadMapper', 'Download Mapper Rdata')
-
-                   )
-
             )
           )# end row
       ),
