@@ -369,7 +369,7 @@ clusters.mapper<- function(m, shinyProgressFunction = NULL) {
     # check for special case of only one datapoint, so no clustering necessary, break out of loop
     if(length(m$partitions[[i]]) < 2 ){
       gmClusts[[i]] = c(1)
-      names(gmClusts[[i]]) = rownames(m$partitions[[i]], m$selected_cols)
+      names(gmClusts[[i]]) = rownames(m$partitions[[i]])
       next
     }
     
@@ -384,7 +384,7 @@ clusters.mapper<- function(m, shinyProgressFunction = NULL) {
     # debug 
     # print(gm$partitions[[i]])
     
-    rowset = m$d[m$partitions[[i]], m$selected_cols]  # partition is a set of rownames
+    rowset <- m$d[m$partitions[[i]], mapper.numeric_cols(m)]  # partition is a set of rownames
     # calculate distance matrix for this partition
     
     # TODO: subset the full distance matrix instead of re-calculating here each time
