@@ -19,3 +19,17 @@ test_that("1d Mapper with iris data", {
   expect_is(m,"mapper")
   
 })
+
+test_that("mapper.numeric_cols returns numeric columns", {
+  d  = data.frame("x"=1:5,"y"=c("a","b","c","d","e"))
+  m <- mapper(dataset = d, lenses = list(l1 = lense(lense.constant) ))
+  expect_equal(mapper.numeric_cols(m),"x")
+})
+
+test_that("mapper in iris datareturns numeric columns", {
+  d = iris
+  l1 <- lense(lense.projection, colnames(d)[1], partition_count=4, overlap = 0.5)
+  m  <- mapper(dataset = d, lenses = list(l1 = lense(lense.constant) ))
+  d <- m$d[mapper.numeric_cols(m)]
+  
+  

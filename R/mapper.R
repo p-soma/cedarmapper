@@ -80,6 +80,24 @@ mapper.dimensions <- function(gm){
   length(gm$lenses)
 }
 
+#' mapper.numeric_cols
+#' utility function to guarantee only numeric columns are used for calculations
+#' @param m mapper object
+#' @return vector of column names
+#' @export
+mapper.numeric_cols <-function(m){
+  
+  if(is.null(m$selected_cols) || length(m$selected_cols) == 0){
+    numeric_cols = names(m$d)[sapply(m$d,is.numeric)]
+  }
+  else {
+    # get only the numeric of the currently selected columns
+    numeric_cols = names(m$d[m$selected_cols])[sapply(m$d[m$selected_cols],is.numeric)]
+  }
+  
+  return(numeric_cols)
+}
+
 # single method to run all steps for mapper pipeline given a mapper object
 #' @export
 mapper.run <- function(m, progressUpdater = NULL){
@@ -138,13 +156,13 @@ makemapper <- function(dataset,
 }
 
 #' calculate distance matrix of the existing data, scale if normalize data is checked
+#' restrict to numeric columns
 #' @param gm A mapper object with d data member
 #' @param method A string method name used by the dist() function
 #' @return distance matrix of data element of mapper object gm$d
 distance.mapper <- function(m, method="euclidean") {
-  # same method, just using scaled data or not
   
-  d <- m$d[, m$selected_cols]
+  d <- m$d[mapper.numeric_cols(m)]
   if ( m$normalize_data ) 
     { dist(scale(d),method, upper=FALSE)  }
   else 
@@ -161,22 +179,17 @@ distance.mapper <- function(m, method="euclidean") {
 
 #' calculate the lense function values and parameters needed for partitioning
 #' mapper object is needed for data and distance matrix only
+#' restricted to numeric columns of data
 #' @export
 #' @param gm
 #' @return Lense object with values and stats
 mapper.lense.calculate <- function(m,dimension=1){
   L <- m$lenses[[dimension]]
   if (class(L) != "lense") {stop ("partition function requires a lense object")}
-  
-  ## this shouldn't be necessary, but make sure selected_cols is a thing
-  ## limits to numeric columns every time
-  if(is.null(m$selected_cols)) {
-    m$selected_cols = names(m$d)[sapply(m$d,is.numeric)]
-  }
 
   # fill up L member variables and return it
   # L$values is 1D vector of values from the filter/lense function with same length as mapper data
-  L$values <- L$lensefun(m$d[m$selected_cols], L$lenseparam, m$distance)
+  L$values <- L$lensefun(m$d[mapper.numeric_cols(m)], L$lenseparam, m$distance)
   names(L$values) <- rownames(m$d)
   
   # calc and store aspects of resulting vector; could be expensive

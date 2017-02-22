@@ -41,16 +41,8 @@ kstable <- function(gm, group_ids = c(1,2)){
     )
     return(data.frame("var"=varname, "pvalue" = kt$p.value, "kstatistic" = kt$statistic))
   }
-  
-  print('making table for cols ')
-  print(gm$selected_cols)
-  
-  if(is.null(gm$selected_cols) || length(gm$selected_cols) == 0 ) { 
-    ktable = "No valid columns selected"
-  } else { 
-    ktable = ldply(gm$selected_cols , ksfun)
-  }
-  
+
+  ktable = ldply(mapper.numeric_cols(gm), ksfun)
   return(ktable[order(ktable$pvalue),])
 }
 
