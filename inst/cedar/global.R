@@ -5,7 +5,6 @@ library(cedar)
 datasets = list()
 data(chemdiab)
 data("iris")
-chemdiab  <- subset(chemdiab, select = -c(cc))
 
 datasets[["Diabetes"]] <- chemdiab
 datasets[["Circle"]]   <- circle_data(r=1, n=500)
