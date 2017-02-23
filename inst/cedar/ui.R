@@ -142,7 +142,9 @@ dashboardBody(
            column(width=2,
               ## TODO add list of input parameters in smaller table    
               box(uiOutput("gmParameters"), 
-                       title="Dimension 1 Parameters", width=NULL, background="light-blue"),
+                  title="Dimension 1 Parameters", width=NULL, background="light-blue"), 
+              box(uiOutput("gmParameters2"),  
+                  title="Dimension 2 Parameters", width=NULL, background="light-blue"), 
               
               box(uiOutput("gmParameters2"), 
                   title="Dimension 2 Parameters", width=NULL, background="light-blue"),
