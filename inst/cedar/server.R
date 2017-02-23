@@ -257,11 +257,14 @@ shinyServer(function(input, output, session) {
 
     selected_cols <- input$selectedColumns
     print(selected_cols)
-    # add selected lense function to choices of coloring variable
+    # add selected lense function(s) to choices of coloring variable
+    choices = c(names(d),input$lenseFunctionSelection)
     
-    # updateSelectInput(session, inputId = "selectedVar", choices = c(selected_cols,input$lenseFunctionSelection))
-
-    updateSelectInput(session, inputId = "selectedVar", choices = c(names(d),input$lenseFunctionSelection))
+    if(!is.null(input$lense2FunctionSelection)){
+      choices = c(choices, input$lense2FunctionSelection)
+    }
+    
+    updateSelectInput(session, inputId = "selectedVar", choices) 
     
     progress <- shiny::Progress$new()
     progress$set(message = "Calculating Clustering", value = 0)
@@ -360,23 +363,32 @@ shinyServer(function(input, output, session) {
   output$gmParameters  <- renderTable({
     input$runMapper
     data.frame( "P" = c(gm$lenses[[1]]$n, 
-                             gm$lenses[[1]]$o,
-                             gm$bin_count,
-                             input$lenseFunctionSelection,
-                             gm$lenses[[1]]$lenseparam,
-                             length(gm$nodes)),
-                row.names = c("partitions","overlap","bin count","filter","param","nodes")
-                )
-    
-    
-  },include.colnames = FALSE)
+         gm$lenses[[1]]$o,
+         gm$bin_count,
+         input$lenseFunctionSelection,
+         gm$lenses[[1]]$lenseparam,
+         length(gm$nodes)),
+         row.names = c("partitions","overlap","bin count","filter","param","nodes")
+    )},include.colnames = FALSE)
   
+  output$gmParameters2  <- renderTable({ 
+    input$runMapper 
+    data.frame( "P" = c(gm$lenses[[2]]$n,  
+        gm$lenses[[2]]$o, 
+        gm$bin_count, 
+        input$lense2FunctionSelection, 
+        gm$lenses[[2]]$lenseparam, 
+        length(gm$nodes)), 
+        row.names = c("partitions","overlap","bin count","filter","param","nodes") 
+    )},include.colnames = FALSE)
+            
   output$gmOverlap   <- renderText({
               input$runMapper
-              gm$overlap})
+              gm$lenses[[1]]$o})
   
-  output$gmBinCount <-  renderText({input$runMapper
-                        gm$bin_count})
+  output$gmBinCount <-  renderText({
+              input$runMapper
+              gm$bin_count})
   
   
   ### Lense/Filter parameter selection
