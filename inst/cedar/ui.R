@@ -145,9 +145,7 @@ dashboardBody(
                   title="Dimension 1 Parameters", width=NULL, background="light-blue"), 
               box(uiOutput("gmParameters2"),  
                   title="Dimension 2 Parameters", width=NULL, background="light-blue"), 
-              
-              box(uiOutput("gmParameters2"), 
-                  title="Dimension 2 Parameters", width=NULL, background="light-blue"),
+
               
               #valueBox(uiOutput("graphNodeCount"), 
               #    subtitle="Nodes", icon = icon("circle-o"),
