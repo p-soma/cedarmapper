@@ -15,7 +15,11 @@ lense.table <- function(){
   lenses = data.frame("Name"="Projection", "fun" =  "lense.projection", params="coordinate", desc="Selected Coordinate")
 
   lenses = data.frame(rbind(lenses,
-            data.frame("Name"="PCA",        "fun" =  "lense.pca", params="", desc="First principle Component"))
+     data.frame("Name"="PCA1", "fun" =  "lense.pca1", params="", desc="First principle Component"))
+  )
+  
+  lenses = data.frame(rbind(lenses,
+     data.frame("Name"="PCA2", "fun" =  "lense.pca1", params="", desc="First principle Component"))
   )
   
   lenses = data.frame(rbind(lenses,
@@ -72,40 +76,27 @@ lense.projection <- function(d,lenseparam=NULL,distmat=NULL ){
   return(L)
 }
 
-# TODO this is not needed, one lense per dimension
-lense.2dprojection <- function(d,lenseparam=NULL,distmat=NULL ){
-  coordinates <- lenseparam
-  # returns a vector variable, defaults to the first column
-  if (is.null(coordinate)) { coordinate= names(d)[1] }
-  
-  #if (! coordinate %in% colnames(d)){
-  #  return(NULL)
-  # }
-  
-  # get single column
-  L <- d[,coordinate]
-  # assign rownames
-  if (is.null(dim(L))){
-    # single dimension vector
-    names(L) <- rownames(d)
-  } else {
-    # multidimension vector use rownames
-    rownames(L) <- rownames(d)  
-  }
-  return(L)
-}
 
 #' Mapper lense using first principle component
 #' @family lenses
 #' @param none
 #' @export
-
-lense.pca <- function(d,lenseparam=NULL,distmat=NULL) {
- # pca = prcomp(gm$d[, gm$selectedCols], retx=TRUE, center=TRUE, scale. = TRUE)
+lense.pca1 <- function(d,lenseparam=NULL,distmat=NULL) {
   pca = prcomp(d, retx=TRUE, center=TRUE, scale. = TRUE)
   L = pca$x[,"PC1"]
   return(L)
 }
+
+#' Mapper lense using second principle component
+#' @family lenses
+#' @param none
+#' @export
+lense.pca2 <- function(d,lenseparam=NULL,distmat=NULL) {
+  pca = prcomp(d, retx=TRUE, center=TRUE, scale. = TRUE)
+  L = pca$x[,"PC2"]
+  return(L)
+}
+
 
 
 #' Eccentrity value of each row of data
