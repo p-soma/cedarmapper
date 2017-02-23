@@ -360,16 +360,33 @@ shinyServer(function(input, output, session) {
   output$gmParameters  <- renderTable({
     input$runMapper
     data.frame( "P" = c(gm$lenses[[1]]$n, 
-                             gm$lenses[[1]]$o,
-                             gm$bin_count,
-                             input$lenseFunctionSelection,
-                             gm$lenses[[1]]$lenseparam,
-                             length(gm$nodes)),
+                        gm$lenses[[1]]$o,
+                        gm$bin_count,
+                        input$lenseFunctionSelection,
+                        gm$lenses[[1]]$lenseparam,
+                        length(gm$nodes)),
                 row.names = c("partitions","overlap","bin count","filter","param","nodes")
-                )
+    )
     
     
   },include.colnames = FALSE)
+  
+  output$gmParameters2  <- renderTable({
+    input$runMapper
+    data.frame( "P" = c(gm$lenses[[2]]$n, 
+                        gm$lenses[[2]]$o,
+                        gm$bin_count,
+                        input$lense2FunctionSelection,
+                        gm$lenses[[2]]$lenseparam,
+                        length(gm$nodes)),
+                row.names = c("partitions","overlap","bin count","filter","param","nodes")
+    )
+    
+    
+  },include.colnames = FALSE)
+  
+  
+  
   
   output$gmOverlap   <- renderText({
               input$runMapper
