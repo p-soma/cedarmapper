@@ -30,6 +30,11 @@ test_that("mapper in iris datareturns numeric columns", {
   d = iris
   l1 <- lense(lense.projection, colnames(d)[1], partition_count=4, overlap = 0.5)
   m  <- mapper(dataset = d, lenses = list(l1 = lense(lense.constant) ))
+  expect_equal(mapper.numeric_cols(m), c("Sepal.Length", "Sepal.Width",  "Petal.Length", "Petal.Width" ))
   d <- m$d[mapper.numeric_cols(m)]
+  expect_equal(length(d),4)  # four columns remain
   
+  m <- mapper.run(m)
+  
+})
   
