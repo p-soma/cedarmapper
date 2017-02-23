@@ -378,26 +378,27 @@ shinyServer(function(input, output, session) {
   # collect all the parameters into single HTML string for display and mapper is run
   output$gmParameters  <- renderTable({
     input$runMapper
-    data.frame( "P" = c(gm$lenses[[1]]$n, 
+    ptable<-data.frame( "D1" = c(gm$lenses[[1]]$n, 
          gm$lenses[[1]]$o,
          gm$bin_count,
          input$lenseFunctionSelection,
-         gm$lenses[[1]]$lenseparam,
+         paste(gm$lenses[[1]]$lenseparam," "),
          length(gm$nodes)),
          row.names = c("partitions","overlap","bin count","filter","param","nodes")
-    )},include.colnames = FALSE)
-  
-  output$gmParameters2  <- renderTable({ 
-    input$runMapper 
-    data.frame( "P" = c(gm$lenses[[2]]$n,  
-        gm$lenses[[2]]$o, 
-        gm$bin_count, 
-        input$lense2FunctionSelection, 
-        gm$lenses[[2]]$lenseparam, 
-        length(gm$nodes)), 
-        row.names = c("partitions","overlap","bin count","filter","param","nodes") 
-    )},include.colnames = FALSE)
-            
+    )
+    if(length(gm$lenses)>1) {
+      ptable = data.frame(ptable,
+                          "D2" = c(gm$lenses[[2]]$n,  
+                                  gm$lenses[[2]]$o, 
+                                  gm$bin_count, 
+                                  input$lense2FunctionSelection, 
+                                  paste(gm$lenses[[2]]$lenseparam," "), 
+                                  length(gm$nodes)), 
+                          row.names = c("partitions","overlap","bin count","filter","param","nodes") )
+      }
+    ptable
+    })
+                          
   output$gmOverlap   <- renderText({
               input$runMapper
               gm$lenses[[1]]$o})
