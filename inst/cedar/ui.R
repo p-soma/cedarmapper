@@ -54,7 +54,7 @@ dashboardBody(
             ),# end of upload box 
             style = "primary") 
           ))),
-          checkboxInput('factorTextData', 'Factor non-numeric data', FALSE),
+          checkboxInput('factorTextData', 'Select only numeric data', FALSE),
           checkboxGroupInput("selectedColumns", label = "Select columns to use", choices=initVariableChoices, selected = initVariableChoices, inline = TRUE), 
           dataTableOutput('dataset')
       ),

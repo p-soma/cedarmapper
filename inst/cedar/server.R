@@ -44,6 +44,8 @@ shinyServer(function(input, output, session) {
   observe({
     input$selectedColumns
     updateSelectInput(session, inputId = "filterVar",  choices = input$selectedColumns)
+    updateSelectInput(session, inputId = "lense2filterVar",  choices = input$selectedColumns)
+    
   })
   
   observe({
@@ -253,7 +255,8 @@ shinyServer(function(input, output, session) {
     factorCols <- list()
     factorCols <- names(d[, ! sapply(d, is.numeric)])
     d[factorCols] <- lapply(d[factorCols], factor)
-    factorCols <- c(names(d[, sapply(d, is.factor)]), names(d[, ! sapply(d, is.numeric)]))
+ #   factorCols <- c(names(d[, sapply(d, is.factor)]), names(d[, ! sapply(d, is.numeric)]))
+    factorCols <- names(d[, sapply(d, is.factor)])
 
     selected_cols <- input$selectedColumns
     print(selected_cols)
