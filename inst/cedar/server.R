@@ -338,13 +338,17 @@ shinyServer(function(input, output, session) {
   testy <- eventReactive(input$runTest,{
       # updateTabItems(session, "tabs", selected = "resulttable")
       return(kstable(gm))
-            } )
+      })
+  
+  createVarTable <- eventReactive(input$runTest,{
+      return(varTable(gm))
+      })
   
   output$hypTestTable <- renderTable({testy()}, caption=paste0("2-side Kolmogorov-Smirnov Test by node groups"),digits=7) 
   
   # TODO add reactivity to redraw when data changes..
   
-  output$varianceTable <- renderTable({varTable(gm)}, caption=paste0("Std mean/variance of data in select nodes"),digits=4)
+  output$varianceTable <- renderTable({createVarTable()}, caption=paste0("Std mean/variance of data in select nodes"),digits=4)
   
   ########### outputs
   output$dataname          <- renderText(input$dataSelection)
