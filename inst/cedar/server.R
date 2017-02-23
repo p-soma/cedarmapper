@@ -257,11 +257,11 @@ shinyServer(function(input, output, session) {
 
     selected_cols <- input$selectedColumns
     print(selected_cols)
-    # add selected lense function to choices of coloring variable
-    
-    # updateSelectInput(session, inputId = "selectedVar", choices = c(selected_cols,input$lenseFunctionSelection))
+    # add selected lense functions to choices of coloring variable
+    # TO DO:  if both lenses are projections, only one "projection" is in the list of choices. Must be able to differentiate
+    #         between the two different lenses for coloring
 
-    updateSelectInput(session, inputId = "selectedVar", choices = c(names(d),input$lenseFunctionSelection))
+    updateSelectInput(session, inputId = "selectedVar", choices = c(names(d),input$lenseFunctionSelection,input$lense2FunctionSelection))
     
     progress <- shiny::Progress$new()
     progress$set(message = "Calculating Clustering", value = 0)
