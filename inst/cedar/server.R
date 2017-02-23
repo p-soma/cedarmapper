@@ -259,11 +259,11 @@ shinyServer(function(input, output, session) {
     factorCols <- names(d[, sapply(d, is.factor)])
 
     selected_cols <- input$selectedColumns
-    print(selected_cols)
+
     # add selected lense function(s) to choices of coloring variable
     choices = c(names(d),input$lenseFunctionSelection)
     
-    if(!is.null(input$lense2FunctionSelection)){
+    if(!is.null(input$lense2FunctionSelection) && input$lense2FunctionSelection != "none"){
       choices = c(choices, input$lense2FunctionSelection)
     }
     
@@ -279,7 +279,7 @@ shinyServer(function(input, output, session) {
       progress$set(value = value, detail = detail)
     }
     
-    
+    lenselist = list()  # lenses varname currently used for lense table 
     lense_fun <- lense.projection
     if(! is.null(input$lenseFunctionSelection)) {
       # selected the string of function name, and 'get' the actual function identifier
@@ -289,8 +289,10 @@ shinyServer(function(input, output, session) {
           lense_fun <- f
           lenseParam <- as.numeric(input$lenseParam)
           if(input$lenseFunctionSelection == "Projection"){lenseParam <- input$filterVar}
-          
           # test for NA in lenseparam WHEN the lense needs a param
+          lenselist[[1]] <- lense(lensefun = lense_fun,  lenseparam = lenseParam,
+                     partition_count=as.numeric(input$partitionCountSelection),
+                     overlap = as.numeric(input$overlapSelection)/100.0 )
       }
       else {
         # pop-up warning message; function doesn't exis
@@ -298,40 +300,47 @@ shinyServer(function(input, output, session) {
       }
     }
     
-    if(! is.null(input$lense2FunctionSelection)) {
+    
+    if(!is.null(input$lense2FunctionSelection) && input$lense2FunctionSelection != "none") {
       # selected the string of function name, and 'get' the actual function identifier
-      fname = get(lenses[input$lenseFunctionSelection,]$fun)
+      fname = get(lenses[input$lense2FunctionSelection,]$fun)
       f = match.fun(fname)
-      if (is.function(f)){ 
+      if (is.function(f)){
+        # test for NA in lenseparam WHEN the lense needs a param
         lense2_fun <- f
         lense2Param <- as.numeric(input$lense2Param)
         if(input$lense2FunctionSelection == "Projection"){lense2Param <- input$lense2filterVar}
-        
-        # test for NA in lenseparam WHEN the lense needs a param
+        lenselist[[2]] <- lense(lensefun = lense2_fun,  lenseparam = lense2Param,
+                             partition_count=as.numeric(input$lense2partitionCountSelection),
+                             overlap = as.numeric(input$lense2overlapSelection)/100.0 )
       }
       else {
-        # pop-up warning message; function doesn't exis
+        # pop-up warning message; function doesn't exist
         stop("error in filter function selection")
       }
     }
     
-    print(paste0("mapper normalize=", input$normalizeOption, ", param=",lenseParam," for ", input$lenseFunctionSelection))
-    print(paste0("mapper normalize=", input$normalizeOption, ", param2=",lense2Param," for ", input$lense2FunctionSelection))
+    gm <<- mapper(dataset = as.data.frame(d), lenses = lenselist,
+                  cluster_method="single",
+                  bin_count = as.numeric(input$binCountSelection),
+                  normalize_data = input$normalizeOption,
+                  selected_cols = selected_cols)
+    gm <<- mapper.run(gm)
     
-    gm<<- makemapper(dataset = as.data.frame(d), 
-                          lensefun = lense_fun, 
-                          partition_count=as.numeric(input$partitionCountSelection),
-                          overlap = as.numeric(input$overlapSelection)/100.0, 
-                          lenseparam = lenseParam,
-                          lense2fun = lense2_fun, 
-                          lense2partition_count=as.numeric(input$lense2partitionCountSelection),
-                          lense2overlap = as.numeric(input$lense2overlapSelection)/100.0, 
-                          lense2param = lense2Param,
-                         # lensevals = data.frame(mapper.lense.calculate(gm)$values), #data.frame(gm$lensefun(gm)), # new filter coloring
-                          selected_cols = selected_cols,
-                          bin_count = as.numeric(input$binCountSelection),
-                          normalize_data = input$normalizeOption,
-                          progressUpdater = NULL)  #updateProgress
+#    gm<<- makemapper(dataset = as.data.frame(d), 
+#                          lensefun = lense_fun, 
+#                          partition_count=as.numeric(input$partitionCountSelection),
+#                          overlap = as.numeric(input$overlapSelection)/100.0, 
+#                          lenseparam = lenseParam,
+#                          lense2fun = lense2_fun, 
+#                          lense2partition_count=as.numeric(input$lense2partitionCountSelection),
+#                          lense2overlap = as.numeric(input$lense2overlapSelection)/100.0, 
+#                          lense2param = lense2Param,
+#                         # lensevals = data.frame(mapper.lense.calculate(gm)$values), #data.frame(gm$lensefun(gm)), # new filter coloring
+#                          selected_cols = selected_cols,
+#                          bin_count = as.numeric(input$binCountSelection),
+#                          normalize_data = input$normalizeOption,
+#                          progressUpdater = NULL)  #updateProgress
     return(gm)
   })
   

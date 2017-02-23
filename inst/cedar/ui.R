@@ -81,7 +81,7 @@ dashboardBody(
           
           fluidRow(
             column(width=4,
-              box( title="Dimension 1 Parameters", width=NULL, background ="navy",
+              box( title="Dimension 1", width=NULL, background ="navy",
                  selectInput("lenseFunctionSelection", label="Lense Function", 
                              choices = lenseChoices, selected = 1),
                  
@@ -104,26 +104,28 @@ dashboardBody(
             ),
             
             column(width=4,
-              box(title="Dimension 2 Parameters", width=NULL, background ="navy", 
+              box(title="Dimension 2", width=NULL, background ="navy", 
                   selectInput("lense2FunctionSelection", label="Lense Function", 
-                             choices = lenseChoices, selected = 1),
+                             choices = c("none", lenseChoices), selected = 1),
                   
-                  conditionalPanel(condition = "input.lense2FunctionSelection == 'Projection'",
+                  conditionalPanel(condition = "input.lense2FunctionSelection != 'none'",
+                    conditionalPanel(condition = "input.lense2FunctionSelection == 'Projection'",
                                    selectInput("lense2filterVar", label = "Filtering Variable", 
-                                               choices = initVariableChoices, selected = 1)
-                  ),
-                  conditionalPanel(condition = "input.lense2FunctionSelection != 'Projection'",
+                                               choices = initVariableChoices, selected = 2)
+                    ),
+                    conditionalPanel(condition = "input.lense2FunctionSelection != 'none' && input.lense2FunctionSelection != 'Projection'",
                                    uiOutput("lense2ParamInput") 
                                    # textInput("lenseParam", label = lenses[input.lenseFunctionSelection,]$desc)}
-                  ),
+                    ),
                   
-                  sliderInput("lense2partitionCountSelection", label = "Number of Partitions", 
+                    sliderInput("lense2partitionCountSelection", label = "Number of Partitions", 
                               min=min(partitionCountChoices),max=max(partitionCountChoices), value=4,
                               step=1),  
-                  selectInput("lense2overlapSelection", label = "Partition Overlap (percent)", 
+                    selectInput("lense2overlapSelection", label = "Partition Overlap (percent)", 
                               choices = c(0:13) * 5  + 10, selected = 50)
                   
                   )
+              )
             )
           )# end row
       ),
