@@ -37,4 +37,15 @@ test_that("mapper in iris datareturns numeric columns", {
   m <- mapper.run(m)
   
 })
+
+test_that("can convert factor to binary columns",{
+  data("chemdiab")
+  binary_df <- column2binary(chemdiab,"cc")
+  expect_is(binary_df, "data.frame")
+  expect_equal(nrow(binary_df), nrow(chemdiab))
+  expect_equal(ncol(binary_df), 3)
+  # note this last test may change if we change how the names are assigned
+  expect_equal(names(binary_df)[1], "cc-Chemical_Diabetic" )
+  
+})
   

@@ -137,3 +137,19 @@ factorBarPlot <- function(gm, varname, group_id = 1){
   #  return(barplot(table(gm$d[varname]), xlab = x_label, ylab = y_label) )
   return(barplot(table(d_group), xlab = x_label, ylab = y_label) )
 }
+
+#' convert categorical column to binary columns
+#' @export
+column2binary<-function(df, colname){
+  # TODO test if column is atually numeric
+  # TODO test for max number of values; e.g. can't add 100 columns
+  max_categories= 20
+  if(length(levels(factor(df[,colname])))> max_categories){
+    print("too many categories")
+    return(NULL)
+  }
+  
+  binary_columns <- model.matrix(~ factor(df[,colname]) - 1)
+  colnames(binary_columns) <- paste(colname, "-",levels(factor(df[,colname])),sep="")
+  return(as.data.frame(binary_columns))
+}
