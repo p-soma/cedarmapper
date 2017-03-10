@@ -3,7 +3,6 @@
 # data and processing
 
 #' @import htmlwidgets
-#' @import cedargraph
 #' @import shiny
 #' @import plyr
 #' @import ggplot2
