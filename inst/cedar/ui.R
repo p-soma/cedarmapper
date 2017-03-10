@@ -186,7 +186,8 @@ dashboardBody(
            ),
            column(width=2,
              box(width=NULL,background="black",
-                 actionButton("runTest", "Compare Groups")
+                 actionButton("runTest", "Compare Groups"),
+                 actionButton("resetZoom", "Reset Zoom")
                  )
             )
          
