@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta http-equiv="Content-type" content="text/html; charset=utf-8">
+        <title>nodegraph test</title>
+
+        <link rel="stylesheet" href="../htmlwidgets/lib/cedargraph.css" type="text/css" media="screen">
+        <script src="../htmlwidgets/lib/d3.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="https://code.jquery.com/jquery-1.10.2.js"></script>
+        <script src="../htmlwidgets/lib/nodegraph.js" type="text/javascript" charset="utf-8"></script>
+
+        <script>
+        var ng2;
+        var setAGroup = function(groupId){
+              ns = ng2.selected();
+              ng2.group(groupId,ns );
+              ng2.unSelectAll();
+            }
+            
+        var reset_ng2 = function(){
+                ng2.reset();
+            }
+      
+        
+        </script>
+
+    </head>
+    <body id="nodegraphwindow" onload="">
+        <h3>Demonstrate NodeGraph D3 Javascript</h3>
+        <div id="graph" ></div>
+        <input id = "btn" type="button" value="Show values" />
+        <input id = "grp1btn" type="button" value="group 1" onclick="setAGroup(1);"/>
+        <input id = "grp2btn" type="button" value="group 2" onclick="setAGroup(2);"/>
+        <input id = "resetbtn" type="button" value="reset" onclick="ng2.reset();"/>
+        <!-- TO DO : test api for removing groups -->
+        <div id="graph2"></div>
+        <script type="text/javascript">
+            // create nodegraph
+            // nodegraph = cedar.NodeGraph().height(500).width(600).data
+        var graphJSON = {};
+
+
+        $( document ).ready( function() {
+            h = $(window).height() - 100
+            $('#graph').height(h).width($(window).width())
+                .css("overflow:scroll;");
+            
+            ng2 = cedar.NodeGraph().h(h).w(window.innerWidth);
+            console.log(Object.getOwnPropertyNames(ng2));
+           // btn.text("reset");
+           // btn.attr("class","btn");
+           //                 btn.attr("onclick","this.resetzoom();")
+        
+    
+            $.getJSON( "graphdata.json", function( json ) {
+                g = d3.select("#graph")                    
+                    .datum(json).call(ng2);
+                ng2.render();
+
+             });
+
+             //
+             // var g = d3.select("#graph");
+             // ng1(g).svg.datum(graphJSON.data)
+            $("#btn").click(function() {
+                 alert(selectedNodes);
+            })
+
+            // $("#grp1btn").click(function() { setAGroup(1);})
+
+         });
+
+
+
+
+
+
+        </script>
+
+    </body>
+</html>
