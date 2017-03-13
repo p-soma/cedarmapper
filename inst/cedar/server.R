@@ -3,17 +3,15 @@
 # data and processing
 
 #' @import htmlwidgets
-#' @import cedargraph
 #' @import shiny
 #' @import plyr
 #' @import ggplot2
 
 
-library(htmlwidgets)
-library(cedargraph)
-library(cedar)
-library(shiny)
-library(plyr)
+#library(htmlwidgets)
+#library(cedar)
+#library(shiny)
+#library(plyr)
 
 # change file size limit to 50mb
 options(shiny.maxRequestSize = 50*1024^2)

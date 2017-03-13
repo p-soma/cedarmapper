@@ -1,0 +1,867 @@
+//var shinyMode = True;
+
+// NodeGraph module
+//var shinyMode = window.HTMLWidgets.shinyMode =
+//      typeof(window.Shiny) !== "undefined" && !!window.Shiny.outputBindings;
+
+
+cedar = {};
+var selectedNodes;
+
+cedar.NodeGraph = function module() {
+
+    var margin = {
+        top: 20,
+        right: 20,
+        bottom: 40,
+        left: 40
+    };
+
+    var w = '100%';
+    var h = window.innerHeight;
+
+    var opacity_percent = 0.98,
+        node_area_percent = 0.2,
+        maxLinkWidth = 10,
+        minLinkWidth = 1,
+        nodecolors = ['white', 'darkgreen'],
+        forcecharge = -2000,
+        LinkDistance = 100,
+        linkdistanceFactor = 1,
+        nudgefactor = 10;
+
+    // functions called by public API
+
+    var resetzoom, manualzoom, shrinkNodeSize, force, graph, svg, nodeSizeScale, setFillColor, getSelected, clearSelected, getValues, setValues, getSizes, forceresize, nodevalues,nudge, changeforcecharge,changeLinkDistance;
+    var setGroupID, clearGroupID, removeGroupID; // function used by externaAPI
+    var nodes;
+
+    // var zoom, zoomed, zooming, // old zoom functions, can be removed?
+
+    var nominal_base_node_size = 8;
+    var min_zoom = 0.1;
+    var max_zoom = 7;
+
+
+
+    function nodegraph(_selection) {
+
+        var width =  _selection.innerWidth;
+        var height = _selection.innerHeight;
+
+        _selection.attr("tabindex", 1);
+
+        _selection.each(function(graphdata) {
+
+
+            // ********* ZOOM FUNCTIONS
+            // currently ctrl+mouse wheel sets scale only, no panning
+
+            // zoomable scales
+            var x_scale = d3.scale.linear().domain([0, w]).range([0, w]);
+            var y_scale = d3.scale.linear().domain([0, h]).range([0, h]);
+
+
+            // zooming = false;
+//
+//             _selection.on("keydown", function() {
+//               zooming = d3.event.ctrlKey;
+//             });
+//
+//             _selection.on("keyup", function() {
+//               zooming = false;
+//             });
+//
+//             zoomed = function(){
+//                 // ignore zoom-by-brush
+//                // if (d3.event.sourceEvent && d3.event.sourceEvent.type === "brush") return;
+//
+//                 if (zooming) {  // make sure ctrl key is down
+//                     // NOTE zooming currently restricted to 'scaling' and not translate = panning
+//                     svg.attr("transform","scale(" + d3.event.scale + ")"); // only scale
+//                     // VERSION WITH PANNING ENABLED
+//                     // svg.attr("transform",'translate(' + zoom.translate() + ')' + ' scale(' + zoom.scale()+ ')');
+//
+//                 }
+//             };
+//
+//             zoom = d3.behavior.zoom()
+//                 .center([width / 2, height / 2])
+//                 .on("zoom", zoomed);
+//
+            // initial values
+            var tx = 0,ty = 0,scale = 1;
+
+
+            resetzoom = function() {
+                scale = 1;
+                tx = 0;
+                ty = 0;
+
+               graph.attr('transform', `translate(${tx}, ${ty}) scale(${scale})`);
+                // resets zoom scales, and moves graph back to center
+            };
+
+            manualzoom = function(z){
+              scale = scale + z;
+              center = [w/2,h/2];
+              doZoom(z,center);
+              graph.attr('transform', `translate(${tx}, ${ty}) scale(${scale})`);
+            };
+
+
+            // ZOOM FUNCTION does not use d3.zoom;
+            // overrwrides mouse wheel event and translates
+            function mousezoom() {
+              center = d3.mouse(document.querySelector('svg'));
+              zoomdir = d3.event.deltaY;
+              d3.event.preventDefault();
+               // prevent default event behaviour
+              doZoom(zoomdir,center);
+            }
+
+            function doZoom(zoomdir,center){
+                console.log(scale);
+                // set zooming; should be global constant
+                var factor = 1.05;
+                // var center = d3.mouse(document.querySelector('svg'));
+                var zY, zX, zScale;
+
+                // calculate new scale
+                if (zoomdir > 0) {
+                    zScale = scale * factor;
+                } else {
+                    zScale = scale / factor;
+                }
+
+                // calculate new translate position
+                // [current mouse position] - ([current mouse position] - [current translate]) * magnification
+                zX = center[1] - (center[1] - tx) * zScale / scale;
+                zY = center[0] - (center[0] - ty) * zScale / scale;
+
+                // set new scale and translate position
+                scale = zScale;
+                console.log("new scale: ");
+                console.log(scale);
+                tx = zX;
+                ty = zY;
+
+                graph.attr('transform', `translate(${tx}, ${ty}) scale(${scale})`);
+            }
+
+
+            // *** MAIN SVG ELEMENT THAT ALL OTHER ELEMENTS ADDED TO
+            svg = d3.select(this)
+                .classed("svg-container", true)
+                .on("keydown.brush", keydown)
+                .on("keyup.brush", keyup)
+                .each(function() {
+                    this.focus();
+                })
+                .append("svg")
+                .attr("id", "nodegraph")
+                .attr("height", h)
+                .attr("width", w)
+                .on('dblclick.zoom', resetzoom)
+                .on('dblclick', resetzoom)
+                .append("g")
+                .attr("class", "canvas")
+                .style("cursor","move")
+                .on('wheel.zoom', mousezoom);
+
+            // brush is a seperate svg 'layer' for rectangle selection
+            var brush = svg.append("g")
+                .attr("class", "brush")
+                .datum(function() {
+                    return {selected: false, previouslySelected: false};
+                });
+
+            // this holds the nodes and links
+            var graph = svg.append('g')
+                .attr("id","graph")
+                .attr('transform', `translate(${tx}, ${ty}) scale(${scale})`);
+
+            getWindowArea  = function(){
+                console.log("window area h, w");
+                console.log(h);
+                console.log(w);
+                var A = (h - margin.top - margin.bottom) *
+                        (w - margin.left - margin.right);
+                return(A);
+            };
+
+            maxNodeSize = function(){
+              var ncount = graphdata.nodes.length;
+              var A = getWindowArea();
+              // node_area_percent constant set above
+              ns = Math.sqrt(( A * node_area_percent)/(ncount * Math.PI ) );
+              return(  ns  );
+            };
+
+            minNodeSize = function(){
+                var t =0.1;
+                noderange = d3.extent(nodeSizes);
+                console.log(noderange);
+                console.log(maxNodeSize());
+                m =
+                  (((1-t)* noderange[0] + t* noderange[1])  / noderange[1]);
+              console.log(m);
+               return(maxNodeSize() *m);
+            };
+
+
+
+            max_base_node_size = function(){
+                maxNodeSize();
+            };
+
+            maxLinkWidth = function(){
+                return(10);
+            };
+
+            minLinkWidth = function(){
+                return(maxLinkWidth() * 0.1);
+            };
+
+            var nodeSizes = graphdata.nodes.map(
+                function(node, i) {
+                    return (node.size);
+                }
+            );
+
+            //. maxLinkWidth
+            var nodeSizeScale = d3.scale.log().base(10)
+                .domain(d3.extent(nodeSizes))
+                .range([minNodeSize(), maxNodeSize()]);
+
+            var linkWeights = graphdata.links.map(
+                function(link, i) {
+                    return (link.weight);
+                });
+
+            var linkWeightScale = d3.scale.linear()
+                .domain(d3.extent(linkWeights))
+                .range([minLinkWidth, maxLinkWidth]);
+
+            // holder for shiftkey detection
+            var shiftKey;
+
+            // dispatch is D3's event model, this function is wired to any functions
+            // that alter node selection (click, brush, etc)
+            dispatch = d3.dispatch("nodeselected");
+
+            dispatch.on("nodeselected", function() {
+                nodelist = getSelected();
+                // TODO: detect if Shiny is loaded first, then and add shiny callback
+                // Rstudio specific, will error when used outside of Shiny
+                if (typeof Shiny != "undefined") {
+                    Shiny.onInputChange("nodelist", nodelist);
+                }
+            });
+
+            // create force layout
+            // TODO  make link distance a function of number of nodes and size
+            force = d3.layout.force()
+                .linkDistance(LinkDistance)
+                .charge(forcecharge)
+                .chargeDistance(maxNodeSize()*4)
+                .size([w, h])
+                .on("tick", do_tick)
+                .nodes(graphdata.nodes)
+                .links(graphdata.links);
+
+            // added for Shiny HTMLWidget; need to determine if useful
+            d3.select(window).on('resize', function() {
+                window_w = parseInt(_selection.style('width'), 10);
+                window_h = parseInt(_selection.style('height'), 10);
+                if (window_w < w) {
+                    forceresize(window_w, window_h);
+                }
+            });
+
+            changeLinkDistance = function(z){
+              var LinkDistance = force.linkDistance();
+              LinkDistance  = LinkDistance + z;
+              force.linkDistance(LinkDistance);
+              console.log(force.linkDistance());
+              force.alpha(0.5).start();
+
+            };
+            changeforcecharge = function(z){
+              forcecharge = force.charge();
+              forcecharge  = forcecharge + z;
+              force.charge(forcecharge);
+              force.alpha(1).start();
+              console.log(force.charge());
+            };
+
+            // added for Shiny HTMLWidget, called when window is resized above
+            forceresize = function(_w, _h) {
+                w = _w, h = _h;
+                svg.attr("width", _w).attr("height", _h);
+                force.size([w, h]).resume();
+            };
+
+
+            // graph moving UI: allow for arrow keys to slightly move all selected (fixed) nodes
+            function keydown() {
+                if (!d3.event.metaKey) switch (d3.event.keyCode) {
+                        case 38:
+                            nudge(0, -1);
+                            break; // UP
+                        case 40:
+                            nudge(0, +1);
+                            break; // DOWN
+                        case 37:
+                            nudge(-1, 0);
+                            break; // LEFT
+                        case 39:
+                            nudge(+1, 0);
+                            break; // RIGHT
+                    }
+                    // detect shiftkey event and set shiftkey var
+                shiftKey = d3.event.shiftKey || d3.event.metaKey;
+            }
+
+            // detect shiftkey event and set shiftkey var
+            function keyup() {
+                shiftKey = d3.event.shiftKey || d3.event.metaKey;
+            }
+
+           nudge= function(dx, dy) {
+                //. nudgefactor global config var
+                tx = tx + dx * nudgefactor;
+                ty = ty + dy * nudgefactor;
+                graph.attr('transform', `translate(${tx}, ${ty}) scale(${scale})`);
+                // d3.event.preventDefault();
+            };
+
+
+            // fixed nodes don't move when layout is redrawn
+            function setFixed(d) {
+                d3.select(this).classed("fixed", d.fixed = true);
+            }
+
+            function releaseFixed(d) {
+                d3.select(this).classed("fixed", d.fixed = false);
+            }
+
+            // THIS IS CURRENTLY NO REALLY WORKING; SETTING LINK CHARGE REPULSES NODES ENOUGH
+           //  function collide(alpha) {
+           //    var quadtree = d3.geom.quadtree(nodes);
+           //    return function(d) {
+           //        var r = nodeSizeScale(d.size) + maxNodeSize(),
+           //          nx1 = d.x - r,
+           //          nx2 = d.x + r,
+           //          ny1 = d.y - r,
+           //          ny2 = d.y + r;
+           //      quadtree.visit(function(quad, x1, y1, x2, y2) {
+           //        if (quad.point && (quad.point !== d)) {
+           //          var x = d.x - quad.point.x,
+           //              y = d.y - quad.point.y,
+           //              l = Math.sqrt(x * x + y * y),
+           //              r = d.radius + quad.point.radius + (d.cluster === quad.point.cluster ? padding : clusterPadding);
+           //          if (l < r) {
+           //            l = (l - r) / l * alpha;
+           //            d.x -= x *= l;
+           //            d.y -= y *= l;
+           //            quad.point.x += x;
+           //            quad.point.y += y;
+           //          }
+           //        }
+           //        res = x1 > nx2 || x2 < nx1 || y1 > ny2 || y2 < ny1;
+           //        return(res);
+           //      });
+           //    };
+           // }
+
+
+            function do_tick() {
+                // prevent collisions, not currently used
+                // var q = d3.geom.quadtree(nodegroup);
+                // nodegroup.each(collide(1));
+                // i = 0,
+                // nl = nodegroup.length;
+                // while (++i < nl) q.visit(collide(nodegroup[i]));
+                //   prevent nodes from going outside of the graph
+
+                // CODE TO RESTRICT NODES INTO GRAPH WINDOW
+                // THIS IS CURRENTLY DISABLED SINCE ZOOMING IS ENABLED
+                // nodegroup
+                //     .attr("cx", function(d) {
+                //         d.x = Math.max(
+                //             nodegroup.attr("r")*2,Math.min(w - nodegroup.attr("r")*2, d.x)
+                //         );
+                //         return d.x;
+                //     })
+                //     .attr("cy", function(d) {
+                //         d.y = Math.max(nodegroup.attr("r")*2,
+                //             Math.min(h - nodegroup.attr("r")*2, d.y)
+                //         );
+                //         return d.y;
+                //     });
+
+
+                link.attr("x1", function(d) {
+                        return d.source.x;
+                    })
+                    .attr("y1", function(d) {
+                        return d.source.y;
+                    })
+                    .attr("x2", function(d) {
+                        return d.target.x;
+                    })
+                    .attr("y2", function(d) {
+                        return d.target.y;
+                    });
+
+                // Translate the groups
+                // to do : remove labels and use tooltips instead
+                nodegroup.attr("transform", function(d) {
+                    return 'translate(' + [d.x, d.y] + ')';
+                });
+            }
+
+
+            // Glow Filter Code.  Add a filter in defs element of SVG
+            var defs = svg.append("defs");
+            var filter = defs.append("filter").attr("id", "drop-shadow").attr("height", "130%");
+
+            // SourceAlpha refers to opacity of graphic that this filter will be applied to
+            // convolve that with a Gaussian with standard deviation 3 and store result
+            // in  blur
+            filter.append("feGaussianBlur")
+                .attr("in", "SourceAlpha")
+                .attr("stdDeviation", 10) //THIS IS THE SIZE OF THE GLOW
+                .attr("result", "blur");
+
+            // original code from example that offets the blur for shadow effect
+            // we don't want an offset, so need to find a way to remove this
+            filter.append("feOffset")
+                .attr("in", "blur")
+                .attr("dx", 0)
+                .attr("dy", 0)
+                .attr("result", "offsetBlur");
+
+            // overlay original SourceGraphic over translated blurred opacity by using
+            // feMerge filter. Order of specifying inputs is important!
+            var feMerge = filter.append("feMerge");
+            feMerge.append("feMergeNode").attr("in", "offsetBlur"); //MAYBE CHANGE THIS TO blur
+            feMerge.append("feMergeNode").attr("in", "SourceGraphic");
+
+
+            var link = graph.selectAll(".link")
+                .data(graphdata.links)
+                .enter().append("line")
+                .attr("class", "link")
+                .style("stroke-width", function(d) {
+                    return (linkWeightScale(d.weight));
+                });
+
+
+            var nodegroup = graph.selectAll("g.nodegroup")
+                .data(graphdata.nodes)
+                .enter().append("g")
+                .attr("nodevalue", function(d) {
+                    return d.values;
+                })
+                .attr("nodeid", function(d) {
+                    return d.name;
+                })
+                .attr("cx", function(d) {
+                    return d.x;
+                })
+                .attr("cy", function(d) {
+                    return d.y;
+                })
+                .classed('nodegroup', true)
+                .on("dblclick", releaseFixed)
+                .on("click", function() {
+                    d3.select(this).classed("selected", !d3.select(this).classed("selected"));
+                    dispatch.nodeselected();
+                })
+                .call(force.drag().on("dragstart", setFixed));
+
+                //.on(".zoom", null)
+
+           nodes =
+            nodegroup
+                .append("circle")
+                .attr("class", "node")
+                .attr("id", function(d) {
+                    return "node_" + d.name;
+                })
+                .attr("r", function(d) {
+                    return nodeSizeScale(d.size);
+                })
+                .attr("nodevalue", function(d) {
+                    return d.values;
+                })
+                .attr("size", function(d) {
+                    return d.size;
+                });
+                // .append("svg:title").text(function(d) {
+                    // return d.values;
+                // })
+            nodegroup.append("text")
+                .attr("text-anchor", "middle")
+                .text(function(d) {
+                    return d.size;
+                });
+
+
+            // ***** BRUSH FUNCTIONS
+            // note this brush layer in the svg element must be defined before the
+            // nodegroup elements, or it covers the nodes and they can't be selected
+            // possible alternative  to explore is to set the z-layers
+
+            function brush_start(d) {
+                // first, save previously selected IF shift+mouse
+                nodegroup.each(function(d) {
+                    d.previouslySelected = shiftKey && d.selected;
+                });
+            }
+
+            function do_brush(d) {
+                var extent = d3.event.target.extent();
+                nodegroup.classed("selected", function(d) {
+                    return d.selected = d.previouslySelected ||
+                        (extent[0][0] <= d.x && d.x < extent[1][0] &&
+                            extent[0][1] <= d.y && d.y < extent[1][1]);
+                });
+                // update selection during brush
+                dispatch.nodeselected();
+            }
+
+            function brush_end() {
+                d3.event.target.clear();
+                dispatch.nodeselected();
+                d3.select(this).call(d3.event.target);
+            }
+
+
+
+            brush.call(d3.svg.brush()
+                .x(x_scale)
+                .y(y_scale)
+                .on("brushstart", brush_start)
+                .on("brush", do_brush)
+                .on("brushend", brush_end)
+                );
+
+            //var labels = nodegroup.append("text")
+            //      .attr("dx", 12)
+            //      .attr("dy", "1em")
+            //      .text(function(d) { return d.values; })
+            //      .attr("style","display:none;");
+
+            getValues = function() {
+                // create a new array of the nodevalue attribute on all nodes
+                // why can't we just nodes.map()
+                _v = [];
+                _selection.selectAll(".node").each(function(d, i) {
+                    _v.push(d3.select(this).attr('nodevalue'));
+                });
+                return (_v);
+            };
+
+            getSizes = function() {
+                _v = [];
+                _selection.selectAll(".node").each(function(d, i) {
+                    _v.push(d3.select(this).attr('size'));
+                });
+                return (_v.map(Number));
+            };
+
+            setValues = function(valuearray) {
+                if (valuearray.constructor === Array && valuearray.length === getValues().length) {
+                    // check if array was sent, and if so, set Values
+                    // debug console.log(valuearray);
+                    // loop over all items class node
+                    _selection.selectAll(".node").each(
+                        function(d, i) {
+                            d3.select(this).attr('nodevalue', valuearray[i]);
+                            //.select("title").text(valuearray[i]);
+                        }
+                    );
+                    setFillColor();
+                }
+            };
+
+            // standard css class name for groups
+            // css file currently assumes groupId is 1 or 2
+            groupClass = function(groupId) {
+                return ("group_" + groupId);
+            };
+
+            // add group css class to specific nodes
+            setGroupID = function(groupId, nodeArray) {
+                // if(nodeArray.constructor === Array){
+                var arrayLength = nodeArray.length;
+                for (var i = 0; i < arrayLength; i++) {
+                    nodeid = nodeArray[i];
+                    className = groupClass(groupId);
+                    d3.select("#node_" + nodeid).classed(className, true);
+                }
+                //  }
+            };
+
+            // remove group css class from specific nodes
+            removeGroupID = function(groupId, nodeArray) {
+                // nodeArray = nodeArray instanceof Array ? nodeArray : [nodeArray]
+                var arrayLength = nodeArray.length;
+                for (var i = 0; i < arrayLength; i++) {
+                    nodeid = nodeArray[i];
+                    className = groupClass(groupId);
+                    d3.select("#node_" + nodeid).classed(className, false);
+                }
+
+            };
+
+            // remove group_x css call from ALL nodes that have it
+            clearGroupID = function(groupId) {
+                // get standard class name for groups
+                var c = groupClass(groupId);
+                // select all nodes with this class, and remove it with D3
+                d3.selectAll("." + c).classed(c, false);
+            };
+
+
+            setFillColor = function() {
+                // set fill color based on value attribute of nodes
+                // call this function after setting up the viz, e.g. in render()
+                var v = getValues().map(Number); // gets the array of the values as numbers
+                // var c = ['White', 'Black'];
+                var vrange = [d3.min(v), d3.max(v)]; // (d3.max(v)+d3.min(v)/2, d3.max(v))
+                colorScale = d3.scale.linear()
+                    .domain(vrange)
+                    .range(nodecolors);
+                //_selection.selectAll(".node")
+                nodegroup.each(
+                    function(d, i) {
+                        n = d3.select(this).select(".node");
+                        n.style('fill', colorScale(n.attr('nodevalue')));
+                        n.style('opacity',opacity_percent);
+                    });
+            };
+
+            setNodeSize = function() {
+                var s = getSizes(); // gets the array of the values we are interested in
+                var vrange = d3.extent(s);
+                // previously was  d3.min(v), (d3.max(v)+d3.min(v)/2, d3.max(v))
+                sizeScale = d3.scale.linear()
+                    .domain(vrange) // d3.extent(values())
+                    .range([minNodeSize(), maxNodeSize()]);
+                //_selection.selectAll(".node")
+                nodegroup.each(
+                    function(d, i) {
+                        n = d3.select(this).select(".node");
+                        n.style('fill', colorScale(n.attr('nodevalue')));
+                    });
+
+
+            };
+
+            shrinkNodeSize = function() {
+              d3.selectAll('circle').attr('r', function(d) {
+                  r = r*0.1;
+                  return r;
+              });
+            };
+
+            // *** NODE SELECTION FUNCTIONS
+
+            getSelected = function() {
+                // get ids OR values of selected nodes;
+                _sel = [];
+                nodegroup.filter(".selected").each(
+                    function(d, i) {
+                        _sel.push(d3.select(this).attr('nodeid'));
+                    });
+                selectedNodes = _sel;
+                return (_sel);
+
+            };
+
+            clearSelected = function() {
+                nodegroup.classed("selected", false);
+                dispatch.nodeselected();
+            };
+
+
+
+
+        }); // end of inner function
+
+
+
+    } // end of main nodegraph function
+
+
+
+
+
+
+    //********* API starts here***************
+    nodegraph.render = function() {
+        setFillColor();
+        force.start();
+    };
+
+    nodegraph.w = function(_x) {
+        if (!arguments.length) return w;
+        w = _x;
+        return this;
+    };
+
+    nodegraph.h = function(_x) {
+        if (!arguments.length) return h;
+        h = _x;
+        return this;
+    };
+
+    nodegraph.resize = function(_w, _h) {
+        console.log("resizing from JS with w=" + _w + " and height=" + _h);
+        if (!arguments.length) return 0;
+        this.w(_w);
+        this.h(_h);
+        forceresize(_w, _h);
+    };
+
+    nodegraph.values = function(newvals) {
+        if (!arguments.length) return (getValues());
+        // TODO ensure newvals must have same length as nodes, or recycle
+        // TODO ensure or convert newvals to array here?
+        setValues(newvals);
+        return this;
+    };
+
+    nodegraph.nodesize = function(_p){
+        if (!arguments.length) return( this.node_area_percent);
+        this.node_area_percent = _p;
+        nodegraph.reforce();
+    };
+
+    nodegraph.selected = function() {
+        return (getSelected());
+
+    };
+
+    nodegraph.unSelectAll = function() {
+        return (clearSelected());
+    };
+
+    // may need
+    //d3.rebind(nodegraph, this.dispatch, "on");
+
+    nodegraph.selecteddispatch = function() {
+        // currently unused
+        return ("");
+    };
+
+    // GROUP SETTING API
+    // THIS SHOULD BE SIMPLIFIED
+    // INTERNAL FUNCTIONS ARE setGroupID, clearGroupID, removeGroupID
+
+    nodegraph.group = function(groupId, nodeIds, remove = false) {
+        // adds attribute of group ID to nodes if not currently selected
+        // clear all previous nodes with attr
+        console.log("set group function group = ");
+        console.log(groupId);
+        console.log("nodes = ", nodeIds);
+        if (remove === true) {
+            // remove true means remove the group
+            if (nodeIds.constructor === Array) {
+                // an array of nodes sent, remove just for those
+                removeGroupID(groupId, nodeIds);
+            } else {
+                // no array sent, remove grup from all nodes
+                // TODO: allow single node id to be sent
+                // as sending a single node id (non-array) will cause group to be removed from all
+                clearGroupID(groupId);
+            }
+            // remove not true so add group
+        } else {
+            setGroupID(groupId, nodeIds);
+        }
+    };
+
+    nodegraph.reforce = function() {
+        force.nodes(this.nodes.data).links(this.links.data);
+
+    };
+
+    nodegraph.recolor = function() {
+        setFillColor();
+    };
+
+    nodegraph.reset = function() {
+        resetzoom();
+    };
+
+    nodegraph.moveleft = function(){
+      nudge(-1,0);
+    };
+
+    nodegraph.moveright = function(){
+      nudge(1,0);
+    };
+
+
+    // origin at top of div, subtract to move up
+    nodegraph.moveup = function(){
+      nudge(0,-1);
+    };
+
+    nodegraph.movedown = function(){
+      nudge(0,1);
+    };
+
+    nodegraph.zoomin = function(){
+      manualzoom(-0.1);
+    };
+
+    nodegraph.zoomout = function(){
+      manualzoom(0.1);
+    };
+
+    nodegraph.shrinkcharge = function(){
+      changeLinkDistance(-10);
+    };
+
+    nodegraph.expandcharge = function(){
+      changeLinkDistance(10);
+    };
+
+    nodegraph.shrinknodes = function(){
+      shrinkNodeSize();
+    }
+
+    dispatch = d3.dispatch("nodeselected");
+
+    add_resetbtn = function(ngname,sel){
+        resetbtn = sel.append("div").append("button").text("reset").attr("class","btn");
+        resetbtn.attr("onclick",ngname + "reset();")
+
+    }
+
+    return( nodegraph);
+
+};
+
+
+
+
+// example use on an html page with element <div id="container1"></div>
+// var nodgeGraph1 = cedar.NodeGraph().w(300).h(300);
+// d3.select("#container1")
+//    .datum(data1)
+//    .call(nodgeGraph1);
+
+// example render in HTMLWidget land
+// var renderGraph =  function(el, x, nodegraph) {
+//         // nodegraph already initialized on el? might as well re draw
+//         var links = HTMLWidgets.dataframeToD3(x.links);
+//         var  nodes = HTMLWidgets.dataframeToD3(x.nodes);
+//         ng = d3.select(el).call(nodegraph);
+//     }

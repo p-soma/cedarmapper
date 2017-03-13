@@ -1,0 +1,52 @@
+{
+	"links": [{
+		"source": 0,
+		"target": 1,
+		"weight": 7
+	}, {
+		"source": 0,
+		"target": 2,
+		"weight": 2
+	}, {
+		"source": 1,
+		"target": 3,
+		"weight": 1
+	}, {
+		"source": 2,
+		"target": 4,
+		"weight": 3
+	}, {
+		"source": 3,
+		"target": 5,
+		"weight": 5
+	}, {
+		"source": 4,
+		"target": 5,
+		"weight": 10
+	}],
+	"nodes": [{
+		"name": 1,
+		"values": 1.59733236811928e-16,
+		"size": 1
+	}, {
+		"name": 2,
+		"values": 0.944910869760126,
+		"size": 10
+	}, {
+		"name": 3,
+		"values": -0.944910869760126,
+		"size": 3
+	}, {
+		"name": 4,
+		"values": 0.944910869760126,
+		"size": 4
+	}, {
+		"name": 5,
+		"values": -0.944910869760126,
+		"size": 5
+	}, {
+		"name": 6,
+		"values": -4.81612690619666e-17,
+		"size": 10
+	}]
+}

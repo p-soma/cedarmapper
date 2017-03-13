@@ -1,0 +1,63 @@
+.link {
+  stroke: #000;
+  stroke-width: 1.5px;
+}
+
+.node {
+  cursor: move;
+  fill: #ccc;
+  stroke: #000;
+  stroke-width: 1.5px;
+}
+
+.node.fixed {
+  stroke: #f00;
+}
+
+.brush .extent {
+  fill-opacity: .1;
+  stroke: #fff;
+  shape-rendering: crispEdges;
+}
+
+
+/* NODE SELECTION COLORS  */
+
+.group_1 {
+  stroke: MediumBlue;
+  filter: drop-shadow(0px 0px 5px MediumBlue);
+}
+
+.group_2 {
+  stroke: FireBrick;
+  filter: drop-shadow(0px 0px 5px FireBrick);
+}
+
+.group_1.group_2 {
+  stroke: Magenta;
+  filter: drop-shadow(0px 0px 5px Magenta);
+}
+
+/* node selection colors; this must be below group colors to override them */
+.selected .node {
+    stroke-width: 3px;
+    stroke: Gold;
+}
+.node text {
+  pointer-events: none;
+  font: 10px sans-serif;
+}
+
+/* .state circle {
+    stroke  : gray;
+    cursor  : pointer;
+ }
+
+
+*/
+
+/* UI hint that node has been stuck and won't move */
+/* currenlty not displaying as these used for data attributes */
+.state.fixed{
+  fill: gray !important;
+}
