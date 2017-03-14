@@ -25,8 +25,8 @@ cedar.NodeGraph = function module() {
         maxLinkWidth = 8,
         minLinkWidth = 1,
         nodecolors = ['white', 'darkgreen'],
-        forcecharge = -2000,
-        LinkDistance = 150,
+        forcecharge = -3000,
+        LinkDistance = 30,
         linkdistanceFactor = 1,
         nudgefactor = 10;
 
@@ -229,11 +229,12 @@ cedar.NodeGraph = function module() {
             force = d3.layout.force()
                 .linkDistance(LinkDistance)
                 .charge(forcecharge)
-                .chargeDistance(maxNodeSize()*3)
                 .size([w, h])
                 .on("tick", do_tick)
                 .nodes(graphdata.nodes)
+                .gravity(0.8)
                 .links(graphdata.links);
+                // other paramters to consider : .chargeDistance(200) or 
 
             // added for Shiny HTMLWidget; need to determine if useful
             d3.select(window).on('resize', function() {
@@ -451,8 +452,8 @@ cedar.NodeGraph = function module() {
 
 
 
-            brush.call(d3.svg.brush()
-                .x(x_scale)
+          brush.call(d3.svg.brush()
+              .x(x_scale)
                 .y(y_scale)
                 .on("brushstart", brush_start)
                 .on("brush", do_brush)
