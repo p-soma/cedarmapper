@@ -29,8 +29,10 @@ HTMLWidgets.widget({
       }
       btngroup.append(btn('zoomin','','glyphicon-zoom-in','ng.zoomin()'));
       btngroup.append(btn('zoomout','','glyphicon-zoom-out','ng.zoomout()'));
-      btngroup.append(btn('linkplus','','glyphicon-resize-horizontal',''));
-      btngroup.append(btn('nodeminus','><','','ng.shrinkNodeSize();'));
+
+      //btngroup.append(btn('linkplus','','glyphicon-resize-horizontal',''));
+      //btngroup.append(btn('nodeminus','><','','ng.shrinkNodeSize();'));
+      
       btngroup.append(
         btn('attractplus','','glyphicon-resize-full','ng.shrinkcharge()')
         );
