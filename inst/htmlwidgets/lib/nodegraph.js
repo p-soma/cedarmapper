@@ -26,7 +26,7 @@ cedar.NodeGraph = function module() {
         minLinkWidth = 1,
         nodecolors = ['white', 'darkgreen'],
         forcecharge = -2000,
-        LinkDistance = 100,
+        LinkDistance = 150,
         linkdistanceFactor = 1,
         nudgefactor = 10;
 
@@ -248,7 +248,7 @@ cedar.NodeGraph = function module() {
               var LinkDistance = force.linkDistance();
               LinkDistance  = LinkDistance + z;
               force.linkDistance(LinkDistance);
-              force.alpha(0.3).start();
+              force.alpha(0.1).start();
 
             };
             
