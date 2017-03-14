@@ -221,13 +221,19 @@ shinyServer(function(input, output, session) {
   })
   
   group1Length <- reactive({
+    input$runMapper
     input$grp1set
     input$grp1remove
+    input$grp1clear
+    
     length(unlist(gm$groups[["1"]]))
   })
   
   group2Length <- reactive({
+    input$runMapper
     input$grp2set
+    input$grp2remove
+    input$grp2clear
     length(unlist(gm$groups[["2"]]))
   })
   
