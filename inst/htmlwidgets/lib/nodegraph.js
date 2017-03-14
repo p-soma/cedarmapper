@@ -248,7 +248,7 @@ cedar.NodeGraph = function module() {
               var LinkDistance = force.linkDistance();
               LinkDistance  = LinkDistance + z;
               force.linkDistance(LinkDistance);
-              force.alpha(0.1).start();
+              force.start();
 
             };
             
