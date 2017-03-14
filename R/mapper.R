@@ -369,7 +369,7 @@ clusters.mapper<- function(m, shinyProgressFunction = NULL) {
     # check for special case of only one datapoint, so no clustering necessary, break out of loop
     if(length(m$partitions[[i]]) < 2 ){
       gmClusts[[i]] = c(1)
-      names(gmClusts[[i]]) = rownames(m$partitions[[i]])
+      names(gmClusts[[i]]) = m$partitions[[i]]
       next
     }
     
