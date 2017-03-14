@@ -22,7 +22,7 @@ cedar.NodeGraph = function module() {
 
     var opacity_percent = 0.98,
         node_area_percent = 0.2,
-        maxLinkWidth = 10,
+        maxLinkWidth = 8,
         minLinkWidth = 1,
         nodecolors = ['white', 'darkgreen'],
         forcecharge = -2000,
@@ -35,16 +35,8 @@ cedar.NodeGraph = function module() {
     var resetzoom, manualzoom, force, graph, svg, nodeSizeScale, setFillColor,
     getSelected, clearSelected, getValues, setValues, forceresize, nodevalues,
     nudge, changeforcecharge,changeLinkDistance;
-    var setGroupID, clearGroupID, removeGroupID; // function used by externaAPI
+    var setGroupID, clearGroupID, removeGroupID; // function used by external API
     var nodes;
-
-    // var zoom, zoomed, zooming, // old zoom functions, can be removed?
-
-    var nominal_base_node_size = 8;
-    var min_zoom = 0.1;
-    var max_zoom = 7;
-
-
 
     function nodegraph(_selection) {
 
@@ -57,40 +49,12 @@ cedar.NodeGraph = function module() {
 
 
             // ********* ZOOM FUNCTIONS
-            // currently ctrl+mouse wheel sets scale only, no panning
+            // currentlymouse wheel sets scale only, no panning
 
             // zoomable scales
             var x_scale = d3.scale.linear().domain([0, w]).range([0, w]);
             var y_scale = d3.scale.linear().domain([0, h]).range([0, h]);
 
-
-            // zooming = false;
-//
-//             _selection.on("keydown", function() {
-//               zooming = d3.event.ctrlKey;
-//             });
-//
-//             _selection.on("keyup", function() {
-//               zooming = false;
-//             });
-//
-//             zoomed = function(){
-//                 // ignore zoom-by-brush
-//                // if (d3.event.sourceEvent && d3.event.sourceEvent.type === "brush") return;
-//
-//                 if (zooming) {  // make sure ctrl key is down
-//                     // NOTE zooming currently restricted to 'scaling' and not translate = panning
-//                     svg.attr("transform","scale(" + d3.event.scale + ")"); // only scale
-//                     // VERSION WITH PANNING ENABLED
-//                     // svg.attr("transform",'translate(' + zoom.translate() + ')' + ' scale(' + zoom.scale()+ ')');
-//
-//                 }
-//             };
-//
-//             zoom = d3.behavior.zoom()
-//                 .center([width / 2, height / 2])
-//                 .on("zoom", zoomed);
-//
             // initial values
             var tx = 0,ty = 0,scale = 1;
 
@@ -137,7 +101,8 @@ cedar.NodeGraph = function module() {
                 }
 
                 // calculate new translate position
-                // [current mouse position] - ([current mouse position] - [current translate]) * magnification
+                // [current mouse position] - 
+                //      ([current mouse position] - [current translate]) * magnification
                 zX = center[1] - (center[1] - tx) * zScale / scale;
                 zY = center[0] - (center[0] - ty) * zScale / scale;
 
@@ -152,7 +117,7 @@ cedar.NodeGraph = function module() {
             }
 
 
-            // *** MAIN SVG ELEMENT THAT ALL OTHER ELEMENTS ADDED TO
+            // *** MAIN SVG ELEMENT
             svg = d3.select(this)
                 .classed("svg-container", true)
                 .on("keydown.brush", keydown)
@@ -347,62 +312,12 @@ cedar.NodeGraph = function module() {
                 d3.select(this).classed("fixed", d.fixed = false);
             }
 
-            // THIS IS CURRENTLY NO REALLY WORKING; SETTING LINK CHARGE REPULSES NODES ENOUGH
-           //  function collide(alpha) {
-           //    var quadtree = d3.geom.quadtree(nodes);
-           //    return function(d) {
-           //        var r = nodeSizeScale(d.size) + maxNodeSize(),
-           //          nx1 = d.x - r,
-           //          nx2 = d.x + r,
-           //          ny1 = d.y - r,
-           //          ny2 = d.y + r;
-           //      quadtree.visit(function(quad, x1, y1, x2, y2) {
-           //        if (quad.point && (quad.point !== d)) {
-           //          var x = d.x - quad.point.x,
-           //              y = d.y - quad.point.y,
-           //              l = Math.sqrt(x * x + y * y),
-           //              r = d.radius + quad.point.radius + (d.cluster === quad.point.cluster ? padding : clusterPadding);
-           //          if (l < r) {
-           //            l = (l - r) / l * alpha;
-           //            d.x -= x *= l;
-           //            d.y -= y *= l;
-           //            quad.point.x += x;
-           //            quad.point.y += y;
-           //          }
-           //        }
-           //        res = x1 > nx2 || x2 < nx1 || y1 > ny2 || y2 < ny1;
-           //        return(res);
-           //      });
-           //    };
-           // }
-
-
-            function do_tick() {
-                // prevent collisions, not currently used
-                // var q = d3.geom.quadtree(nodegroup);
-                // nodegroup.each(collide(1));
-                // i = 0,
-                // nl = nodegroup.length;
-                // while (++i < nl) q.visit(collide(nodegroup[i]));
-                //   prevent nodes from going outside of the graph
-
-                // CODE TO RESTRICT NODES INTO GRAPH WINDOW
-                // THIS IS CURRENTLY DISABLED SINCE ZOOMING IS ENABLED
-                // nodegroup
-                //     .attr("cx", function(d) {
-                //         d.x = Math.max(
-                //             nodegroup.attr("r")*2,Math.min(w - nodegroup.attr("r")*2, d.x)
-                //         );
-                //         return d.x;
-                //     })
-                //     .attr("cy", function(d) {
-                //         d.y = Math.max(nodegroup.attr("r")*2,
-                //             Math.min(h - nodegroup.attr("r")*2, d.y)
-                //         );
-                //         return d.y;
-                //     });
-
-
+           function do_tick() {
+                // Translate the groups
+                nodegroup.attr("transform", function(d) {
+                    return 'translate(' + [d.x, d.y] + ')';
+                });
+                
                 link.attr("x1", function(d) {
                         return d.source.x;
                     })
@@ -416,11 +331,6 @@ cedar.NodeGraph = function module() {
                         return d.target.y;
                     });
 
-                // Translate the groups
-                // to do : remove labels and use tooltips instead
-                nodegroup.attr("transform", function(d) {
-                    return 'translate(' + [d.x, d.y] + ')';
-                });
             }
 
 
@@ -483,10 +393,8 @@ cedar.NodeGraph = function module() {
                 })
                 .call(force.drag().on("dragstart", setFixed));
 
-                //.on(".zoom", null)
 
-           nodes =
-            nodegroup
+           nodes = nodegroup
                 .append("circle")
                 .attr("class", "node")
                 .attr("id", function(d) {
@@ -494,8 +402,8 @@ cedar.NodeGraph = function module() {
                 })
                 .attr("r", function(d) {
                     console.log("d size=" + d.size);
-                    r = nodeSizeScale(d.size)
-                    console.log("r = " + r)
+                    r = nodeSizeScale(d.size);
+                    console.log("r = " + r);
                     return r;
                 })
                 .attr("nodevalue", function(d) {
@@ -504,9 +412,7 @@ cedar.NodeGraph = function module() {
                 .attr("size", function(d) {
                     return d.size;
                 });
-                // .append("svg:title").text(function(d) {
-                    // return d.values;
-                // })
+ 
             nodegroup.append("text")
                 .attr("text-anchor", "middle")
                 .text(function(d) {
