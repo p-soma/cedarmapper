@@ -406,51 +406,6 @@ clusters.mapper<- function(m, shinyProgressFunction = NULL) {
 }
 
 
-clusters2d.mapper<- function(gm, cluster_method = "single", scaling=FALSE, shinyProgressFunction = NULL) {
-  
-  gmClusts = list() 
-  npartition = length(gm$partitions)
-  # loop through each partition
-  for ( i in 1:npartition) {
-    print(paste0("analyzing partition ", i))
-    
-    # check for special case of only one datapoint, so no clustering necessary, break out of loop
-    if(length(gm$partitions[[i]][,1]) < 2 ){
-      gmClusts[[i]] = c(1)
-      names(gmClusts[[i]]) = rownames(gm$partitions[[i]])
-      next
-    }
-    
-    
-    # SHINY STUFF for displaying progress bar when this is run; remove when parallelizing
-    # If we were passed a shiny progress update function, call update each iteration
-    if (is.function(shinyProgressFunction)) {
-      text <- paste0("clustering partition ", i)
-      shinyProgressFunction(value = (i/npartition), detail = text)
-    }
-    # end shiny stuff
-    
-    # debug 
-    # print(gm$partitions[[i]])
-    rowset = gm$d[rownames(gm$partitions[[i]]), gm$selected_cols] 
-    
-    # calculate distance matrix for this partition
-    # TODO: check if whole data set partition is present, and extract subset from that
-    partition_dist =  dist(rowset,method="euclidean")
-    
-    # if(DEBUG) {print(max(partition_dist))}
-    # do standard clustering and cut 
-    partition_cluster <- hclust(partition_dist, method="single") 
-    cluster_cutheight <- cut_function(partition_cluster$height,  max( partition_dist), gm$bin_count)
-    gmClusts[[i]] <- cutree(partition_cluster, h=cluster_cutheight )
-    
-    # note rowIDs are propagated in cluster$labels, so cutree returns groups labeled correctly
-  }
-  return(gmClusts)
-}
-
-
-
 #' histogram based cut function for single-linkage clusters
 #' @export
 #' @param cluster_heights heights of each cluster, height element from hclust output
