@@ -185,7 +185,7 @@ cedar.NodeGraph = function module() {
 
             var nodeSizes = graphdata.nodes.map(
                 function(node, i) {
-                    return (node.size);
+                    return (node.size+1);
                 }
             );
 
@@ -219,7 +219,7 @@ cedar.NodeGraph = function module() {
             };
 
             minNodeSize = function(){
-                var t =0.1; // coefficient determining node size variation
+                var t =0.2; // coefficient determining node size variation
                 noderange = d3.extent(nodeSizes);
                 m = (
                       ((1-t) * noderange[0] + t * noderange[1])  
@@ -230,7 +230,7 @@ cedar.NodeGraph = function module() {
               return(maxNodeSize() *m);
             };
             
-            var nodeSizeScale = d3.scale.log().base(10)
+            nodeSizeScale = d3.scale.log().base(10)
                 .domain(d3.extent(nodeSizes))
                 .range([minNodeSize(), maxNodeSize()]);
 
@@ -264,7 +264,7 @@ cedar.NodeGraph = function module() {
             force = d3.layout.force()
                 .linkDistance(LinkDistance)
                 .charge(forcecharge)
-                .chargeDistance(maxNodeSize()*4)
+                .chargeDistance(maxNodeSize()*3)
                 .size([w, h])
                 .on("tick", do_tick)
                 .nodes(graphdata.nodes)
@@ -283,11 +283,11 @@ cedar.NodeGraph = function module() {
               var LinkDistance = force.linkDistance();
               LinkDistance  = LinkDistance + z;
               force.linkDistance(LinkDistance);
-              console.log("force linkdistance = " + force.linkDistance());
-              force.alpha(0.5).start();
+              force.alpha(0.3).start();
 
             };
             
+            // currently unused
             changeforcecharge = function(z){
               forcecharge = force.charge();
               forcecharge  = forcecharge + z;
@@ -493,7 +493,10 @@ cedar.NodeGraph = function module() {
                     return "node_" + d.name;
                 })
                 .attr("r", function(d) {
-                    return nodeSizeScale(d.size);
+                    console.log("d size=" + d.size);
+                    r = nodeSizeScale(d.size)
+                    console.log("r = " + r)
+                    return r;
                 })
                 .attr("nodevalue", function(d) {
                     return d.values;
@@ -787,11 +790,11 @@ cedar.NodeGraph = function module() {
       manualzoom(0.1);
     };
 
-    nodegraph.shrinkcharge = function(){
+    nodegraph.shrink = function(){
       changeLinkDistance(-10);
     };
 
-    nodegraph.expandcharge = function(){
+    nodegraph.expand = function(){
       changeLinkDistance(10);
     };
 
