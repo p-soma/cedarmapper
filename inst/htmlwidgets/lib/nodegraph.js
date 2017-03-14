@@ -32,7 +32,9 @@ cedar.NodeGraph = function module() {
 
     // functions called by public API
 
-    var resetzoom, manualzoom, shrinkNodeSize, force, graph, svg, nodeSizeScale, setFillColor, getSelected, clearSelected, getValues, setValues, getSizes, forceresize, nodevalues,nudge, changeforcecharge,changeLinkDistance;
+    var resetzoom, manualzoom, force, graph, svg, nodeSizeScale, setFillColor,
+    getSelected, clearSelected, getValues, setValues, forceresize, nodevalues,
+    nudge, changeforcecharge,changeLinkDistance;
     var setGroupID, clearGroupID, removeGroupID; // function used by externaAPI
     var nodes;
 
@@ -181,58 +183,11 @@ cedar.NodeGraph = function module() {
                 .attr("id","graph")
                 .attr('transform', `translate(${tx}, ${ty}) scale(${scale})`);
 
-            getWindowArea  = function(){
-                console.log("window area h, w");
-                console.log(h);
-                console.log(w);
-                var A = (h - margin.top - margin.bottom) *
-                        (w - margin.left - margin.right);
-                return(A);
-            };
-
-            maxNodeSize = function(){
-              var ncount = graphdata.nodes.length;
-              var A = getWindowArea();
-              // node_area_percent constant set above
-              ns = Math.sqrt(( A * node_area_percent)/(ncount * Math.PI ) );
-              return(  ns  );
-            };
-
-            minNodeSize = function(){
-                var t =0.1;
-                noderange = d3.extent(nodeSizes);
-                console.log(noderange);
-                console.log(maxNodeSize());
-                m =
-                  (((1-t)* noderange[0] + t* noderange[1])  / noderange[1]);
-              console.log(m);
-               return(maxNodeSize() *m);
-            };
-
-
-
-            max_base_node_size = function(){
-                maxNodeSize();
-            };
-
-            maxLinkWidth = function(){
-                return(10);
-            };
-
-            minLinkWidth = function(){
-                return(maxLinkWidth() * 0.1);
-            };
-
             var nodeSizes = graphdata.nodes.map(
                 function(node, i) {
                     return (node.size);
                 }
             );
-
-            //. maxLinkWidth
-            var nodeSizeScale = d3.scale.log().base(10)
-                .domain(d3.extent(nodeSizes))
-                .range([minNodeSize(), maxNodeSize()]);
 
             var linkWeights = graphdata.links.map(
                 function(link, i) {
@@ -242,6 +197,51 @@ cedar.NodeGraph = function module() {
             var linkWeightScale = d3.scale.linear()
                 .domain(d3.extent(linkWeights))
                 .range([minLinkWidth, maxLinkWidth]);
+
+            
+           getWindowArea  = function(){
+                console.log("window area h, w");
+                var A = (h - margin.top - margin.bottom) *
+                        (w - margin.left - margin.right);
+                console.log("window area=" + A);
+                return(A);
+            };
+
+            // **** NODE SIZE CALCULATIONS
+            // determine the largest node size based on n nodes and window area
+            maxNodeSize = function(){
+              var ncount = graphdata.nodes.length;
+              var A = getWindowArea();
+              // node_area_percent constant set above
+              ns = Math.sqrt(( A * node_area_percent)/(ncount * Math.PI ) );
+              console.log("maxnodesize="+ns );
+              return(  ns  );
+            };
+
+            minNodeSize = function(){
+                var t =0.1; // coefficient determining node size variation
+                noderange = d3.extent(nodeSizes);
+                m = (
+                      ((1-t) * noderange[0] + t * noderange[1])  
+                              / noderange[1]
+                   );
+                  
+              console.log("minnodesize = " + (m * maxNodeSize()));
+              return(maxNodeSize() *m);
+            };
+            
+            var nodeSizeScale = d3.scale.log().base(10)
+                .domain(d3.extent(nodeSizes))
+                .range([minNodeSize(), maxNodeSize()]);
+
+            maxLinkWidth = function(){
+                return(10);
+            };
+
+            minLinkWidth = function(){
+                return(maxLinkWidth() * 0.1);
+            };
+
 
             // holder for shiftkey detection
             var shiftKey;
@@ -283,10 +283,11 @@ cedar.NodeGraph = function module() {
               var LinkDistance = force.linkDistance();
               LinkDistance  = LinkDistance + z;
               force.linkDistance(LinkDistance);
-              console.log(force.linkDistance());
+              console.log("force linkdistance = " + force.linkDistance());
               force.alpha(0.5).start();
 
             };
+            
             changeforcecharge = function(z){
               forcecharge = force.charge();
               forcecharge  = forcecharge + z;
@@ -565,14 +566,6 @@ cedar.NodeGraph = function module() {
                 return (_v);
             };
 
-            getSizes = function() {
-                _v = [];
-                _selection.selectAll(".node").each(function(d, i) {
-                    _v.push(d3.select(this).attr('size'));
-                });
-                return (_v.map(Number));
-            };
-
             setValues = function(valuearray) {
                 if (valuearray.constructor === Array && valuearray.length === getValues().length) {
                     // check if array was sent, and if so, set Values
@@ -631,42 +624,17 @@ cedar.NodeGraph = function module() {
                 // set fill color based on value attribute of nodes
                 // call this function after setting up the viz, e.g. in render()
                 var v = getValues().map(Number); // gets the array of the values as numbers
-                // var c = ['White', 'Black'];
-                var vrange = [d3.min(v), d3.max(v)]; // (d3.max(v)+d3.min(v)/2, d3.max(v))
+                var vrange = [d3.min(v), d3.max(v)];
                 colorScale = d3.scale.linear()
                     .domain(vrange)
                     .range(nodecolors);
-                //_selection.selectAll(".node")
+                    
                 nodegroup.each(
                     function(d, i) {
                         n = d3.select(this).select(".node");
                         n.style('fill', colorScale(n.attr('nodevalue')));
                         n.style('opacity',opacity_percent);
                     });
-            };
-
-            setNodeSize = function() {
-                var s = getSizes(); // gets the array of the values we are interested in
-                var vrange = d3.extent(s);
-                // previously was  d3.min(v), (d3.max(v)+d3.min(v)/2, d3.max(v))
-                sizeScale = d3.scale.linear()
-                    .domain(vrange) // d3.extent(values())
-                    .range([minNodeSize(), maxNodeSize()]);
-                //_selection.selectAll(".node")
-                nodegroup.each(
-                    function(d, i) {
-                        n = d3.select(this).select(".node");
-                        n.style('fill', colorScale(n.attr('nodevalue')));
-                    });
-
-
-            };
-
-            shrinkNodeSize = function() {
-              d3.selectAll('circle').attr('r', function(d) {
-                  r = r*0.1;
-                  return r;
-              });
             };
 
             // *** NODE SELECTION FUNCTIONS
@@ -734,12 +702,6 @@ cedar.NodeGraph = function module() {
         // TODO ensure or convert newvals to array here?
         setValues(newvals);
         return this;
-    };
-
-    nodegraph.nodesize = function(_p){
-        if (!arguments.length) return( this.node_area_percent);
-        this.node_area_percent = _p;
-        nodegraph.reforce();
     };
 
     nodegraph.selected = function() {
@@ -833,17 +795,17 @@ cedar.NodeGraph = function module() {
       changeLinkDistance(10);
     };
 
-    nodegraph.shrinknodes = function(){
-      shrinkNodeSize();
-    }
+//    nodegraph.shrinknodes = function(){
+//      shrinkNodeSize();
+//    }
 
     dispatch = d3.dispatch("nodeselected");
 
     add_resetbtn = function(ngname,sel){
         resetbtn = sel.append("div").append("button").text("reset").attr("class","btn");
-        resetbtn.attr("onclick",ngname + "reset();")
+        resetbtn.attr("onclick",ngname + "reset();");
 
-    }
+    };
 
     return( nodegraph);
 
