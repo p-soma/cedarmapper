@@ -22,14 +22,14 @@ HTMLWidgets.widget({
 
       $(el).before(btngroup);
      //  btngroup.addClass("btn-group");
-      btngroup.append(btn('reset','reset','','ng.reset();'));
+      btngroup.append(btn('recenter','recenter','','ng.reset();'));
       var a  = ["left", "right","up", "down"];
       for (var i = 0; i < a.length; i++) {
         btngroup.append(btn(`move${a[i]}`,'', `glyphicon-arrow-${a[i]}`,`ng.move${a[i]}()`));
       }
       btngroup.append(btn('zoomin','','glyphicon-zoom-in','ng.zoomin()'));
       btngroup.append(btn('zoomout','','glyphicon-zoom-out','ng.zoomout()'));
-
+        
       btngroup.append(
         btn('attractplus','','glyphicon-resize-full','ng.expand()')
         );
@@ -37,6 +37,9 @@ HTMLWidgets.widget({
         btn('attractmius','','glyphicon-resize-small','ng.shrink()')
           );
 
+      btngroup.append(
+        btn('rotate','','glyphicon-repeat','ng.rotate()')
+        );
 
 
 

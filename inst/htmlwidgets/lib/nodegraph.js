@@ -34,7 +34,7 @@ cedar.NodeGraph = function module() {
 
     var resetzoom, manualzoom, force, graph, svg, nodeSizeScale, setFillColor,
     getSelected, clearSelected, getValues, setValues, forceresize, nodevalues,
-    nudge, changeforcecharge,changeLinkDistance;
+    nudge, changeforcecharge,changeLinkDistance,changeRotation,setTransform;
     var setGroupID, clearGroupID, removeGroupID; // function used by external API
     var nodes;
 
@@ -56,23 +56,34 @@ cedar.NodeGraph = function module() {
             var y_scale = d3.scale.linear().domain([0, h]).range([0, h]);
 
             // initial values
-            var tx = 0,ty = 0,scale = 1;
+            var tx = 0,ty = 0,scale = 1,rotation=0;
 
 
+            setTransform = function(){
+              var rotationx = h/2;
+              var rotationy = w/2;
+graph.attr('transform', `translate(${tx}, ${ty}) scale(${scale}) rotate(${rotation} ${rotationx} ${rotationy})`);
+            }; 
+            
             resetzoom = function() {
+              // this is really a "re-center" function
                 scale = 1;
                 tx = 0;
                 ty = 0;
-
-               graph.attr('transform', `translate(${tx}, ${ty}) scale(${scale})`);
-                // resets zoom scales, and moves graph back to center
-            };
+                setTransform();
+              };
 
             manualzoom = function(z){
               scale = scale + z;
               center = [w/2,h/2];
               doZoom(z,center);
-              graph.attr('transform', `translate(${tx}, ${ty}) scale(${scale})`);
+              setTransform();
+      
+            };
+            
+             changeRotation = function(deg){
+              rotation = rotation + deg;
+              setTransform();
             };
 
 
@@ -113,7 +124,8 @@ cedar.NodeGraph = function module() {
                 tx = zX;
                 ty = zY;
 
-                graph.attr('transform', `translate(${tx}, ${ty}) scale(${scale})`);
+                setTransform();
+        
             }
 
 
@@ -145,8 +157,10 @@ cedar.NodeGraph = function module() {
 
             // this holds the nodes and links
             var graph = svg.append('g')
-                .attr("id","graph")
-                .attr('transform', `translate(${tx}, ${ty}) scale(${scale})`);
+                .attr("id","graph");
+            
+            setTransform();  // this adds transform attr to graph, usually set manually 
+                
 
             var nodeSizes = graphdata.nodes.map(
                 function(node, i) {
@@ -253,6 +267,7 @@ cedar.NodeGraph = function module() {
 
             };
             
+            
             // currently unused
             changeforcecharge = function(z){
               forcecharge = force.charge();
@@ -299,7 +314,7 @@ cedar.NodeGraph = function module() {
                 //. nudgefactor global config var
                 tx = tx + dx * nudgefactor;
                 ty = ty + dy * nudgefactor;
-                graph.attr('transform', `translate(${tx}, ${ty}) scale(${scale})`);
+                setTransform();
                 // d3.event.preventDefault();
             };
 
@@ -703,6 +718,10 @@ cedar.NodeGraph = function module() {
 
     nodegraph.expand = function(){
       changeLinkDistance(10);
+    };
+    
+    nodegraph.rotate = function(){
+      changeRotation(10); // 10 degrees
     };
 
 //    nodegraph.shrinknodes = function(){
