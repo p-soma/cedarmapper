@@ -7,10 +7,13 @@
 
 #' @docType package
 #' @name cedar
-NULL
 
-#' run the shiny app
 #' @export
-cedar <- function(){
-  shinyAppDir("inst/cedar")
+runCedar <- function() {
+  appDir <- system.file("cedar",  package = "cedar")
+  if (appDir == "") {
+    stop("Could not find cedar app directory. Try re-installing `cedar`.", call. = FALSE)
+  }
+  
+  shiny::runApp(appDir, display.mode = "normal")
 }
