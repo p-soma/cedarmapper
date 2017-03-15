@@ -9,4 +9,8 @@
 #' @name cedar
 NULL
 
-# note this file currently serves only as the package documentation
+#' run the shiny app
+#' @export
+cedar <- function(){
+  shinyAppDir("inst/cedar")
+}
