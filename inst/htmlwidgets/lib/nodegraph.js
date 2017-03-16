@@ -131,9 +131,9 @@ graph.attr('transform', `translate(${tx}, ${ty}) scale(${scale}) rotate(${rotati
 
             // *** MAIN SVG ELEMENT
             svg = d3.select(this)
+                .on("keydown", keydown)
+                .on("keyup", keyup)
                 .classed("svg-container", true)
-                .on("keydown.brush", keydown)
-                .on("keyup.brush", keyup)
                 .each(function() {
                     this.focus();
                 })
@@ -146,14 +146,14 @@ graph.attr('transform', `translate(${tx}, ${ty}) scale(${scale}) rotate(${rotati
                 .append("g")
                 .attr("class", "canvas")
                 .style("cursor","move")
-                .on('wheel.zoom', mousezoom);
+                .on('wheel.zoom', mousezoom)
+
+
+//                .on("keydown.brush", keydown)
+//               .on("keyup.brush", keyup);
 
             // brush is a seperate svg 'layer' for rectangle selection
-            var brush = svg.append("g")
-                .attr("class", "brush")
-                .datum(function() {
-                    return {selected: false, previouslySelected: false};
-                });
+
 
             // this holds the nodes and links
             var graph = svg.append('g')
@@ -161,7 +161,11 @@ graph.attr('transform', `translate(${tx}, ${ty}) scale(${scale}) rotate(${rotati
             
             setTransform();  // this adds transform attr to graph, usually set manually 
                 
-
+            var brush = graph.append("g")
+                .attr("class", "brush")
+                .datum(function() {
+                    return {selected: false, previouslySelected: false};
+                });
             var nodeSizes = graphdata.nodes.map(
                 function(node, i) {
                     return (node.size+1);
@@ -287,6 +291,7 @@ graph.attr('transform', `translate(${tx}, ${ty}) scale(${scale}) rotate(${rotati
 
             // graph moving UI: allow for arrow keys to slightly move all selected (fixed) nodes
             function keydown() {
+                console.log('keydown');
                 if (!d3.event.metaKey) switch (d3.event.keyCode) {
                         case 38:
                             nudge(0, -1);
