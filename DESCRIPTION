@@ -10,6 +10,8 @@ Depends:
     R (>= 3.3.0),
     cluster (>= 2.0.0),
     plyr(>= 1.8.0),
+    Rcpp(>= 1.2.0),
+    magrittr(>=1.5),
     igraph(>= 1.0),
     ggplot2(>= 2.0),
     gtable(>= 0.2.0),
