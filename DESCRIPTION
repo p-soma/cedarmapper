@@ -21,10 +21,10 @@ Depends:
     shinyjs (>= 0.5.2),
     shinyAce(>= 0.2.1),
     shinyBS(>= 0.60),
-    yaml(>= 2.1)
+    yaml(>= 2.1),
+    htmltools (>= 0.2.6)
+    jsonlite
 Suggests:
-    htmltools (>= 0.2.6),
-    jsonlite,
     devtools,
     roxygen2,
     testthat
