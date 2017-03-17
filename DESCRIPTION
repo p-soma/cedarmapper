@@ -22,7 +22,7 @@ Depends:
     shinyAce(>= 0.2.1),
     shinyBS(>= 0.60),
     yaml(>= 2.1),
-    htmltools (>= 0.2.6)
+    htmltools (>= 0.2.6),
     jsonlite (>=1.1)
 Suggests:
     devtools,
