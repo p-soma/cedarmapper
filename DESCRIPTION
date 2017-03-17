@@ -23,7 +23,7 @@ Depends:
     shinyBS(>= 0.60),
     yaml(>= 2.1),
     htmltools (>= 0.2.6)
-    jsonlite
+    jsonlite (>=1.1)
 Suggests:
     devtools,
     roxygen2,
