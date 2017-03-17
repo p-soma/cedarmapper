@@ -9,7 +9,6 @@ License: file LICENSE
 Depends:
     R (>= 3.3.0),
     cluster (>= 2.0.0),
-    NbClust (>= 3.0),
     plyr(>= 1.8.0),
     igraph(>= 1.0),
     ggplot2(>= 2.0),
@@ -22,13 +21,10 @@ Depends:
     shinyjs (>= 0.5.2),
     shinyAce(>= 0.2.1),
     shinyBS(>= 0.60),
-    yaml(>= 2.1),
-    shinyjs (>= 0.5.2)
+    yaml(>= 2.1)
 Suggests:
     htmltools (>= 0.2.6),
     jsonlite,
-    fastcluster,
-    knitr,
     devtools,
     roxygen2,
     testthat
