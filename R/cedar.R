@@ -15,5 +15,5 @@ runCedar <- function() {
     stop("Could not find cedar app directory. Try re-installing `cedar`.", call. = FALSE)
   }
   
-  shiny::runApp(appDir, display.mode = "normal")
+  shiny::runApp(appDir, launch.browser = TRUE, display.mode = "normal")
 }
