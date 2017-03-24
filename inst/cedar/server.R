@@ -111,21 +111,31 @@ shinyServer(function(input, output, session) {
   
   ####TODO error obj varname not found
   histVals <- reactive({
-      input$showHist
-      if(!is.null(input$nodelist)){
-        varname = selectedVar()
-        nodedata(gm, as.numeric(input$nodelist),varname)
-      } else {
-        c(0)
-      }
-      b1 <- factorBarPlot(gm, selectedVar(), group_id = 1)
-      # below is for plotting bar plot of node group 2, not functional
-    #  b2 <- factorBarPlot(gm, selectedVar(), group_id = 2)
-     # barPlotList <- list(b1,b2)
-    #  return(barPlotList)
-      return(b1)
+       input$showHist
+       if(!is.null(input$nodelist)){
+         varname = selectedVar()
+         nodedata(gm, as.numeric(input$nodelist),varname)
+       } else {
+         c(0)
+       }
+           
+       varname = selectedVar()
+       nodes <- input$nodelist
+       if (is.numeric(gm$d[,varname])){       
+         varplot <- hist(
+           # nodePrep(gm,selectedVar())$values,
+           nodedata(gm, gm$nodes[nodes], varname),
+           main="Data from Selected Nodes",
+           ylab="Frequency",
+           xlab=paste0("data for ",varname )
+         )
+       } else {
+         varplot <- factorBarPlot(gm, varname, input$nodelist)
+       }
+       return(varplot)
+      
     
-    })
+     })
     
   output$nodeHist1 <- renderPlot({histVals()[1]})
   #showBarPlot <- eventReactive(input$showHist,{ 
@@ -253,7 +263,7 @@ shinyServer(function(input, output, session) {
   observeEvent(input$runMapper, {
     updateTabItems(session, "tabs", selected = "graph")
     
-    #factor categorical data and save for later
+   # convert categorical data to factor
 
     #factorVars <- convertColsToFactors(gm$d)
     factorCols <- list()
