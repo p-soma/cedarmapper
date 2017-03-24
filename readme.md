@@ -9,7 +9,7 @@ Installation  (DRAFT)
 
 ***Prerequisites***
 
-CEDAR using the RStudio Shiny application framework
+The CEDAR mapper pipeline is implemented in R, and the CEDAR user interface is implented using the Shiny application framework from Rstudio https://shiny.rstudio.com/ 
 
 Download and Install R, select the latest version (>= 3.3.1)
 
