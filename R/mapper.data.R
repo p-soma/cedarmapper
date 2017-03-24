@@ -130,12 +130,11 @@ partitiondata <- function(gm, p, varname = NULL){
 #' returns bar plot
 #' @export 
 #' 
-factorBarPlot <- function(gm, varname, group_id = 1){
+factorBarPlot <- function(gm, varname, nodes){
   x_label = varname
   y_label = "Frequency"
-  d_group = groupdata(gm,group_id,varname)
-  #  return(barplot(table(gm$d[varname]), xlab = x_label, ylab = y_label) )
-  return(barplot(table(d_group), xlab = x_label, ylab = y_label) )
+  d = nodedata(gm, gm$nodes[nodes], varname)
+  return(barplot(table(d), xlab = x_label, ylab = y_label))
 }
 
 #' convert categorical column to binary columns
