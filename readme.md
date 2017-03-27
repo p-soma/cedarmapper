@@ -13,17 +13,16 @@ The CEDAR mapper pipeline is implemented in R, and the CEDAR user interface is i
 
 Download and Install R, select the latest version (>= 3.3.1) https://cran.r-project.org/
 
-Windows users may also need to download and install Rtools (version 3.4 ) from https://cran.rstudio.com/bin/windows/Rtools/    Note: when installing don't need to the TCL/TK extras for these tools for CEDAR. 
+Windows users may also need to download and install Rtools (version 3.4 ) from https://cran.r-project.org/web/packages/devtools/README.html    Note: when installing don't need to the TCL/TK extras for these tools for CEDAR. 
 
-Install Rstudio latest version ( tested with 1.0.1x)
+Install Rstudio latest version ( tested with 1.0.1x) ( https://rstudio.com/ ) 
 Install an alternative browser such as Chrome or Firefox.  Unfortunately the graph visualization does not currently work in the Rstudio internal browser or Internet Explorer (does not work in 7-10 or Edge)
 
 ***Installation in R***
 
-In Rstudio, install 'devtools'  and include its dependencies with the following command:
+In Rstudio, install 'devtools' with the following command:
 
 > install.packages('devtools')
- 
  
 Once devtools is installed, you can install the Cedar package from github within Rstudio
 
