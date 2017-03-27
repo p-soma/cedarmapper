@@ -11,7 +11,7 @@ Installation  (DRAFT)
 
 The CEDAR mapper pipeline is implemented in R, and the CEDAR user interface is implented using the Shiny application framework from Rstudio https://shiny.rstudio.com/ 
 
-Download and Install R, select the latest version (>= 3.3.1)
+Download and Install R, select the latest version (>= 3.3.1) https://cran.r-project.org/
 
 Windows users may also need to download and install Rtools (version 3.4 ) from https://cran.rstudio.com/bin/windows/Rtools/    Note: when installing don't need to the TCL/TK extras for these tools for CEDAR. 
 
@@ -22,7 +22,7 @@ Install an alternative browser such as Chrome or Firefox.  Unfortunately the gra
 
 In Rstudio, install 'devtools'  and include its dependencies with the following command:
 
-> install.packages('devtools', dependencies = c('import'))
+> install.packages('devtools')
  
  
 Once devtools is installed, you can install the Cedar package from github within Rstudio
