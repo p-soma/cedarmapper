@@ -25,7 +25,7 @@ cedar.NodeGraph = function module() {
         maxLinkWidth = 8,
         minLinkWidth = 1,
         nodecolors = ['white', 'darkgreen'],
-        forcecharge = -3000,
+        ForceCharge = -3000,
         LinkDistance = 30,
         linkdistanceFactor = 1,
         nudgefactor = 10;
@@ -60,9 +60,21 @@ cedar.NodeGraph = function module() {
 
 
             setTransform = function(){
-              var rotationx = h/2;
-              var rotationy = w/2;
-graph.attr('transform', `translate(${tx}, ${ty}) scale(${scale}) rotate(${rotation} ${rotationx} ${rotationy})`);
+                
+              // uses globals tx,tx,scale and rotation
+              var rotationy = h/2;
+              var rotationx = w/2;        
+              var graphtransform = `translate(${tx}, ${ty}) scale(${scale}) rotate(${rotation} ${rotationx} ${rotationy})`;
+                            
+              graph.attr('transform', graphtransform );
+              
+              nodegroup.each(function(d,i) {
+                  d3.selectAll('text')
+                    .attr('transform', `rotate(${-1*rotation})`); 
+              });
+              // brush.attr('transform', `rotate(${antirotation}  ${rotationx} ${rotationy})`);
+            
+ 
             }; 
             
             resetzoom = function() {
@@ -158,9 +170,7 @@ graph.attr('transform', `translate(${tx}, ${ty}) scale(${scale}) rotate(${rotati
             // this holds the nodes and links
             var graph = svg.append('g')
                 .attr("id","graph");
-            
-            setTransform();  // this adds transform attr to graph, usually set manually 
-                
+                            
             var brush = graph.append("g")
                 .attr("class", "brush")
                 .datum(function() {
@@ -246,13 +256,13 @@ graph.attr('transform', `translate(${tx}, ${ty}) scale(${scale}) rotate(${rotati
             // TODO  make link distance a function of number of nodes and size
             force = d3.layout.force()
                 .linkDistance(LinkDistance)
-                .charge(forcecharge)
+                .charge(ForceCharge)
                 .size([w, h])
                 .on("tick", do_tick)
                 .nodes(graphdata.nodes)
-                .gravity(0.8)
-                .links(graphdata.links);
-                // other paramters to consider : .chargeDistance(200) or 
+                .links(graphdata.links)
+                // .chargeDistance(100);
+                // other paramters to consider :  or 
 
             // added for Shiny HTMLWidget; need to determine if useful
             d3.select(window).on('resize', function() {
@@ -267,7 +277,7 @@ graph.attr('transform', `translate(${tx}, ${ty}) scale(${scale}) rotate(${rotati
               var LinkDistance = force.linkDistance();
               LinkDistance  = LinkDistance + z;
               force.linkDistance(LinkDistance);
-              force.start();
+              force.resume();
 
             };
             
@@ -277,7 +287,7 @@ graph.attr('transform', `translate(${tx}, ${ty}) scale(${scale}) rotate(${rotati
               forcecharge = force.charge();
               forcecharge  = forcecharge + z;
               force.charge(forcecharge);
-              force.alpha(1).start();
+              force.alpha(0.25).start();
               console.log(force.charge());
             };
 
@@ -586,9 +596,6 @@ graph.attr('transform', `translate(${tx}, ${ty}) scale(${scale}) rotate(${rotati
                 dispatch.nodeselected();
             };
 
-
-
-
         }); // end of inner function
 
 
@@ -725,8 +732,9 @@ graph.attr('transform', `translate(${tx}, ${ty}) scale(${scale}) rotate(${rotati
       changeLinkDistance(10);
     };
     
-    nodegraph.rotate = function(){
-      changeRotation(10); // 10 degrees
+    nodegraph.rotate = function(direction){
+      direction = (typeof direction !== 'undefined') ?  direction : 1;
+      changeRotation(10*direction); // 10 degrees
     };
 
 //    nodegraph.shrinknodes = function(){

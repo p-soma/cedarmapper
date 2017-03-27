@@ -38,7 +38,11 @@ HTMLWidgets.widget({
           );
 
       btngroup.append(
-        btn('rotate','','glyphicon-repeat','ng.rotate()')
+        btn('rotate','','glyphicon-repeat','ng.rotate(1)')
+        );
+        
+              btngroup.append(
+        btn('rotateleft','','flipped glyphicon-repeat','ng.rotate(-1)')
         );
 
 
