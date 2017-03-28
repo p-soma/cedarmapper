@@ -152,15 +152,16 @@ cedar.NodeGraph = function module() {
                 .append("svg")
                 .attr("id", "nodegraph")
                 .attr("height", h)
-                .attr("width", w)
-                .on('dblclick.zoom', resetzoom)
-                .on('dblclick', resetzoom)
-                .append("g")
+                .attr("width", w);
+                // .on('dblclick.zoom', resetzoom)
+                // .on('dblclick', resetzoom);
+                
+              svg.append("g")
                 .attr("class", "canvas")
                 .style("cursor","move")
                 .on('wheel.zoom', mousezoom)
 
-
+            
 //                .on("keydown.brush", keydown)
 //               .on("keyup.brush", keyup);
 
@@ -366,31 +367,58 @@ cedar.NodeGraph = function module() {
 
 
             // Glow Filter Code.  Add a filter in defs element of SVG
-            var defs = svg.append("defs");
-            var filter = defs.append("filter").attr("id", "drop-shadow").attr("height", "130%");
-
+            var defs = svg.append("defs");           
             // SourceAlpha refers to opacity of graphic that this filter will be applied to
             // convolve that with a Gaussian with standard deviation 3 and store result
             // in  blur
+            
+            var blurfilter = function(filterid,blurcolor) {
+            filterstr =  '<filter id="' + filterid +'" height="130%"> ' + 
+             '<feGaussianBlur in="SourceAlpha" stdDeviation="3"/>' + 
+             '  <feOffset dx="2" dy="2" result="offsetblur"/>' +
+             '  <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge></filter>';
+            };     
+            
+            glowfilter = '<filter id="glow">'+
+                      '    <feGaussianBlur stdDeviation="2.5" result="coloredBlur"/>'+
+                      '    <feMerge>'+
+                      '        <feMergeNode in="coloredBlur"/>'+
+                      '        <feMergeNode in="SourceGraphic"/>'+
+                      '    </feMerge>'+
+                      '</filter>';
+            
+            var filter = defs.append("filter").attr("id","colorglow");
             filter.append("feGaussianBlur")
-                .attr("in", "SourceAlpha")
-                .attr("stdDeviation", 10) //THIS IS THE SIZE OF THE GLOW
-                .attr("result", "blur");
+                  .attr("stdDeviation","3.5")
+	                .attr("result","coloredBlur");
+                  var feMerge = filter.append("feMerge");
+                  feMerge.append("feMergeNode")
+	                        .attr("in","coloredBlur");
+                  feMerge.append("feMergeNode")
+	                        .attr("in","SourceGraphic");
+          
+            // <polygon points="58.263,0.056 100,41.85" 
+            //         filter="url(#dropshadow)"/>
+            //var filter1 = defs.append("filter").attr("id", "group1filter").attr("height", "130%");
+            //filter1.append("feGaussianBlur")
+            //    .attr("in", "SourceAlpha")
+            //    .attr("stdDeviation", 10) //THIS IS THE SIZE OF THE GLOW
+            //    .attr("result", "blur");
 
             // original code from example that offets the blur for shadow effect
             // we don't want an offset, so need to find a way to remove this
-            filter.append("feOffset")
-                .attr("in", "blur")
-                .attr("dx", 0)
-                .attr("dy", 0)
-                .attr("result", "offsetBlur");
+            //filter1.append("feOffset")
+            //    .attr("in", "blur")
+            //    .attr("dx", 0)
+            //    .attr("dy", 0)
+            //    .attr("result", "offsetBlur");
 
             // overlay original SourceGraphic over translated blurred opacity by using
             // feMerge filter. Order of specifying inputs is important!
-            var feMerge = filter.append("feMerge");
-            feMerge.append("feMergeNode").attr("in", "offsetBlur"); //MAYBE CHANGE THIS TO blur
-            feMerge.append("feMergeNode").attr("in", "SourceGraphic");
-
+            //var feMerge = filter1.append("feMerge");
+            //feMerge.append("feMergeNode")
+            //feMerge.append("feMergeNode").attr("in", "SourceGraphic");
+            // end of filter
 
             var link = graph.selectAll(".link")
                 .data(graphdata.links)
@@ -527,16 +555,34 @@ cedar.NodeGraph = function module() {
                 return ("group_" + groupId);
             };
 
+            // ### need to use this to toggle filter by detecting current group
+            setGroupAppearance = function(n,groupId){
+                var className = groupClass(groupId);    
+                n.classed(className, true);
+                n.style("filter", "url(#colorglow)");
+                // n.attr('filter',"url(#colorglow)");                
+            };
+            
+            removeGroupAppearance = function(n,groupID){
+              var className = groupClass(groupId);  
+              n.classed(className, false);
+              var c = n.attr("class") ; // need a string here
+             
+              console.log(/[Gg]roup/.test(c));
+              if (/[Gg]roup/.test(c)) {
+                  n.style("filter",null);
+              }
+            };
+            
             // add group css class to specific nodes
             setGroupID = function(groupId, nodeArray) {
                 // if(nodeArray.constructor === Array){
                 var arrayLength = nodeArray.length;
-                for (var i = 0; i < arrayLength; i++) {
-                    nodeid = nodeArray[i];
-                    className = groupClass(groupId);
-                    d3.select("#node_" + nodeid).classed(className, true);
+                for (var i = 0; i < arrayLength; i++) { 
+                    var n = d3.select("#node_" + nodeArray[i]); 
+                    // instead of d3.select, should be grap select to avoid whole DOM search?
+                    setGroupAppearance(n,groupId);
                 }
-                //  }
             };
 
             // remove group css class from specific nodes
@@ -544,9 +590,8 @@ cedar.NodeGraph = function module() {
                 // nodeArray = nodeArray instanceof Array ? nodeArray : [nodeArray]
                 var arrayLength = nodeArray.length;
                 for (var i = 0; i < arrayLength; i++) {
-                    nodeid = nodeArray[i];
-                    className = groupClass(groupId);
-                    d3.select("#node_" + nodeid).classed(className, false);
+                    var n = d3.select("#node_" + nodeArray[i]);
+                    removeGroupAppearance(n,groupID);
                 }
 
             };
@@ -665,9 +710,7 @@ cedar.NodeGraph = function module() {
     nodegraph.group = function(groupId, nodeIds, remove = false) {
         // adds attribute of group ID to nodes if not currently selected
         // clear all previous nodes with attr
-        console.log("set group function group = ");
-        console.log(groupId);
-        console.log("nodes = ", nodeIds);
+       
         if (remove === true) {
             // remove true means remove the group
             if (nodeIds.constructor === Array) {

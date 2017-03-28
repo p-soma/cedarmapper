@@ -25,24 +25,31 @@
 
 .group_1 {
   stroke: MediumBlue;
-  filter: drop-shadow(0px 0px 5px MediumBlue);
+  stroke-width: 3px;
+  /* filter: drop-shadow(0px 0px 5px MediumBlue); */
+  
 }
 
 .group_2 {
   stroke: FireBrick;
-  filter: drop-shadow(0px 0px 5px FireBrick);
+  stroke-width: 3px;
+  /* filter: drop-shadow(0px 0px 5px FireBrick);*/
 }
 
 .group_1.group_2 {
   stroke: Magenta;
-  filter: drop-shadow(0px 0px 5px Magenta);
+  stroke-width: 3px;
+  /* filter: drop-shadow(0px 0px 5px Magenta); */
 }
 
 /* node selection colors; this must be below group colors to override them */
+/* dashed so the group can be seen below */
 .selected .node {
-    stroke-width: 3px;
+    stroke-width: 2px;
+    stroke-dasharray: 5,5;
     stroke: Gold;
 }
+
 .node text {
   pointer-events: none;
   font: 10px sans-serif;
