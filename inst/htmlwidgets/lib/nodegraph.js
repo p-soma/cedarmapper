@@ -566,7 +566,7 @@ cedar.NodeGraph = function module() {
             removeGroupAppearance = function(n,groupID){
               var className = groupClass(groupId);  
               n.classed(className, false);
-              var c = n.attr("class")  // need a string here
+              var c = n.attr("class") ; // need a string here
              
               console.log(/[Gg]roup/.test(c));
               if (/[Gg]roup/.test(c)) {
@@ -602,7 +602,6 @@ cedar.NodeGraph = function module() {
                 var c = groupClass(groupId);
                 // select all nodes with this class, and remove it with D3
                 d3.selectAll("." + c).classed(c, false);
-                
             };
 
 
