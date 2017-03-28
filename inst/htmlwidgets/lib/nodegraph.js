@@ -559,8 +559,19 @@ cedar.NodeGraph = function module() {
             setGroupAppearance = function(n,groupId){
                 var className = groupClass(groupId);    
                 n.classed(className, true);
-                // n.style("filter", "url(#colorglow)");
-                n.attr('filter',"url(#colorglow)");                
+                n.style("filter", "url(#colorglow)");
+                // n.attr('filter',"url(#colorglow)");                
+            };
+            
+            removeGroupAppearance = function(n,groupID){
+              var className = groupClass(groupId);  
+              n.classed(className, false);
+              var c = n.attr("class")  // need a string here
+             
+              console.log(/[Gg]roup/.test(c));
+              if (/[Gg]roup/.test(c)) {
+                  n.style("filter",null);
+              }
             };
             
             // add group css class to specific nodes
@@ -579,9 +590,8 @@ cedar.NodeGraph = function module() {
                 // nodeArray = nodeArray instanceof Array ? nodeArray : [nodeArray]
                 var arrayLength = nodeArray.length;
                 for (var i = 0; i < arrayLength; i++) {
-                    nodeid = nodeArray[i];
-                    className = groupClass(groupId);
-                    d3.select("#node_" + nodeid).classed(className, false);
+                    var n = d3.select("#node_" + nodeArray[i]);
+                    removeGroupAppearance(n,groupID);
                 }
 
             };
@@ -592,6 +602,7 @@ cedar.NodeGraph = function module() {
                 var c = groupClass(groupId);
                 // select all nodes with this class, and remove it with D3
                 d3.selectAll("." + c).classed(c, false);
+                
             };
 
 
