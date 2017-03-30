@@ -21,12 +21,12 @@ cedar.NodeGraph = function module() {
     var h = window.innerHeight;
 
     var opacity_percent = 0.98,
-        node_area_percent = 0.2,
+        node_area_percent = 0.3,
         maxLinkWidth = 8,
         minLinkWidth = 1,
         nodecolors = ['white', 'darkgreen'],
         ForceCharge = -3000,
-        LinkDistance = 30,
+        LinkDistance = 100,
         linkdistanceFactor = 1,
         nudgefactor = 10;
 
@@ -47,6 +47,7 @@ cedar.NodeGraph = function module() {
 
         _selection.each(function(graphdata) {
 
+              console.log(JSON.stringify(graphdata));
 
             // ********* ZOOM FUNCTIONS
             // currentlymouse wheel sets scale only, no panning
@@ -60,23 +61,23 @@ cedar.NodeGraph = function module() {
 
 
             setTransform = function(){
-                
+
               // uses globals tx,tx,scale and rotation
               var rotationy = h/2;
-              var rotationx = w/2;        
+              var rotationx = w/2;
               var graphtransform = `translate(${tx}, ${ty}) scale(${scale}) rotate(${rotation} ${rotationx} ${rotationy})`;
-                            
+
               graph.attr('transform', graphtransform );
-              
+
               nodegroup.each(function(d,i) {
                   d3.selectAll('text')
-                    .attr('transform', `rotate(${-1*rotation})`); 
+                    .attr('transform', `rotate(${-1*rotation})`);
               });
               // brush.attr('transform', `rotate(${antirotation}  ${rotationx} ${rotationy})`);
-            
- 
-            }; 
-            
+
+
+            };
+
             resetzoom = function() {
               // this is really a "re-center" function
                 scale = 1;
@@ -90,9 +91,9 @@ cedar.NodeGraph = function module() {
               center = [w/2,h/2];
               doZoom(z,center);
               setTransform();
-      
+
             };
-            
+
              changeRotation = function(deg){
               rotation = rotation + deg;
               setTransform();
@@ -124,7 +125,7 @@ cedar.NodeGraph = function module() {
                 }
 
                 // calculate new translate position
-                // [current mouse position] - 
+                // [current mouse position] -
                 //      ([current mouse position] - [current translate]) * magnification
                 zX = center[1] - (center[1] - tx) * zScale / scale;
                 zY = center[0] - (center[0] - ty) * zScale / scale;
@@ -137,7 +138,7 @@ cedar.NodeGraph = function module() {
                 ty = zY;
 
                 setTransform();
-        
+
             }
 
 
@@ -152,31 +153,33 @@ cedar.NodeGraph = function module() {
                 .append("svg")
                 .attr("id", "nodegraph")
                 .attr("height", h)
-                .attr("width", w);
+                .attr("width", w)
+                .on("keydown.brush", keydown)
+                .on("keyup.brush", keyup);
+
                 // .on('dblclick.zoom', resetzoom)
                 // .on('dblclick', resetzoom);
-                
-              svg.append("g")
-                .attr("class", "canvas")
-                .style("cursor","move")
-                .on('wheel.zoom', mousezoom)
 
-            
-//                .on("keydown.brush", keydown)
-//               .on("keyup.brush", keyup);
-
-            // brush is a seperate svg 'layer' for rectangle selection
 
 
             // this holds the nodes and links
             var graph = svg.append('g')
-                .attr("id","graph");
-                            
-            var brush = graph.append("g")
+                .attr("class", "canvas")
+                .attr("id","graph")
+                .on('wheel.zoom', mousezoom);
+
+            var brush = svg.append("g")
                 .attr("class", "brush")
                 .datum(function() {
                     return {selected: false, previouslySelected: false};
                 });
+
+                // .append('rect')
+                //   attr('height',h).
+                //   attr('width',w)
+                //   .attr('style','fill: rgba(10,10,10,10);');
+
+
             var nodeSizes = graphdata.nodes.map(
                 function(node, i) {
                     return (node.size+1);
@@ -192,7 +195,7 @@ cedar.NodeGraph = function module() {
                 .domain(d3.extent(linkWeights))
                 .range([minLinkWidth, maxLinkWidth]);
 
-            
+
            getWindowArea  = function(){
                 console.log("window area h, w");
                 var A = (h - margin.top - margin.bottom) *
@@ -216,14 +219,14 @@ cedar.NodeGraph = function module() {
                 var t =0.2; // coefficient determining node size variation
                 noderange = d3.extent(nodeSizes);
                 m = (
-                      ((1-t) * noderange[0] + t * noderange[1])  
+                      ((1-t) * noderange[0] + t * noderange[1])
                               / noderange[1]
                    );
-                  
+
               console.log("minnodesize = " + (m * maxNodeSize()));
               return(maxNodeSize() *m);
             };
-            
+
             nodeSizeScale = d3.scale.log().base(10)
                 .domain(d3.extent(nodeSizes))
                 .range([minNodeSize(), maxNodeSize()]);
@@ -256,14 +259,17 @@ cedar.NodeGraph = function module() {
             // create force layout
             // TODO  make link distance a function of number of nodes and size
             force = d3.layout.force()
-                .linkDistance(LinkDistance)
-                .charge(ForceCharge)
+                .linkDistance(maxNodeSize()*2)
+                .charge(-1500)
+                //.gravity(0.1)
+                //.chargeDistance(maxNodeSize()*3)
                 .size([w, h])
                 .on("tick", do_tick)
+
                 .nodes(graphdata.nodes)
-                .links(graphdata.links)
-                // .chargeDistance(100);
-                // other paramters to consider :  or 
+                .links(graphdata.links);
+
+                // other paramters to consider :  or
 
             // added for Shiny HTMLWidget; need to determine if useful
             d3.select(window).on('resize', function() {
@@ -281,8 +287,8 @@ cedar.NodeGraph = function module() {
               force.resume();
 
             };
-            
-            
+
+
             // currently unused
             changeforcecharge = function(z){
               forcecharge = force.charge();
@@ -349,7 +355,7 @@ cedar.NodeGraph = function module() {
                 nodegroup.attr("transform", function(d) {
                     return 'translate(' + [d.x, d.y] + ')';
                 });
-                
+
                 link.attr("x1", function(d) {
                         return d.source.x;
                     })
@@ -367,58 +373,61 @@ cedar.NodeGraph = function module() {
 
 
             // Glow Filter Code.  Add a filter in defs element of SVG
-            var defs = svg.append("defs");           
+            var defs = svg.append("defs");
             // SourceAlpha refers to opacity of graphic that this filter will be applied to
             // convolve that with a Gaussian with standard deviation 3 and store result
             // in  blur
-            
+
             var blurfilter = function(filterid,blurcolor) {
-            filterstr =  '<filter id="' + filterid +'" height="130%"> ' + 
-             '<feGaussianBlur in="SourceAlpha" stdDeviation="3"/>' + 
+            filterstr =  '<filter id="' + filterid +'" height="130%"> ' +
+             '<feGaussianBlur in="SourceAlpha" stdDeviation="3"/>' +
              '  <feOffset dx="2" dy="2" result="offsetblur"/>' +
              '  <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge></filter>';
-            };     
-            
-            glowfilter = '<filter id="glow">'+
-                      '    <feGaussianBlur stdDeviation="2.5" result="coloredBlur"/>'+
-                      '    <feMerge>'+
-                      '        <feMergeNode in="coloredBlur"/>'+
-                      '        <feMergeNode in="SourceGraphic"/>'+
-                      '    </feMerge>'+
-                      '</filter>';
-            
-            var filter = defs.append("filter").attr("id","colorglow");
-            filter.append("feGaussianBlur")
+            };
+
+            // attempt to reduce color saturation to indicate selection
+            // currently not used
+             var greyFilter = defs.append("filter").attr("id","greyfilter")
+              .html(  '    <feColorMatrix type="matrix" values="0.3333 0.3333 0.3333 0 0'+
+                      '                                         0.3333 0.3333 0.3333 0 0'+
+                      '                                         0.3333 0.3333 0.3333 0 0'+
+                      '                                         0      0      0      1 0"/>');
+
+            // filter helps to indicate group affiliation; glows color or stroke only
+
+            var glowFilter = defs.append("filter").attr("id","colorglow");
+            glowFilter.append("feGaussianBlur")
                   .attr("stdDeviation","3.5")
 	                .attr("result","coloredBlur");
-                  var feMerge = filter.append("feMerge");
-                  feMerge.append("feMergeNode")
-	                        .attr("in","coloredBlur");
-                  feMerge.append("feMergeNode")
-	                        .attr("in","SourceGraphic");
-          
-            // <polygon points="58.263,0.056 100,41.85" 
-            //         filter="url(#dropshadow)"/>
+            var feMerge = glowFilter.append("feMerge");
+            feMerge.append("feMergeNode")
+                      .attr("in","coloredBlur");
+            feMerge.append("feMergeNode")
+                      .attr("in","SourceGraphic");
+
+            var grayScaleFilter = defs.append("filter")
+                .attr("id","grayscale")
+                .append("feColorMatrix")
+                  .attr("type","saturate")
+                  .attr("values","5");
+
+
+            // example use
+            //         <something filter="url(#dropshadow)"/>
+            // or <something style="filter: url(#dropshadow)">
             //var filter1 = defs.append("filter").attr("id", "group1filter").attr("height", "130%");
             //filter1.append("feGaussianBlur")
             //    .attr("in", "SourceAlpha")
             //    .attr("stdDeviation", 10) //THIS IS THE SIZE OF THE GLOW
             //    .attr("result", "blur");
 
-            // original code from example that offets the blur for shadow effect
-            // we don't want an offset, so need to find a way to remove this
-            //filter1.append("feOffset")
-            //    .attr("in", "blur")
-            //    .attr("dx", 0)
-            //    .attr("dy", 0)
-            //    .attr("result", "offsetBlur");
+            // STYLES ADDED INSIDE THIS SVG ELEMENT
+            // COULD BE INSIDE THE CONTAINING  HTML PAGE ALSO
+            // OR COULD BE REF'D IN THE CSS AS url("nodegraph.html#grayscale")
 
-            // overlay original SourceGraphic over translated blurred opacity by using
-            // feMerge filter. Order of specifying inputs is important!
-            //var feMerge = filter1.append("feMerge");
-            //feMerge.append("feMergeNode")
-            //feMerge.append("feMergeNode").attr("in", "SourceGraphic");
-            // end of filter
+            var styles = svg.append('style')
+              .html('.selected { filter: url("#grayscale");}')
+
 
             var link = graph.selectAll(".link")
                 .data(graphdata.links)
@@ -471,7 +480,7 @@ cedar.NodeGraph = function module() {
                 .attr("size", function(d) {
                     return d.size;
                 });
- 
+
             nodegroup.append("text")
                 .attr("text-anchor", "middle")
                 .text(function(d) {
@@ -557,29 +566,29 @@ cedar.NodeGraph = function module() {
 
             // ### need to use this to toggle filter by detecting current group
             setGroupAppearance = function(n,groupId){
-                var className = groupClass(groupId);    
+                var className = groupClass(groupId);
                 n.classed(className, true);
                 n.style("filter", "url(#colorglow)");
-                // n.attr('filter',"url(#colorglow)");                
+                // n.attr('filter',"url(#colorglow)");
             };
-            
+
             removeGroupAppearance = function(n,groupID){
-              var className = groupClass(groupId);  
+              var className = groupClass(groupId);
               n.classed(className, false);
               var c = n.attr("class") ; // need a string here
-             
+
               console.log(/[Gg]roup/.test(c));
               if (/[Gg]roup/.test(c)) {
                   n.style("filter",null);
               }
             };
-            
+
             // add group css class to specific nodes
             setGroupID = function(groupId, nodeArray) {
                 // if(nodeArray.constructor === Array){
                 var arrayLength = nodeArray.length;
-                for (var i = 0; i < arrayLength; i++) { 
-                    var n = d3.select("#node_" + nodeArray[i]); 
+                for (var i = 0; i < arrayLength; i++) {
+                    var n = d3.select("#node_" + nodeArray[i]);
                     // instead of d3.select, should be grap select to avoid whole DOM search?
                     setGroupAppearance(n,groupId);
                 }
@@ -613,7 +622,7 @@ cedar.NodeGraph = function module() {
                 colorScale = d3.scale.linear()
                     .domain(vrange)
                     .range(nodecolors);
-                    
+
                 nodegroup.each(
                     function(d, i) {
                         n = d3.select(this).select(".node");
@@ -710,7 +719,7 @@ cedar.NodeGraph = function module() {
     nodegraph.group = function(groupId, nodeIds, remove = false) {
         // adds attribute of group ID to nodes if not currently selected
         // clear all previous nodes with attr
-       
+
         if (remove === true) {
             // remove true means remove the group
             if (nodeIds.constructor === Array) {
@@ -774,7 +783,7 @@ cedar.NodeGraph = function module() {
     nodegraph.expand = function(){
       changeLinkDistance(10);
     };
-    
+
     nodegraph.rotate = function(direction){
       direction = (typeof direction !== 'undefined') ?  direction : 1;
       changeRotation(10*direction); // 10 degrees

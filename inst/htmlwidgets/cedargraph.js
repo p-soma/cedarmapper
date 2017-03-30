@@ -120,6 +120,7 @@ HTMLWidgets.widget({
           nodedata.links = HTMLWidgets.dataframeToD3(x.links);
           nodedata.nodes = HTMLWidgets.dataframeToD3(x.nodes);
 
+          window.nodedata = nodedata;
           // TODO options = x.options
 
 
