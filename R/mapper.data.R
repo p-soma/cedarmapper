@@ -152,3 +152,16 @@ column2binary<-function(df, colname){
   colnames(binary_columns) <- paste(colname, "-",levels(factor(df[,colname])),sep="")
   return(as.data.frame(binary_columns))
 }
+
+#' equalize histogram for cut_function
+#' 
+equalize_hist <- function(d){
+  h <- hist(d, breaks = length(d))#breaks=bin_breaks)
+  cdf <- cumsum(h$counts)
+  slope <- sum(h$counts) / (max(d) - min(d))
+  cdfn <- (cdf / slope) + min(d)
+  eq_hst_vals <- rep(cdfn, h$counts)
+  eq_hst <- hist(eq_hst_vals, breaks=length(d))# breaks=bin_breaks)
+  return(as.vector(eq_hst_vals))
+  #return(eq_hst)
+}
