@@ -39,7 +39,7 @@ lense <- function(lensefun, lenseparam=NULL, partition_count=4, overlap = 0.5) {
 #' @return mapper object with all params needed for pipeline
 #' @export
 
-mapper <- function(dataset, lenses, cluster_method="single", bin_count=10, normalize_data=TRUE, selected_cols=NULL){
+mapper <- function(dataset, lenses, cluster_method="single", bin_count=10, normalize_data=TRUE, equalize_data=TRUE, selected_cols=NULL){
   # lenses have previous parameters used: lensefun, partition_count=4, overlap = 0.5,lenseparam = NULL
   
   # note: dimensions variable 
@@ -55,6 +55,7 @@ mapper <- function(dataset, lenses, cluster_method="single", bin_count=10, norma
                       "cluster_method"=cluster_method, 
                       "bin_count" = as.numeric(bin_count),
                       "normalize_data" = normalize_data,
+                      "equalize_data" = equalize_data,
                       "selected_cols" = selected_cols
                       ),
                  class="mapper")
@@ -123,7 +124,7 @@ mapper.run <- function(m, progressUpdater = NULL){
 makemapper <- function(dataset, 
               lensefun, partition_count=4, overlap = 0.5, lenseparam = NULL,
               lense2fun = NULL, lense2partition_count=NULL,lense2overlap = 0.0,lense2param = NULL,
-              bin_count=10, cluster_method= 'single', normalize_data=TRUE, 
+              bin_count=10, cluster_method= 'single', normalize_data=TRUE, equalize_data =TRUE,
               progressUpdater=NULL, selected_cols=NULL) {
   
   # create objects with the above params
@@ -149,6 +150,7 @@ makemapper <- function(dataset,
                cluster_method=cluster_method, 
                bin_count=bin_count, 
                normalize_data=normalize_data,
+               equalize_data=equalize_data,
                selected_cols=selected_cols
                )
   m <- mapper.run(m)
@@ -190,7 +192,13 @@ mapper.lense.calculate <- function(m,dimension=1){
   # fill up L member variables and return it
   # L$values is 1D vector of values from the filter/lense function with same length as mapper data
   L$values <- L$lensefun(m$d[mapper.numeric_cols(m)], L$lenseparam, m$distance)
+  
+  if (m$equalize_data){
+    L$values <- equalize_hist(L$values)
+  }
+  
   names(L$values) <- rownames(m$d)
+
   
   # calc and store aspects of resulting vector; could be expensive
   L$p0 <- min(L$values)  
@@ -433,6 +441,7 @@ cut_function  <-  function(cluster_heights, maxdist, bin_count) {
   #print(bin_breaks)
   
   height_hist <- hist(c(cluster_heights,maxdist), breaks=bin_breaks, plot=FALSE)
+  
   
   z <- ( height_hist$counts == 0 )
   if (sum(z) != 0) {
