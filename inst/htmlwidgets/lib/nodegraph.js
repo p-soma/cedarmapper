@@ -168,7 +168,7 @@ cedar.NodeGraph = function module() {
                 .attr("id","graph")
                 .on('wheel.zoom', mousezoom);
 
-            var brush = svg.append("g")
+            var brush = graph.append("g")
                 .attr("class", "brush")
                 .datum(function() {
                     return {selected: false, previouslySelected: false};
@@ -216,7 +216,7 @@ cedar.NodeGraph = function module() {
             };
 
             minNodeSize = function(){
-                var t =0.2; // coefficient determining node size variation
+                var t =0.3; // coefficient determining node size variation
                 noderange = d3.extent(nodeSizes);
                 m = (
                       ((1-t) * noderange[0] + t * noderange[1])
@@ -483,6 +483,7 @@ cedar.NodeGraph = function module() {
 
             nodegroup.append("text")
                 .attr("text-anchor", "middle")
+                .attr("pointer-events","none")
                 .text(function(d) {
                     return d.size;
                 });
