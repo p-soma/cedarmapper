@@ -338,6 +338,7 @@ shinyServer(function(input, output, session) {
                   cluster_method="single",
                   bin_count = as.numeric(input$binCountSelection),
                   normalize_data = input$normalizeOption,
+                  equalize_data = input$equalizeOption,
                   selected_cols = selected_cols)
     gm <<- mapper.run(gm)
     
