@@ -259,13 +259,15 @@ cedar.NodeGraph = function module() {
             // create force layout
             // TODO  make link distance a function of number of nodes and size
             force = d3.layout.force()
-                .linkDistance(maxNodeSize()*2)
-                .charge(-1500)
+                .linkDistance(maxNodeSize()*2.5)
+                //.chargeDistance(maxNodeSize()*3)
+                .charge(-1000)
                 //.gravity(0.1)
                 //.chargeDistance(maxNodeSize()*3)
                 .size([w, h])
                 .on("tick", do_tick)
-
+                .friction(0.66)
+                .gravity(0.165)
                 .nodes(graphdata.nodes)
                 .links(graphdata.links);
 
