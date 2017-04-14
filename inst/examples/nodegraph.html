@@ -8,8 +8,12 @@
         <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.17/d3.min.js"></script>
        <!-- <script src="../htmlwidgets/lib/d3.min.js" type="text/javascript" charset="utf-8"></script> -->
         <script src="https://code.jquery.com/jquery-1.10.2.js"></script>
-        <script src="../htmlwidgets/lib/nodegraph.js" type="text/javascript" charset="utf-8"></script>
+        <script src="../htmlwidgets/lib/nodegraphz.js" type="text/javascript" charset="utf-8"></script>
 
+        <script type="text/javascript" src="zoomandbrush.js">
+
+
+        </script>
         <script>
         var ng;
         var setAGroup = function(groupId){
@@ -42,23 +46,24 @@
         var el ="#graphcontainer"
 
         $( document ).ready( function() {
-            h = $(window).height() - 100
+            h = $(window).height() - 100;
+            w = $(window).width();
             $(el).height(h).width($(window).width())
                 .css("overflow:scroll;");
-
-            ng = cedar.NodeGraph().h(h).w(window.innerWidth);
+           selectableForceDirectedGraph(el,w,h);
+            // ng = cedar.NodeGraph().h(h).w(window.innerWidth);
             console.log(Object.getOwnPropertyNames(ng));
            // btn.text("reset");
            // btn.attr("class","btn");
            //                 btn.attr("onclick","this.resetzoom();")
 
 
-            $.getJSON( "diabetesmapper.json", function( json ) {
-                g = d3.select("#graphcontainer")
-                    .datum(json).call(ng);
-                ng.render();
-
-             });
+            // $.getJSON( "diabetesmapper.json", function( json ) {
+            //     g = d3.select("#graphcontainer")
+            //         .datum(json).call(ng);
+            //     ng.render();
+            //
+            //  });
 
              //
              // var g = d3.select("#graph");
