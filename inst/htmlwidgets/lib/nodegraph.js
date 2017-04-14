@@ -25,7 +25,7 @@ cedar.NodeGraph = function module() {
         maxLinkWidth = 8,
         minLinkWidth = 1,
         nodecolors = ['white', 'darkgreen'],
-        ForceCharge = -3000,
+        ForceCharge = -1000,
         LinkDistance = 100,
         linkdistanceFactor = 1,
         nudgefactor = 10;
@@ -260,18 +260,15 @@ cedar.NodeGraph = function module() {
             // TODO  make link distance a function of number of nodes and size
             force = d3.layout.force()
                 .linkDistance(maxNodeSize()*2.5)
-                //.chargeDistance(maxNodeSize()*3)
-                .charge(-1000)
-                //.gravity(0.1)
-                //.chargeDistance(maxNodeSize()*3)
+                .charge(ForceCharge)
                 .size([w, h])
                 .on("tick", do_tick)
-                .friction(0.66)
-                .gravity(0.165)
                 .nodes(graphdata.nodes)
                 .links(graphdata.links);
 
                 // other paramters to consider :  or
+                  //.friction(0.1)
+                //.gravity(0.165)
 
             // added for Shiny HTMLWidget; need to determine if useful
             d3.select(window).on('resize', function() {
@@ -428,7 +425,7 @@ cedar.NodeGraph = function module() {
             // OR COULD BE REF'D IN THE CSS AS url("nodegraph.html#grayscale")
 
             var styles = svg.append('style')
-              .html('.selected { filter: url("#grayscale");}')
+              .html('.selected { filter: url("#grayscale");}');
 
 
             var link = graph.selectAll(".link")
@@ -501,6 +498,8 @@ cedar.NodeGraph = function module() {
                 nodegroup.each(function(d) {
                     d.previouslySelected = shiftKey && d.selected;
                 });
+                graph.selectAll(".node").classed({'unbrushed':false});
+                
             }
 
             function do_brush(d) {
@@ -566,6 +565,13 @@ cedar.NodeGraph = function module() {
             groupClass = function(groupId) {
                 return ("group_" + groupId);
             };
+            
+            otherGroup = function(groupId){
+              // very naive function to return other group
+              if(groupId === 1) return 2;
+              return 1;
+              
+            };
 
             // ### need to use this to toggle filter by detecting current group
             setGroupAppearance = function(n,groupId){
@@ -576,14 +582,16 @@ cedar.NodeGraph = function module() {
             };
 
             removeGroupAppearance = function(n,groupID){
-              var className = groupClass(groupId);
-              n.classed(className, false);
+              n.classed(groupClass(groupId), false);
               var c = n.attr("class") ; // need a string here
-
-              console.log(/[Gg]roup/.test(c));
-              if (/[Gg]roup/.test(c)) {
-                  n.style("filter",null);
-              }
+              
+              // loop through n (node list) and remove filter 
+              var otherClassname =  groupClass(otherGroup(groupId));
+              
+              n.style("filter",function(d,i){
+                return ( this.classed(otherClassname) ? "" : this.style("filter"));
+              });
+            
             };
 
             // add group css class to specific nodes
@@ -592,7 +600,6 @@ cedar.NodeGraph = function module() {
                 var arrayLength = nodeArray.length;
                 for (var i = 0; i < arrayLength; i++) {
                     var n = d3.select("#node_" + nodeArray[i]);
-                    // instead of d3.select, should be grap select to avoid whole DOM search?
                     setGroupAppearance(n,groupId);
                 }
             };
@@ -608,7 +615,6 @@ cedar.NodeGraph = function module() {
 
             };
 
-            // remove group_x css call from ALL nodes that have it
             clearGroupID = function(groupId) {
                 // get standard class name for groups
                 var c = groupClass(groupId);
