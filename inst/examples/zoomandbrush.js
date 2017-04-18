@@ -7,7 +7,7 @@
 // shift+click on a node will add to currently selected nodes
 // click and drag on a node will drag it and other layout will move out of the way
 // click and drag on a node will move ALL selected nodes in the same way
-// nodes have encloded test (nodes are g with circles and texts)
+// nodes have encloded test (are g with circles and text
 // CURRENTLY NODES ARE NOT 'FIXED'  ; FORCE LAYOUT WILL MOVE THEM INTO POSITION
 
 
@@ -17,7 +17,7 @@ function selectableForceDirectedGraph(el,w,h) {
     var colorscale = d3.scale.category20b();
 
     width = w;
-    height = 500;
+    height = h;
 
     var nodeGraph = null;
 
@@ -278,8 +278,6 @@ function selectableForceDirectedGraph(el,w,h) {
     }
 
 
-
-
     function dragstarted(d) {
         d3.event.sourceEvent.stopPropagation();
         if (!d.selected && !shiftKey) {
@@ -331,8 +329,8 @@ function selectableForceDirectedGraph(el,w,h) {
 
 
         force = d3.layout.force()
-        .charge(-120)
-        .linkDistance(50)
+        .charge(-500)
+        .linkDistance(75)
         .nodes(graph.nodes)
         .links(graph.links)
         .size([width, height])
@@ -341,8 +339,13 @@ function selectableForceDirectedGraph(el,w,h) {
 
         nodes = node.data(graph.nodes)
               .enter().append("g")
-              .attr("class", "node")
+              .attr("class", "node");
 
+
+        titles = nodes.append("svg:title")
+                .text(function (d) {
+                    return d.y;
+                });
 
 
         circles = nodes.append("circle")
