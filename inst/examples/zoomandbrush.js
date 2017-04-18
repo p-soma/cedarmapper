@@ -7,11 +7,12 @@
 // shift+click on a node will add to currently selected nodes
 // click and drag on a node will drag it and other layout will move out of the way
 // click and drag on a node will move ALL selected nodes in the same way
+// nodes have encloded test (nodes are g with circles and texts)
 // CURRENTLY NODES ARE NOT 'FIXED'  ; FORCE LAYOUT WILL MOVE THEM INTO POSITION
 
 
 function selectableForceDirectedGraph(el,w,h) {
-    var force, width,height,
+    var force, nodes, circles, texts, width,height,
     shiftKey, ctrlKey;
     var colorscale = d3.scale.category20b();
 
@@ -75,14 +76,14 @@ function selectableForceDirectedGraph(el,w,h) {
       .x(d3.scale.identity().domain([0, width]))
       .y(d3.scale.identity().domain([0, height]))
       .on("brushstart", function(d) {
-        node.each(function(d) {
+        nodes.each(function(d) {
             d.previouslySelected = shiftKey && d.selected; });
           })
-    .on("brush", function() {
+      .on("brush", function() {
         var extent = d3.event.target.extent();
         console.log("**********extent x",extent[0][0],extent[1][0],"y",extent[0][1],extent[1][1]);
 
-        node.classed("selected", function(d) {
+        nodes.classed("selected", function(d) {
               return( d.selected = d.previouslySelected ||
             (   xScale.invert(extent[0][0]) <= d.x  &&  d.x < xScale.invert(extent[1][0])
              && yScale.invert(extent[0][1]) <= d.y  &&  d.y < yScale.invert(extent[1][1])  )
@@ -196,9 +197,14 @@ function selectableForceDirectedGraph(el,w,h) {
           });
 
 
-      node.attr("cx", function (d) { return translation[0] + scaleFactor*d.x;
+      circles.attr("cx", function (d) { return translation[0] + scaleFactor*d.x;
           })
           .attr("cy", function (d) { return translation[1] + scaleFactor*d.y;
+          });
+
+      texts.attr("x", function (d) { return translation[0] + scaleFactor*d.x;
+          })
+          .attr("y", function (d) { return translation[1] + scaleFactor*d.y;
           });
     };
 
@@ -278,25 +284,25 @@ function selectableForceDirectedGraph(el,w,h) {
         d3.event.sourceEvent.stopPropagation();
         if (!d.selected && !shiftKey) {
             // if this node isn't selected, then we have to unselect every other node
-            node.classed("selected", function(p) { return p.selected =  p.previouslySelected = false; });
+            nodes.classed("selected", function(p) { return p.selected =  p.previouslySelected = false; });
         }
 
         d3.select(this).classed("selected", function(p) { d.previouslySelected = d.selected; return d.selected = true; });
 
-        node.filter(function(d) { return d.selected; })
+        nodes.filter(function(d) { return d.selected; })
         .each(function(d) { d.fixed |= 2; })
     }
 
     function dragended(d) {
         //d3.select(self).classed("dragging", false);
-        node.filter(function(d) { return d.selected; })
+        nodes.filter(function(d) { return d.selected; })
         .each(function(d) { d.fixed &= ~6; })
 
     }
 
 
     function dragged(d) {
-        node.filter(function(d) { return d.selected; })
+        nodes.filter(function(d) { return d.selected; })
         .each(function(d) {
             d.x += d3.event.dx;
             d.y += d3.event.dy;
@@ -326,38 +332,53 @@ function selectableForceDirectedGraph(el,w,h) {
 
         force = d3.layout.force()
         .charge(-120)
-        .linkDistance(30)
+        .linkDistance(50)
         .nodes(graph.nodes)
         .links(graph.links)
         .size([width, height])
         .start();
 
 
-        node = node.data(graph.nodes).enter().append("circle")
-        .attr("r", 10)
-        .attr("cx", function(d) { return d.x; })
-        .attr("cy", function(d) { return d.y; })
-        .style("fill",function(d) { return(colorscale(Math.floor(Math.random() * 20)));  })
-        .on("dblclick", function(d) { d3.event.stopPropagation(); })
-        .on("click", function(d) {
-                  if (d3.event.defaultPrevented) return;
+        nodes = node.data(graph.nodes)
+              .enter().append("g")
+              .attr("class", "node")
 
-                  if (!shiftKey) {
-                      //if the shift key isn't down, unselect everything
-                      node.classed("selected", function(p) { return p.selected =  p.previouslySelected = false; })
-                  }
 
-                  // always select this node
-                  d3.select(this).classed("selected", d.selected = !d.previouslySelected);
-              })
-        .on("mouseup", function(d) {
-            //if (d.selected && shiftKey) d3.select(this).classed("selected", d.selected = false);
-            })
-        .call(d3.behavior.drag()
-              .on("dragstart", dragstarted)
-              .on("drag", dragged)
-              .on("dragend", dragended));
 
+        circles = nodes.append("circle")
+                .attr("r", function(d) { return( Math.sqrt(d.x)); })
+                .attr("cx", function(d) { return d.x; })
+                .attr("cy", function(d) { return d.y; })
+                .style("fill",function(d) { return(colorscale(Math.floor(Math.random() * 20)));  })
+                .on("dblclick", function(d) { d3.event.stopPropagation(); })
+                .on("click", function(d) {
+                          if (d3.event.defaultPrevented) return;
+
+                          if (!shiftKey) {
+                              //if the shift key isn't down, unselect everything
+                              node.classed("selected", function(p) { return p.selected =  p.previouslySelected = false; })
+                          }
+
+                          // always select this node
+                          d3.select(this).classed("selected", d.selected = !d.previouslySelected);
+                      })
+                .on("mouseup", function(d) {
+                    //if (d.selected && shiftKey) d3.select(this).classed("selected", d.selected = false);
+                    })
+                .call(d3.behavior.drag()
+                      .on("dragstart", dragstarted)
+                      .on("drag", dragged)
+                      .on("dragend", dragended));
+
+
+        texts = nodes.append("text")
+            .attr("pointer-events","none")
+            .attr("class", "nodetext")
+            .attr("dy","0.1em")
+            .attr("x",  function(d) { return d.x; })
+            .attr("y",  function(d) { return d.y; })
+            .attr("text-anchor","middle")
+            .text(function(d) { return Math.floor(d.x)});
 
         force.on("tick", tick);
 
