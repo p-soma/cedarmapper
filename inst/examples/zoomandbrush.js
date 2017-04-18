@@ -13,7 +13,7 @@
 function selectableForceDirectedGraph(el,w,h) {
     var force, width,height,
     shiftKey, ctrlKey;
-
+    var colorscale = d3.scale.category20b();
 
     width = w;
     height = 500;
@@ -334,9 +334,10 @@ function selectableForceDirectedGraph(el,w,h) {
 
 
         node = node.data(graph.nodes).enter().append("circle")
-        .attr("r", 4)
+        .attr("r", 10)
         .attr("cx", function(d) { return d.x; })
         .attr("cy", function(d) { return d.y; })
+        .style("fill",function(d) { return(colorscale(Math.floor(Math.random() * 20)));  })
         .on("dblclick", function(d) { d3.event.stopPropagation(); })
         .on("click", function(d) {
                   if (d3.event.defaultPrevented) return;
