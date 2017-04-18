@@ -5,10 +5,10 @@
         <title>nodegraph test</title>
 
         <link rel="stylesheet" href="../htmlwidgets/lib/cedargraph.css" type="text/css" media="screen">
-        <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.17/d3.min.js"></script>
-       <!-- <script src="../htmlwidgets/lib/d3.min.js" type="text/javascript" charset="utf-8"></script> -->
+        <!-- <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.17/d3.min.js"></script> -->
+       <script src="../htmlwidgets/lib/d3.min.js" type="text/javascript" charset="utf-8"></script>
         <script src="https://code.jquery.com/jquery-1.10.2.js"></script>
-        <script src="../htmlwidgets/lib/nodegraphz.js" type="text/javascript" charset="utf-8"></script>
+        <!-- <nothing script src="../htmlwidgets/lib/nodegraphz.js" type="text/javascript" charset="utf-8"></script> -->
 
         <script type="text/javascript" src="zoomandbrush.js">
 
@@ -32,13 +32,14 @@
     </head>
     <body id="nodegraphwindow" onload="">
         <h3>Demonstrate NodeGraph D3 Javascript</h3>
-        <div id="graphcontainer" ></div>
+        <div id="graphcontainer" style="height=500px;" height="500px" ></div>
         <input id = "btn" type="button" value="Show values" />
         <input id = "grp1btn" type="button" value="group 1" onclick="setAGroup(1);"/>
         <input id = "grp2btn" type="button" value="group 2" onclick="setAGroup(2);"/>
         <input id = "resetbtn" type="button" value="reset" onclick="ng.reset();"/>
         <!-- TO DO : test api for removing groups -->
-        <div id="graph2"></div>
+
+
         <script type="text/javascript">
             // create nodegraph
             // nodegraph = cedar.NodeGraph().height(500).width(600).data
@@ -46,13 +47,12 @@
         var el ="#graphcontainer"
 
         $( document ).ready( function() {
-            h = $(window).height() - 100;
+            h = 200 // $(window).height() - 100;
             w = $(window).width();
             $(el).height(h).width($(window).width())
                 .css("overflow:scroll;");
            selectableForceDirectedGraph(el,w,h);
             // ng = cedar.NodeGraph().h(h).w(window.innerWidth);
-            console.log(Object.getOwnPropertyNames(ng));
            // btn.text("reset");
            // btn.attr("class","btn");
            //                 btn.attr("onclick","this.resetzoom();")
