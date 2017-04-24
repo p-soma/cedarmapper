@@ -238,7 +238,7 @@ cedar.NodeGraph = function module() {
           }
 
           function lasso_disable() {
-          	lasso_area.attr("width", 0).attr("height", 0)
+          	lasso_area.attr("width", 0).attr("height", 0);
           }
 
           // Lasso functions to execute while lassoing
@@ -284,7 +284,7 @@ cedar.NodeGraph = function module() {
 
             // Reset the style of the not selected dots
             lasso.items().filter(function(d) {
-                return d.selected === false
+                return d.selected === false;
               })
               .classed({
                 "not_possible": false,
@@ -306,7 +306,6 @@ cedar.NodeGraph = function module() {
             .on("draw", lasso_draw) // lasso draw function
             .on("end", lasso_end); // lasso end function
 
-        graph.call(lasso);
             // NODE INFORMATIONAL FUNCTIONS
             var nodeSizes = graphdata.nodes.map(
                 function(node, i) {
@@ -397,6 +396,10 @@ cedar.NodeGraph = function module() {
                   //.friction(0.1)
                 //.gravity(0.165)
 
+                      
+            graph.call(lasso);
+            
+
             // added for Shiny HTMLWidget; need to determine if useful
             d3.select(window).on('resize', function() {
                 window_w = parseInt(_selection.style('width'), 10);
@@ -451,10 +454,10 @@ cedar.NodeGraph = function module() {
                 case 67:  // C KEY triggers 'CENTERING'
                   center_view();
                   break;
-                };
+                }
 
               // just shift key
-              shiftKey = d3.event.shiftKey // || d3.event.metaKey;
+              shiftKey = d3.event.shiftKey || d3.event.metaKey;
 
               if (shiftKey) {
                   zoom_disable();
@@ -470,7 +473,7 @@ cedar.NodeGraph = function module() {
                 lasso_disable();
                 drag_enable();
                 zoom_enable();
-              };
+              }
 
             }
 
@@ -823,25 +826,16 @@ cedar.NodeGraph = function module() {
                 nodegroup.classed("selected", false);
                 dispatch.nodeselected();
             };
-            
-            
 
         }); // end of inner function
-
-
-
+  
     } // end of main nodegraph function
-
-
-
-
 
 
     //********* API starts here***************
     nodegraph.render = function() {
         setFillColor();        
         force.start(); 
-        lasso.items(nodegroup);
     };
 
     nodegraph.w = function(_x) {
