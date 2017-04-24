@@ -41,7 +41,7 @@ cedar.NodeGraph = function module() {
     
         var  changeforcecharge,changeLinkDistance; // deprecated and will be removed
 
-    var nodes,lasso;
+    var nodes,nodegroup, lasso;
     
     function nodegraph(_selection) {
 
@@ -185,7 +185,7 @@ cedar.NodeGraph = function module() {
             .each(function(d) {
               d.fixed &= ~6;
             })
-
+            dispatch.nodeselected();
         }        
         
         // *** MAIN SVG ELEMENT
@@ -243,7 +243,6 @@ cedar.NodeGraph = function module() {
 
           // Lasso functions to execute while lassoing
           function lasso_start() {
-            d3.selectAll(".nodes").classed("group1", false);
             lasso.items()
               .classed({
                 "not_possible": true,
@@ -292,6 +291,7 @@ cedar.NodeGraph = function module() {
                 "possible": false
               });
 
+              dispatch.nodeselected();
               lasso_disable();
 
           }
