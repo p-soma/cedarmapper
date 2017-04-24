@@ -28,115 +28,286 @@ cedar.NodeGraph = function module() {
         ForceCharge = -1000,
         LinkDistance = 100,
         linkdistanceFactor = 1,
-        nudgefactor = 10;
-
-        var scaleFactor = 1;
-        var translation = [0,0];
+        nudgefactor = 10,
+        scaleFactor = 1,
+        translation = [0,0];
+    
+    
     // functions called by public API
-
     var resetzoom, manualzoom, force, graph, svg, nodeSizeScale, setFillColor,
-    getSelected, clearSelected, getValues, setValues, forceresize, nodevalues,
-    nudge, changeforcecharge,changeLinkDistance,changeRotation,setTransform;
-    var setGroupID, clearGroupID, removeGroupID; // function used by external API
-    var nodes;
+        getSelected, clearSelected, getValues, setValues, forceresize, nodevalues,
+        nudge, rotate, setTransform,
+        setGroupID, clearGroupID, removeGroupID; 
+    
+        var  changeforcecharge,changeLinkDistance; // deprecated and will be removed
 
+    var nodes,lasso;
+    
     function nodegraph(_selection) {
 
-        var width =  _selection.innerWidth;
-        var height = _selection.innerHeight;
-
+        var shiftKey;
+        
         _selection.attr("tabindex", 1);
 
         _selection.each(function(graphdata) {
 
-              console.log(JSON.stringify(graphdata));
-
-            // ********* ZOOM FUNCTIONS
-            // currentlymouse wheel sets scale only, no panning
-
-            // zoomable scales
-            var x_scale = d3.scale.linear().domain([0, w]).range([0, w]);
-            var y_scale = d3.scale.linear().domain([0, h]).range([0, h]);
+            // DEBUG
+            //console.log(JSON.stringify(graphdata));
 
             // initial values
             var tx = 0,ty = 0,scale = 1,rotation=0;
 
 
-            setTransform = function(){
-
+            setTransform = function(){ // TO DO USE PARAMETERS h and w
+              // for ROTATION only currently; let zoom handle translate and scale
               // uses globals tx,tx,scale and rotation
               var rotationy = h/2;
               var rotationx = w/2;
               var graphtransform = `translate(${tx}, ${ty}) scale(${scale}) rotate(${rotation} ${rotationx} ${rotationy})`;
+              var bbox, thisnode;
 
+              // add svg transform to whole graph
               graph.attr('transform', graphtransform );
 
+              // since whole graph is rotated, now counter rotate the text inside nodes
+              // but with the bbox center as center of rotation (not graph center)
               nodegroup.each(function(d,i) {
-                  d3.selectAll('text')
-                    .attr('transform', `rotate(${-1*rotation})`);
+                  thisnode = d3.select(this)
+                  bbox = thisnode.node().getBBox(); //bounding box of rotated nodegroup, to find center x,y
+                  thisnode.attr('transform', `rotate(${-1*rotation}  ${bbox.x+ bbox.width/2} ${bbox.y + bbox.height/2} )`);
               });
               // brush.attr('transform', `rotate(${antirotation}  ${rotationx} ${rotationy})`);
-
-
             };
 
 
-            //  changeRotation = function(deg){
-            //   rotation = rotation + deg;
-            //   setTransform();
-            // };
+            rotate = function(deg){
+              rotation = rotation + deg;
+              setTransform();
+            };
 
 
             /*** Configure zoom behaviour ***/
+
+            // zoomable scales
+            var x_scale = d3.scale.linear().domain([0, w ]).range([0, w]);
+            var y_scale = d3.scale.linear().domain([0, h ]).range([0, h]);
+
             var zoombehavior = d3.behavior.zoom()
                 .scaleExtent([0.1,10]) //allow 10 times zoom in or out
-                .on("zoom", semanticzoom);
+                .x(x_scale)
+                .y(y_scale)
+                .on('zoom', semanticzoom);
 
             function semanticzoom() {
-                console.log("zoom", d3.event.translate, d3.event.scale);
-                scaleFactor = d3.event.scale;
-                translation = d3.event.translate;
+                // debug console.log("zoom", d3.event.translate, d3.event.scale);
+                scaleFactor = d3.event.scale;  // set global
+                translation = d3.event.translate;  //  set global
                 do_tick(); //update positions
             }
-
-            // *** MAIN SVG ELEMENT
-            svg = d3.select(this)
-                .on("keydown", keydown)
-                .on("keyup", keyup)
-                .classed("svg-container", true)
-                .each(function() {
-                    this.focus();
-                })
-                .append("svg")
-                .attr("id", "nodegraph")
-                .attr("height", h)
-                .attr("width", w)
-                .on("keydown.brush", keydown)
-                .on("keyup.brush", keyup);
-
-                // .on('dblclick.zoom', resetzoom)
-                // .on('dblclick', resetzoom);
+            
+            function zoom_disable(){
+              graph.call(zoombehavior)
+                .on("zoom", null)            
+                .on("mousedown.zoom", null)
+                .on("touchstart.zoom", null)
+                .on("touchmove.zoom", null)
+                .on("touchend.zoom", null);
+                
+            }
+            
+            function zoom_enable(){
+                graph.call(zoombehavior).on("zoom",semanticzoom);
+            }
+            
 
 
 
-            // this holds the nodes and links
-            var graph = svg.append('g')
-                .attr("class", "canvas")
-                .attr("id","graph")
-                .call(zoombehavior)
+         var drag  = d3.behavior.drag()
 
-            var brush = graph.append("g")
-                .attr("class", "brush")
-                .datum(function() {
-                    return {selected: false, previouslySelected: false};
-                });
+         function drag_enable(){
+            drag.on("dragstart", dragstarted)
+            .on("drag", dragged)
+            .on("dragend", dragended);
+        }
+  
+        function drag_disable(){
+            drag.on("dragstart", null)
+            .on("drag", null)
+            .on("dragend", null);
+        }
+        
+        drag_enable();
+  
 
-                // .append('rect')
-                //   attr('height',h).
-                //   attr('width',w)
-                //   .attr('style','fill: rgba(10,10,10,10);');
+        function dragstarted(d) {
+          d3.event.sourceEvent.stopPropagation();
+          if (!d.selected && !shiftKey) {
+            // if this node isn't selected, then we have to unselect every other node
+            nodes.classed("selected", function(p) {
+              return p.selected = p.previouslySelected = false;
+            });
+          }
+
+          d3.select(this).classed("selected", function(p) {
+            d.previouslySelected = d.selected;
+            return d.selected = true;
+          });
+
+          nodes.filter(function(d) {
+              return d.selected;
+            })
+            .each(function(d) {
+              d.fixed |= 2;
+            })
+        }
 
 
+        function dragged(d) {
+          nodes.filter(function(d) {
+              return d.selected;
+            })
+            .each(function(d) {
+              d.x += d3.event.dx;
+              d.y += d3.event.dy;
+
+              d.px += d3.event.dx;
+              d.py += d3.event.dy;
+            })
+
+          force.resume();
+        }
+        
+        function dragended(d) {
+          //d3.select(self).classed("dragging", false);
+          nodes.filter(function(d) {
+              return d.selected;
+            })
+            .each(function(d) {
+              d.fixed &= ~6;
+            })
+
+        }        
+        
+        // *** MAIN SVG ELEMENT
+        svg = d3.select(this)
+            .on("keydown", keydown)
+            .on("keyup", keyup)
+            .classed("svg-container", true)
+            .each(function() {
+                this.focus();
+            })
+            .append("svg")
+            .attr("id", "nodegraph")
+            .attr("height", h)
+            .attr("width", w);
+
+
+        // this holds the nodes and links
+        var graph = svg.append('g')
+            .attr("class", "canvas")
+            .attr("id","graph")
+            .call(zoombehavior);
+
+
+        // not sure if this rect is needed but seems to add a glue layer for the lasso
+        var rect = graph.append('svg:rect')
+            .attr('width', w)
+            .attr('height', h)
+            .attr('fill', 'transparent')
+            .attr('opacity', 0.5)
+            .attr('stroke', 'transparent')
+            .attr('stroke-width', 1)
+            .attr("id", "zrect");
+            // .datum(function() {
+            //     return {selected: false, previouslySelected: false};
+            // });
+          // lassoing
+          // Create the area where the lasso event can be triggered
+          var lasso_area = graph.append("rect")
+            .attr("id", "lasso_area")
+            .attr("x",-(w)/2)
+            .attr("y",-(w)/2)
+            .attr("width", 0)
+            .attr("height", 0)
+            .style('cursor', 'crosshair')
+            .style('background', "grey")
+            .style("opacity", 0.05);
+
+          function lasso_enable(){
+           	lasso_area.attr("width", w*4).attr("height", h*4);
+          }
+
+          function lasso_disable() {
+          	lasso_area.attr("width", 0).attr("height", 0)
+          }
+
+          // Lasso functions to execute while lassoing
+          function lasso_start() {
+            d3.selectAll(".nodes").classed("group1", false);
+            lasso.items()
+              .classed({
+                "not_possible": true,
+                "selected": false
+              }); // style as not possible
+          }
+
+          function lasso_draw() {
+            // Style the possible nodes
+            lasso.items()
+              .filter(function(d) {
+                return d.possible === true
+              })
+              .classed({
+                "not_possible": false,
+                "possible": true
+              });
+
+            // Style the not possible nodes
+            lasso.items().filter(function(d) {
+                return d.possible === false
+              })
+              .classed({
+                "not_possible": true,
+                "possible": false
+              });
+          }
+
+          function lasso_end() {
+            // Style the selected dots
+            lasso.items().filter(function(d) {
+                return d.selected === true
+              })
+              .classed({
+                "not_possible": false,
+                "possible": false
+              })
+              .classed("selected", true);
+
+            // Reset the style of the not selected dots
+            lasso.items().filter(function(d) {
+                return d.selected === false
+              })
+              .classed({
+                "not_possible": false,
+                "possible": false
+              });
+
+              lasso_disable();
+
+          }
+
+          // Define the lasso GLOBAL
+          lasso = d3.lasso()
+            .closePathDistance(300) // max distance for the lasso loop to be closed
+            .closePathSelect(true) // can items be selected by closing the path?
+            .hoverSelect(true) // can items by selected by hovering over them?
+            .area(lasso_area)
+            .on("start", lasso_start) // lasso start function
+            .on("draw", lasso_draw) // lasso draw function
+            .on("end", lasso_end); // lasso end function
+
+        graph.call(lasso);
+            // NODE INFORMATIONAL FUNCTIONS
             var nodeSizes = graphdata.nodes.map(
                 function(node, i) {
                     return (node.size+1);
@@ -197,8 +368,7 @@ cedar.NodeGraph = function module() {
             };
 
 
-            // holder for shiftkey detection
-            var shiftKey;
+            
 
             // dispatch is D3's event model, this function is wired to any functions
             // that alter node selection (click, brush, etc)
@@ -236,21 +406,10 @@ cedar.NodeGraph = function module() {
                 }
             });
 
-            changeLinkDistance = function(z){
-              var LinkDistance = force.linkDistance();
-              LinkDistance  = LinkDistance + z;
-              force.linkDistance(LinkDistance);
-              force.resume();
-
-            };
-
-
             // currently unused
-            changeforcecharge = function(z){
-              forcecharge = force.charge();
-              forcecharge  = forcecharge + z;
-              force.charge(forcecharge);
-              force.alpha(0.25).start();
+            changeForceCharge = function(z){
+              force.charge(force.charge()+z);
+              force.start();
               console.log(force.charge());
             };
 
@@ -264,28 +423,55 @@ cedar.NodeGraph = function module() {
 
             // graph moving UI: allow for arrow keys to slightly move all selected (fixed) nodes
             function keydown() {
-                console.log('keydown');
-                if (!d3.event.metaKey) switch (d3.event.keyCode) {
-                        case 38:
-                            nudge(0, -1);
-                            break; // UP
-                        case 40:
-                            nudge(0, +1);
-                            break; // DOWN
-                        case 37:
-                            nudge(-1, 0);
-                            break; // LEFT
-                        case 39:
-                            nudge(+1, 0);
-                            break; // RIGHT
-                    }
-                    // detect shiftkey event and set shiftkey var
-                shiftKey = d3.event.shiftKey || d3.event.metaKey;
-            }
 
-            // detect shiftkey event and set shiftkey var
+              if (!d3.event.metaKey) switch (d3.event.keyCode) {
+                case 82:  // r
+                  rotation = rotation + 10;
+                  setTransform();
+                  break;
+                case 76:  // l
+                  rotation = rotation - 10;
+                  setTransform();
+                  break;
+                case 88: // x
+                  reset();
+                  break;
+                case 38:// UP
+                  nudge(0, -1);
+                  break;
+                case 40: // DOWN
+                  nudge(0, +1);
+                  break;
+                case 37: // LEFT
+                  nudge(-1, 0);
+                  break;
+                case 39: // RIGHT
+                  nudge(+1, 0);
+                  break;
+                case 67:  // C KEY triggers 'CENTERING'
+                  center_view();
+                  break;
+                };
+
+              // just shift key
+              shiftKey = d3.event.shiftKey // || d3.event.metaKey;
+
+              if (shiftKey) {
+                  zoom_disable();
+                  drag_disable();
+                  lasso_enable();
+              }
+            }
+            
             function keyup() {
-                shiftKey = d3.event.shiftKey || d3.event.metaKey;
+              shiftKey = d3.event.shiftKey || d3.event.metaKey;
+              if (d3.event.keyCode == 16) { // || d3.event.metaKey;
+                // ctrlKey = d3.event.ctrlKey;
+                lasso_disable();
+                drag_enable();
+                zoom_enable();
+              };
+
             }
 
            nudge= function(dx, dy) {
@@ -322,33 +508,24 @@ cedar.NodeGraph = function module() {
                     });
 
 
+                // NODES are circles and texts in nodegroup (g).  Both must be moved around at each tick
                 nodes.attr("cx", function (d) {
-
-                    //return(d.x)
+               //return(d.x)
                     return translation[0] + scaleFactor*d.x;
                     })
                     .attr("cy", function (d) {
                         return translation[1] + scaleFactor*d.y;
                     });
-
-                // // Translate the groups
-                // nodegroup.attr("transform", function(d) {
-                //     return 'translate(' + [d.x, d.y] + ')';
-                // });
-                //
-                //
-                // link.attr("x1", function(d) {
-                //         return d.source.x;
-                //     })
-                //     .attr("y1", function(d) {
-                //         return d.source.y;
-                //     })
-                //     .attr("x2", function(d) {
-                //         return d.target.x;
-                //     })
-                //     .attr("y2", function(d) {
-                //         return d.target.y;
-                //     });
+                    
+                nodetexts.attr("x", function (d) {
+               //return(d.x)
+                    return translation[0] + scaleFactor*d.x;
+                    })
+                    .attr("y", function (d) {
+                        return translation[1] + scaleFactor*d.y;
+                    });
+                    
+                setTransform();
 
             }
 
@@ -407,7 +584,7 @@ cedar.NodeGraph = function module() {
             // OR COULD BE REF'D IN THE CSS AS url("nodegraph.html#grayscale")
 
             var styles = svg.append('style')
-              .html('.selected { filter: url("#grayscale");}');
+              .html('.selected { filter: url("#colorglow");}');
 
 
             var link = graph.selectAll(".link")
@@ -435,12 +612,12 @@ cedar.NodeGraph = function module() {
                     return d.y;
                 })
                 .classed('nodegroup', true)
-                .on("dblclick", releaseFixed)
+                .call(drag)
                 .on("click", function() {
                     d3.select(this).classed("selected", !d3.select(this).classed("selected"));
                     dispatch.nodeselected();
                 })
-                // .call(force.drag().on("dragstart", setFixed));
+               
 
 
            nodes = nodegroup
@@ -462,7 +639,7 @@ cedar.NodeGraph = function module() {
                     return d.size;
                 });
 
-            nodegroup.append("text")
+            nodetexts = nodegroup.append("text")
                 .attr("text-anchor", "middle")
                 .attr("pointer-events","none")
                 .text(function(d) {
@@ -470,52 +647,58 @@ cedar.NodeGraph = function module() {
                 });
 
 
+           lasso.items(nodegroup);
+           
+          // DISABLE BRUSH
+           
             // ***** BRUSH FUNCTIONS
             // note this brush layer in the svg element must be defined before the
             // nodegroup elements, or it covers the nodes and they can't be selected
             // possible alternative  to explore is to set the z-layers
+            // TODO delete these brush functions as they are not used by lasso
+            // function brush_start(d) {
+//                 // first, save previously selected IF shift+mouse
+//                 nodegroup.each(function(d) {
+//                     d.previouslySelected = shiftKey && d.selected;
+//                 });
+//                 graph.selectAll(".node").classed({'unbrushed':false});
+//
+//             }
+//
+//             function do_brush(d) {
+//                 var extent = d3.event.target.extent();
+//                 nodegroup.classed("selected", function(d) {
+//                     return d.selected = d.previouslySelected ||
+//                         (extent[0][0] <= d.x && d.x < extent[1][0] &&
+//                             extent[0][1] <= d.y && d.y < extent[1][1]);
+//                 });
+//                 // update selection during brush
+//                 dispatch.nodeselected();
+//             }
+//
+//             function brush_end() {
+//                 d3.event.target.clear();
+//                 dispatch.nodeselected();
+//                 d3.select(this).call(d3.event.target);
+//             }
 
-            function brush_start(d) {
-                // first, save previously selected IF shift+mouse
-                nodegroup.each(function(d) {
-                    d.previouslySelected = shiftKey && d.selected;
-                });
-                graph.selectAll(".node").classed({'unbrushed':false});
 
-            }
+          // TODO delete this section
+          // brush.call(d3.svg.brush()
+          //     .x(x_scale)
+          //       .y(y_scale)
+          //       .on("brushstart", brush_start)
+          //       .on("brush", do_brush)
+          //       .on("brushend", brush_end)
+          //       );
 
-            function do_brush(d) {
-                var extent = d3.event.target.extent();
-                nodegroup.classed("selected", function(d) {
-                    return d.selected = d.previouslySelected ||
-                        (extent[0][0] <= d.x && d.x < extent[1][0] &&
-                            extent[0][1] <= d.y && d.y < extent[1][1]);
-                });
-                // update selection during brush
-                dispatch.nodeselected();
-            }
-
-            function brush_end() {
-                d3.event.target.clear();
-                dispatch.nodeselected();
-                d3.select(this).call(d3.event.target);
-            }
-
-
-
-          brush.call(d3.svg.brush()
-              .x(x_scale)
-                .y(y_scale)
-                .on("brushstart", brush_start)
-                .on("brush", do_brush)
-                .on("brushend", brush_end)
-                );
 
             //var labels = nodegroup.append("text")
             //      .attr("dx", 12)
             //      .attr("dy", "1em")
             //      .text(function(d) { return d.values; })
             //      .attr("style","display:none;");
+
 
             getValues = function() {
                 // create a new array of the nodevalue attribute on all nodes
@@ -640,6 +823,8 @@ cedar.NodeGraph = function module() {
                 nodegroup.classed("selected", false);
                 dispatch.nodeselected();
             };
+            
+            
 
         }); // end of inner function
 
@@ -654,8 +839,9 @@ cedar.NodeGraph = function module() {
 
     //********* API starts here***************
     nodegraph.render = function() {
-        setFillColor();
-        force.start();
+        setFillColor();        
+        force.start(); 
+        lasso.items(nodegroup);
     };
 
     nodegraph.w = function(_x) {
@@ -670,6 +856,8 @@ cedar.NodeGraph = function module() {
         return this;
     };
 
+    nodegraph.lasso = function() { return lasso;};
+    
     nodegraph.resize = function(_w, _h) {
         console.log("resizing from JS with w=" + _w + " and height=" + _h);
         if (!arguments.length) return 0;
@@ -707,9 +895,12 @@ cedar.NodeGraph = function module() {
     // THIS SHOULD BE SIMPLIFIED
     // INTERNAL FUNCTIONS ARE setGroupID, clearGroupID, removeGroupID
 
-    nodegraph.group = function(groupId, nodeIds, remove = false) {
+    nodegraph.group = function(groupId, nodeIds, remove) {
         // adds attribute of group ID to nodes if not currently selected
         // clear all previous nodes with attr
+
+        if (arguments.length < 3) { remove = false; }
+
 
         if (remove === true) {
             // remove true means remove the group
@@ -729,7 +920,8 @@ cedar.NodeGraph = function module() {
     };
 
     nodegraph.reforce = function() {
-        force.nodes(this.nodes.data).links(this.links.data);
+        // doesn't work
+        force.nodes(nodes.data).links(links.data);
 
     };
 
@@ -767,17 +959,9 @@ cedar.NodeGraph = function module() {
       manualzoom(0.1);
     };
 
-    nodegraph.shrink = function(){
-      changeLinkDistance(-10);
-    };
-
-    nodegraph.expand = function(){
-      changeLinkDistance(10);
-    };
-
     nodegraph.rotate = function(direction){
       direction = (typeof direction !== 'undefined') ?  direction : 1;
-      changeRotation(10*direction); // 10 degrees
+      rotate(10*direction); // 10 degrees
     };
 
 //    nodegraph.shrinknodes = function(){

@@ -68,8 +68,6 @@ function selectableForceDirectedGraph(el, w, h) {
                    n = d3.select(this);
                    // n.attr('transform', graphtransform );
                    bbox = n.node().getBBox();
-
-                   console.log("x", bbox.x);
                    n.selectAll('text').attr('transform', `rotate(${-1*rotation}  ${bbox.x+ bbox.width/2} ${bbox.y + bbox.height/2} )`);
                   //  d3.selectAll('text')
                   //   .attr('transform', `rotate(${-1*rotation} ${rotationx} ${rotationy})`);
@@ -100,35 +98,42 @@ function selectableForceDirectedGraph(el, w, h) {
 
   vis.attr('id', 'vis')
 
+// Define the lasso
+     lasso_area = vis.append("rect")
+      .attr("id", "lasso_area")
+      .attr("x",-(w)/2)
+      .attr("y",-(w)/2)
+      .attr("width", 0)
+      .attr("height", 0)
+      .style('cursor', 'crosshair')
+      .style('background', "grey")
+      .style("opacity", 0.05);
+      
+    var lasso = d3.lasso()
+      .closePathDistance(300) // max distance for the lasso loop to be closed
+      .closePathSelect(true) // can items be selected by closing the path?
+      .hoverSelect(true) // can items by selected by hovering over them?
+      .area(lasso_area)
+      .on("draw", lasso_draw) // lasso draw function
+      .on("end", lasso_end); 
   // lassoing
   // Create the area where the lasso event can be triggered
-  var lasso_area = vis.append("rect")
-    .attr("id", "lasso_area")
-    .attr("x",-(w)/2)
-    .attr("y",-(w)/2)
-    .attr("width", 0)
-    .attr("height", 0)
-    .style('cursor', 'crosshair')
-    .style('background', "grey")
-    .style("opacity", 0.05);
 
-  function lasso_enable(){
+
+  lasso.enable = function(){
    	lasso_area.attr("width", w*4).attr("height", h*4);
   }
 
-  function lasso_disable() {
+  lasso.disable = function() {
   	lasso_area.attr("width", 0).attr("height", 0)
   }
 
   // Lasso functions to execute while lassoing
-  function lasso_start() {
+  lasso.on("start",function() {
     d3.selectAll(".nodes").classed("group1", false);
     lasso.items()
-      .classed({
-        "not_possible": true,
-        "selected": false
-      }); // style as not possible
-  }
+      .classed({ "not_possible": true, "selected": false}); // style as not possible
+  });
 
   function lasso_draw() {
     // Style the possible nodes
@@ -171,21 +176,11 @@ function selectableForceDirectedGraph(el, w, h) {
         "possible": false
       });
 
-      lasso_disable();
+      lasso.disable();
 
   }
 
-  // Define the lasso
-  var lasso = d3.lasso()
-    .closePathDistance(300) // max distance for the lasso loop to be closed
-    .closePathSelect(true) // can items be selected by closing the path?
-    .hoverSelect(true) // can items by selected by hovering over them?
-    .area(lasso_area)
-    .on("start", lasso_start) // lasso start function
-    .on("draw", lasso_draw) // lasso draw function
-    .on("end", lasso_end); // lasso end function
-
-
+// lasso end function
 
   var link = vis.append("g")
     .attr("class", "link")
@@ -259,7 +254,7 @@ function selectableForceDirectedGraph(el, w, h) {
   };
 
   function reset(){
-    zoomer.translate([0,0]).scale(1).
+      zoomer.translate([0,0]).scale(1);
     // svg_graph.call(zoomer.transform, d3.zoomIdentity);
     rotation = 0;
     setTransform()
@@ -304,8 +299,16 @@ function selectableForceDirectedGraph(el, w, h) {
   };
 
 
-  function nude(x,y){
-    ;
+  function nudge(x,y){ 
+      console.log('current zoom', zoomer.translate());
+      console.log('nudge',x,y);
+
+      x = zoomer.translate()[0] + x;
+      y = zoomer.translate()[1] + y;
+            console.log('result', [x, y]);
+      zoomer.translate([x,y]);
+      semanticzoom();
+      tick();
   }
 
   function keydown() {
@@ -340,11 +343,7 @@ function selectableForceDirectedGraph(el, w, h) {
       };
 
     // just shift key
-    shiftKey = d3.event.shiftKey // || d3.event.metaKey;
-    console.log('skey? ', d3.event.keyCode);
-    // ctrlKey = d3.event.ctrlKey;
-
-
+    shiftKey = d3.event.shiftKey || d3.event.metaKey;
 
     if (shiftKey) {
       // disable zoom when shift key
@@ -355,29 +354,47 @@ function selectableForceDirectedGraph(el, w, h) {
         .on("touchend.zoom", null);
 
       //svg_graph.on('zoom', null);
-      vis.selectAll('g.gnode')
-        .on('mousedown.drag', null);
+      drag_disable()
+      // vis.selectAll('g.node')
+      //   .on('mousedown.drag', null);
 
-      lasso_enable();
+      lasso.enable();
 
     }
   }
 
   function keyup() {
-    // shiftKey = d3.event.shiftKey // || d3.event.metaKey;
+    shiftKey = d3.event.shiftKey // || d3.event.metaKey;
     console.log('shift up? ', d3.event.keyCode);
     if (d3.event.keyCode == 16) { // || d3.event.metaKey;
       // ctrlKey = d3.event.ctrlKey;
       // turns off with any key up?
 
-      lasso_disable();
+      lasso.disable();
+      drag_enable();
       svg_graph.call(zoomer);
     };
 
   }
 
 
+   var drag  = d3.behavior.drag()
+      .on("dragstart", dragstarted)
+      .on("drag", dragged)
+      .on("dragend", dragended);
 
+  function drag_enable(){
+      drag.on("dragstart", dragstarted)
+      .on("drag", dragged)
+      .on("dragend", dragended);
+  }
+  
+  function drag_disable(){
+      drag.on("dragstart", null)
+      .on("drag", null)
+      .on("dragend", null);
+  }
+  
 
   function dragstarted(d) {
     d3.event.sourceEvent.stopPropagation();
@@ -483,47 +500,29 @@ function selectableForceDirectedGraph(el, w, h) {
       .on("mouseup", function(d) {
         //if (d.selected && shiftKey) d3.select(this).classed("selected", d.selected = false);
       })
-      .call(d3.behavior.drag()
-        .on("dragstart", dragstarted)
-        .on("drag", dragged)
-        .on("dragend", dragended));
-
-
+      .call(drag)
 
 
     circles = nodes.append("circle")
       .attr("r", function(d) {
         return (Math.floor(Math.random()*20))+15;
-      })
-      .attr("cx", function(d) {
-        return d.x;
-      })
-      .attr("cy", function(d) {
-        return d.y;
-      })
+      })      
       .style("fill", function(d) {
         return (colorscale(Math.floor(Math.random() * 20)));
-      })
-      ;
+      });
 
 
     texts = nodes.append("text")
         .attr("text-anchor", "middle")
         .attr("pointer-events","none")
         .attr("class", "nodetext")
-        .attr("x", function(d) {
-          return d.x;
-        })
-        .attr("y", function(d) {
-          return d.y;
-        })
-       .text(function(d) {
+        .text(function(d) {
          return Math.floor(d.x)
        });
 
 
 
-
+     drag_enable();
     lasso.items(nodes);
     vis.call(lasso);
     force.on("tick", tick);
