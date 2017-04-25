@@ -198,7 +198,7 @@ mapper.lense.calculate <- function(m,dimension=1){
   }
   
   names(L$values) <- rownames(m$d)
-
+  # TODO : order L$values in place, but first determine if order is relied upon elsewhere
   
   # calc and store aspects of resulting vector; could be expensive
   L$p0 <- min(L$values)  

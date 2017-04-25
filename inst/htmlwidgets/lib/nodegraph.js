@@ -31,6 +31,7 @@ cedar.NodeGraph = function module() {
         nudgefactor = 10,
         scaleFactor = 1,
         translation = [0,0];
+        option_textvisible = true;
     
     
     // functions called by public API
@@ -71,11 +72,15 @@ cedar.NodeGraph = function module() {
 
               // since whole graph is rotated, now counter rotate the text inside nodes
               // but with the bbox center as center of rotation (not graph center)
-              nodegroup.each(function(d,i) {
-                  thisnode = d3.select(this)
-                  bbox = thisnode.node().getBBox(); //bounding box of rotated nodegroup, to find center x,y
-                  thisnode.attr('transform', `rotate(${-1*rotation}  ${bbox.x+ bbox.width/2} ${bbox.y + bbox.height/2} )`);
-              });
+              if(option_textvisible){
+                  nodegroup.each(function(d,i) {
+                      thisnode = d3.select(this)
+                      bbox = thisnode.node().getBBox();
+                           //bounding box of rotated nodegroup, to find center x,y
+                      thisnode.attr('transform', `rotate(${-1*rotation}  ${bbox.x+ bbox.width/2} ${bbox.y + bbox.height/2} )`);
+                  });
+              }
+              
               // brush.attr('transform', `rotate(${antirotation}  ${rotationx} ${rotationy})`);
             };
 
@@ -117,6 +122,14 @@ cedar.NodeGraph = function module() {
             
             function zoom_enable(){
                 graph.call(zoombehavior).on("zoom",semanticzoom);
+            }
+            
+            resetzoom = function(){
+                tx = ty = 0 
+                scale = 1
+                zoombehavior.scale(1).translate([0, 0])
+                zoombehavior.event(graph)
+                setTransform()
             }
             
 
@@ -386,6 +399,7 @@ cedar.NodeGraph = function module() {
             // TODO  make link distance a function of number of nodes and size
             force = d3.layout.force()
                 .linkDistance(maxNodeSize()*2.5)
+                .gravity(0.05)
                 .charge(ForceCharge)
                 .size([w, h])
                 .on("tick", do_tick)
@@ -394,7 +408,7 @@ cedar.NodeGraph = function module() {
 
                 // other paramters to consider :  or
                   //.friction(0.1)
-                //.gravity(0.165)
+                //
 
                       
             graph.call(lasso);
@@ -436,8 +450,18 @@ cedar.NodeGraph = function module() {
                   rotation = rotation - 10;
                   setTransform();
                   break;
+                case 84: // t
+                    //  TOGGLE TEXT 
+                    if (option_textvisible){
+                        option_textvisible = false;
+                        removeNodeText();
+                    } else {
+                        option_textvisible = true
+                        addNodeText();
+                    };
+                    break;
                 case 88: // x
-                  reset();
+                  resetzoom();
                   break;
                 case 38:// UP
                   nudge(0, -1);
@@ -520,14 +544,18 @@ cedar.NodeGraph = function module() {
                         return translation[1] + scaleFactor*d.y;
                     });
                     
-                nodetexts.attr("x", function (d) {
-               //return(d.x)
-                    return translation[0] + scaleFactor*d.x;
+                    
+                if (option_textvisible){
+                    nodetexts
+                    .attr("x", function (d) { 
+                        return translation[0] + scaleFactor*d.x;
                     })
                     .attr("y", function (d) {
                         return translation[1] + scaleFactor*d.y;
                     });
                     
+                }
+                
                 setTransform();
 
             }
@@ -615,6 +643,18 @@ cedar.NodeGraph = function module() {
                     return d.y;
                 })
                 .classed('nodegroup', true)
+                .on("dblclick", function(d) { d3.event.stopPropagation(); })
+                .on("click", function(d) {
+                    if (d3.event.defaultPrevented) return;
+
+                    if (!shiftKey) {
+                        //if the shift key isn't down, unselect everything
+                        node.classed("selected", function(p) { return p.selected =  p.previouslySelected = false; })
+                    }
+
+                    // always select this node
+                    d3.select(this).classed("selected", d.selected = !d.previouslySelected);
+                })
                 .call(drag);
                 // .on("click", function() {
                 //     d3.select(this).classed("selected", !d3.select(this).classed("selected"));
@@ -642,13 +682,25 @@ cedar.NodeGraph = function module() {
                     return d.size;
                 });
 
-            nodetexts = nodegroup.append("text")
-                .attr("text-anchor", "middle")
-                .attr("pointer-events","none")
-                .text(function(d) {
-                    return d.size;
-                });
+                if( option_textvisible) {
+                    addNodeText();
+                };
 
+                function addNodeText(){
+                    nodetexts = nodegroup.append("text")
+                        .filter(function(d) { return d.size > 1 })
+                        .attr("class", "nodetext")
+                        .attr("text-anchor", "middle")
+                        .attr("pointer-events","none")                        
+                        .text(function(d) {return d.size; });
+                    do_tick();                    
+                }
+                
+                function removeNodeText(){
+                    graph.selectAll('.nodetext').remove();
+                    nodegroup.each(function(d,i) { d3.select(this).attr('transform', null); });
+                    do_tick();
+                }
 
            lasso.items(nodegroup);
            
