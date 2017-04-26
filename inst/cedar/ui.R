@@ -5,13 +5,28 @@
 library(shiny)
 library(shinydashboard)
 
+tags$head(
+  tags$script('var dimension = [0, 0];
+      $(document).on("shiny:connected", 
+      function(e) {
+        dimension[0] = window.innerWidth;
+        dimension[1] = window.innerHeight;
+        Shiny.onInputChange("dimension", dimension);
+        });
+
+      $(window).resize(function(e) {
+      dimension[0] = window.innerWidth;
+      dimension[1] = window.innerHeight;
+      Shiny.onInputChange("dimension", dimension);
+      });
+'))
+
 dashboardPage(
     
 dashboardHeader(title = "CEDAR"),
   
 ################
 dashboardSidebar( 
-    
     sidebarMenu(
       id = "tabs",
       menuItem("Data",       tabName = "data",       icon = icon("table")),
@@ -23,7 +38,26 @@ dashboardSidebar(
     tags$div(align="center", style="position: absolute; bottom: 10%;
     left:50%; margin-left:-25px;",
       tags$img(src="http://cabs.msu.edu/toolkit/images/helmet/gif/Spartan-helmet-White-150-pxls.gif", height=50)
+    ),
+    tags$hr()
+    ,
+    tags$div(class="user-panel",
+             actionButton("grp1set",   "Grp 1"),
+             actionButton("grp1remove","Remove"),
+             actionButton("grp1clear", "Clear"),
+             p(textOutput("group1Count", inline = TRUE), " nodes"),
+             actionButton("grp2set",   "Grp 2"),
+             actionButton("grp2remove","Remove"),
+             actionButton("grp2clear", "Clear"),
+             p(textOutput("group2Count", inline = TRUE), " nodes"),
+             
+             bsModal("hypothesisTest", "Hypothesis Testing of data in nodes by Group", "runTest",size = "large",
+                     tableOutput("hypTestTable"),
+                     tableOutput("varianceTable")
+             )
     )
+    
+    
   ),
   
 #############
@@ -136,9 +170,10 @@ dashboardBody(
       tabItem(tabName = "graph",
          fluidRow(
            column(width=10,
-              box(title = NULL,
-                  width=NULL,
-                  conditionalPanel("input.runMapper", cedarGraphOutput("cgplot","100%",500)),
+              #box(title = NULL,
+              #    width=NULL,
+              tags$div(id="graphcontainer",
+                  conditionalPanel("input.runMapper", cedarGraphOutput("cgplot","100%","100%")),
                   conditionalPanel("!input.runMapper",h4("Please select parameters and calculate mapper to see graph"))
               )
             ),
@@ -167,37 +202,33 @@ dashboardBody(
 
  
           )
-         ), # end of row1
-         fluidRow(
-           column(width=4,
-               box(width=NULL,background="light-blue",
-                   actionButton("grp1set",   "Set Group 1"),
-                   actionButton("grp1remove","Remove Nodes"),
-                   actionButton("grp1clear", "Reset"),
-                   p(textOutput("group1Count", inline = TRUE), " nodes")
-               )
-           ),
-           column(width=4,
-                  box(width=NULL,background="light-blue",
-                      div(style="display:inline-block",actionButton("grp2set",   "Set Group 2")),
-                      div(style="display:inline-block",actionButton("grp2remove","Remove Nodes")),
-                      div(style="display:inline-block",actionButton("grp2clear", "Reset")),
-                      p(textOutput("group2Count", inline = TRUE), " nodes")
-                 )
-           ),
-           column(width=2,
-             box(width=NULL,background="black",
-                 actionButton("runTest", "Compare Groups"),
-                 actionButton("resetZoom", "Reset Zoom")
-                 )
-            )
+         ) # end of row1
          
          
-         ,bsModal("hypothesisTest", "Hypothesis Testing of data in nodes by Group", "runTest",size = "large",
-                  tableOutput("hypTestTable"),
-                  tableOutput("varianceTable")
-                  )
-         ) # end row2
+        # , fluidRow(
+           # #column(width=4,
+           #     box(width=NULL,background="light-blue",
+           #         actionButton("grp1set",   "Set Group 1"),
+           #         actionButton("grp1remove","Remove Nodes"),
+           #         actionButton("grp1clear", "Reset"),
+           #         p(textOutput("group1Count", inline = TRUE), " nodes")
+           #     )
+           # ),
+           # column(width=4,
+           #        box(width=NULL,background="light-blue",
+           #            div(style="display:inline-block",actionButton("grp2set",   "Set Group 2")),
+           #            div(style="display:inline-block",actionButton("grp2remove","Remove Nodes")),
+           #            div(style="display:inline-block",actionButton("grp2clear", "Reset")),
+           #            p(textOutput("group2Count", inline = TRUE), " nodes")
+           #       )
+           # ),
+           # column(width=2,
+           #   box(width=NULL,background="black",
+           #       actionButton("runTest", "Compare Groups"),
+           #       actionButton("resetZoom", "Reset Zoom")
+           #       )
+           #  )
+         #) # end row2
       ),
       
       tabItem(tabName="console",
