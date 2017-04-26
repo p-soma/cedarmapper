@@ -1,3 +1,14 @@
+#graphcontainer{
+    height:95vh !important;
+}
+
+#cgplot{
+    height:90vh !important;
+}
+
+#nodegraph {
+     height:90vh !important;
+}
 
 .link {
   stroke: #000;

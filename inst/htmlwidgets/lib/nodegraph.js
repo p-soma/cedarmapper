@@ -13,12 +13,14 @@ cedar.NodeGraph = function module() {
     var margin = {
         top: 20,
         right: 20,
-        bottom: 40,
-        left: 40
+        bottom: 20,
+        left: 20
     };
 
-    var w = '100%';
-    var h = window.innerHeight;
+    // starting values, overridden when plot is created
+    // eg ng = nodegraph(el).h(500).w(800)
+    var w = $(window).width()-margin.left - margin.right;
+    var h = $(window).height()-margin.top - margin.bottom;
 
     var opacity_percent = 0.98,
         node_area_percent = 0.3,

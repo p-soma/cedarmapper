@@ -2,13 +2,14 @@ HTMLWidgets.widget({
 
   name: "cedarGraph",
   type: 'output',
-  factory: function(el, w=500,h=500) {
-    // build object on DOM element 'el' and set size
+  factory: function(el, w,h) {
+    // build object on DOM element 'el' and set size     
+    $(el).width(w).height(h);
     ng = cedar.NodeGraph(el);
     ng.w(w);
     ng.h(h);
     // change element to have same size as parameters
-    d3.select(el).style({"width":w,"height":h});
+
 
 
     // function buttons
