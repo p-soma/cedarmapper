@@ -21,8 +21,11 @@ tags$head(
       });
 '))
 
+
 dashboardPage(
-    
+
+
+  
 dashboardHeader(title = "CEDAR"),
   
 ################
@@ -50,11 +53,9 @@ dashboardSidebar(
              actionButton("grp2remove","Remove"),
              actionButton("grp2clear", "Clear"),
              p(textOutput("group2Count", inline = TRUE), " nodes"),
-             
-             bsModal("hypothesisTest", "Hypothesis Testing of data in nodes by Group", "runTest",size = "large",
-                     tableOutput("hypTestTable"),
-                     tableOutput("varianceTable")
-             )
+             actionButton("runTest", "Compare Groups"),
+             actionButton("resetZoom", "Reset Zoom")
+
     )
     
     
@@ -196,6 +197,10 @@ dashboardBody(
                   title= "Selected Nodes",
                   width=NULL, color="light-blue"),
               
+              bsModal("hypothesisTest", "Hypothesis Testing of data in nodes by Group", "runTest",size = "large",
+                      tableOutput("hypTestTable"),
+                      tableOutput("varianceTable")
+              ),
               bsModal("valHist", "Histogram of Selected Nodes", "showHist", size = "large", plotOutput("nodeHist1"))
                      # plotOutput("nodeHist2"))
                  
@@ -242,6 +247,8 @@ dashboardBody(
                     verbatimTextOutput("eval_output") )
               )
       )
+      
+
       #,
       #tabItem(tabName="resulttable",
       #        p("")
