@@ -1,4 +1,3 @@
-//var shinyMode = True;
 
 // NodeGraph module
 //var shinyMode = window.HTMLWidgets.shinyMode =
@@ -109,6 +108,12 @@ cedar.NodeGraph = function module() {
                 // debug console.log("zoom", d3.event.translate, d3.event.scale);
                 scaleFactor = d3.event.scale;  // set global
                 translation = d3.event.translate;  //  set global
+                // redraw all text on zoom, so that small nodes text is not displayed
+                if( option_textvisible ){
+                    removeNodeText();
+                    addNodeText();
+                }
+                
                 do_tick(); //update positions
             }
             
@@ -401,7 +406,7 @@ cedar.NodeGraph = function module() {
             // TODO  make link distance a function of number of nodes and size
             force = d3.layout.force()
                 .linkDistance(maxNodeSize()*2.5)
-                .gravity(0.05)
+                .gravity(0.1)
                 .charge(ForceCharge)
                 .size([w, h])
                 .on("tick", do_tick)
@@ -459,7 +464,7 @@ cedar.NodeGraph = function module() {
                         removeNodeText();
                     } else {
                         option_textvisible = true
-                        addNodeText();
+                        showNodeText();
                     };
                     break;
                 case 88: // x
@@ -522,7 +527,6 @@ cedar.NodeGraph = function module() {
             }
 
            function do_tick() {
-
                 link.attr("x1", function (d) {
                         return translation[0] + scaleFactor*d.source.x;
                     })
@@ -536,14 +540,23 @@ cedar.NodeGraph = function module() {
                         return translation[1] + scaleFactor*d.target.y;
                     });
 
-
                 // NODES are circles and texts in nodegroup (g).  Both must be moved around at each tick
-                nodes.attr("cx", function (d) {
-               //return(d.x)
-                    return translation[0] + scaleFactor*d.x;
-                    })
+                nodes
+                    .attr("cx", function (d) {
+                      return translation[0] + scaleFactor*d.x; })
                     .attr("cy", function (d) {
-                        return translation[1] + scaleFactor*d.y;
+                        return translation[1] + scaleFactor*d.y;})
+                    .attr("r",function(d){
+                        if (scaleFactor < 1) {
+                          // console.log( d.size * scaleFactor);
+                          // console.log('r orig', nodeSizeScale(d.size * scaleFactor));
+                          r = nodeSizeScale(d.size) * scaleFactor;
+                          // console.log( 'r', r);
+                        }
+                        else {
+                          r = nodeSizeScale(d.size);
+                        }
+                        return r;                     
                     });
                     
                     
@@ -671,11 +684,8 @@ cedar.NodeGraph = function module() {
                 .attr("id", function(d) {
                     return "node_" + d.name;
                 })
-                .attr("r", function(d) {
-                    console.log("d size=" + d.size);
-                    r = nodeSizeScale(d.size);
-                    console.log("r = " + r);
-                    return r;
+                .attr("r", function(d) {                    
+                    return nodeSizeScale(d.size);
                 })
                 .attr("nodevalue", function(d) {
                     return d.values;
@@ -683,26 +693,40 @@ cedar.NodeGraph = function module() {
                 .attr("size", function(d) {
                     return d.size;
                 });
-
-                if( option_textvisible) {
-                    addNodeText();
-                };
-
-                function addNodeText(){
-                    nodetexts = nodegroup.append("text")
-                        .filter(function(d) { return d.size > 1 })
-                        .attr("class", "nodetext")
-                        .attr("text-anchor", "middle")
-                        .attr("pointer-events","none")                        
-                        .text(function(d) {return d.size; });
-                    do_tick();                    
-                }
-                
-                function removeNodeText(){
-                    graph.selectAll('.nodetext').remove();
-                    nodegroup.each(function(d,i) { d3.select(this).attr('transform', null); });
+                         
+                   
+            function addNodeText(){
+                nodetexts = nodegroup
+                    .filter(function(d){                        
+                        node_radius = d3.select(this).select('circle').attr('r');
+                        return node_radius > 12  // var smallestNodeWithText=10;
+                    })
+                .append("text")
+                    .filter(function(d) { return d.size > 1 })                    
+                .attr("class", "nodetext")
+                .attr("text-anchor", "middle")
+                .attr("pointer-events","none")                        
+                .text(function(d) {return d.size; });
+            }
+              
+            function removeNodeText(){
+            // triggered by UI, clears text from nodes
+                graph.selectAll('.nodetext').remove();
+                nodegroup.each(function(d,i) { d3.select(this).attr('transform', null); });
+                do_tick();
+            }
+              
+            function showNodeText(){
+                // triggered by UI (eg 't' key)
+                // build text and tick 
+                    addNodeText()
                     do_tick();
-                }
+            }
+                
+
+                
+                // when building viz, add text but don't tick
+                addNodeText();
 
            lasso.items(nodegroup);
            
@@ -888,7 +912,7 @@ cedar.NodeGraph = function module() {
 
     //********* API starts here***************
     nodegraph.render = function() {
-        setFillColor();        
+        setFillColor(); 
         force.start(); 
     };
 
@@ -1015,6 +1039,15 @@ cedar.NodeGraph = function module() {
 //    nodegraph.shrinknodes = function(){
 //      shrinkNodeSize();
 //    }
+
+    nodegraph.nodes = function(){
+      return nodes;
+    }
+
+    nodegraph.nodeSizeScale = function(){
+      return nodeSizeScale;
+    
+    }
 
     dispatch = d3.dispatch("nodeselected");
 
