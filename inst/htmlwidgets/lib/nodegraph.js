@@ -140,6 +140,12 @@ cedar.NodeGraph = function module() {
             }
             
 
+        function dblclick(d) {
+          d3.event.stopPropagation();
+          d3.select(this)
+              .classed("fixed",   d.fixed    = false )
+              .classed("selected",d.selected = false );
+        }
 
 
          var drag  = d3.behavior.drag()
@@ -160,6 +166,8 @@ cedar.NodeGraph = function module() {
   
 
         function dragstarted(d) {
+          d3.select(this).classed("fixed", d.fixed = true);
+          
           d3.event.sourceEvent.stopPropagation();
           if (!d.selected && !shiftKey) {
             // if this node isn't selected, then we have to unselect every other node
@@ -177,7 +185,8 @@ cedar.NodeGraph = function module() {
               return d.selected;
             })
             .each(function(d) {
-              d.fixed |= 2;
+              
+              // d.fixed |= 2;
             })
         }
 
@@ -266,7 +275,7 @@ cedar.NodeGraph = function module() {
             lasso.items()
               .classed({
                 "not_possible": true,
-                "selected": false
+                // "selected": false
               }); // style as not possible
           }
 
@@ -295,12 +304,14 @@ cedar.NodeGraph = function module() {
             // Style the selected dots
             lasso.items().filter(function(d) {
                 return d.selected === true
-              })
-              .classed({
-                "not_possible": false,
-                "possible": false
-              })
-              .classed("selected", true);
+              }).each(function(d){
+                  d3.select(this).classed({
+                    "not_possible": false,
+                    "possible": false
+                  })
+                  .classed("selected", true)
+                  .classed("fixed", d.fixed = true)
+            });
 
             // Reset the style of the not selected dots
             lasso.items().filter(function(d) {
@@ -658,13 +669,13 @@ cedar.NodeGraph = function module() {
                     return d.y;
                 })
                 .classed('nodegroup', true)
-                .on("dblclick", function(d) { d3.event.stopPropagation(); })
+                .on("dblclick",dblclick)
                 .on("click", function(d) {
                     if (d3.event.defaultPrevented) return;
 
                     if (!shiftKey) {
                         //if the shift key isn't down, unselect everything
-                        node.classed("selected", function(p) { return p.selected =  p.previouslySelected = false; })
+                        d3.select(this).classed("selected", function(p) { return p.selected =  p.previouslySelected = false; })
                     }
 
                     // always select this node
