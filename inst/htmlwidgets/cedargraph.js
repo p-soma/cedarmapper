@@ -2,61 +2,56 @@ HTMLWidgets.widget({
 
   name: "cedarGraph",
   type: 'output',
-  factory: function(el, w=500,h=500) {
-    // set defaults
-
-
+  factory: function(el, w,h) {
+    // build object on DOM element 'el' and set size     
+    $(el).width(w).height(h);
     ng = cedar.NodeGraph(el);
     ng.w(w);
     ng.h(h);
+    // change element to have same size as parameters
 
 
-      function btn(btnname,text, icon,action){
-        b = `<button type="button" id = "${btnname}" class="btn btn-info btn-sm" onclick="${action};"><span class="glyphicon ${icon}"></span>${text}</button>`;
-        return(b);
-      }
 
-
-      btngroup =  $( "<div class='btn-group' id='graph-btns'></div>" );
-
-
-      $(el).before(btngroup);
+    // function buttons
+      // function btn(btnname,text, icon,action){
+ //        b = `<button type="button" id = "${btnname}" class="btn btn-info btn-sm" onclick="${action};"><span class="glyphicon ${icon}"></span>${text}</button>`;
+ //        return(b);
+ //      }
+ //
+ //
+ //      btngroup =  $( "<div class='btn-group' id='graph-btns'></div>" );
+ //
+ //
+ //      $(el).before(btngroup);
      //  btngroup.addClass("btn-group");
-      btngroup.append(btn('recenter','recenter','','ng.reset();'));
-      var a  = ["left", "right","up", "down"];
-      for (var i = 0; i < a.length; i++) {
-        btngroup.append(btn(`move${a[i]}`,'', `glyphicon-arrow-${a[i]}`,`ng.move${a[i]}()`));
-      }
-      btngroup.append(btn('zoomin','','glyphicon-zoom-in','ng.zoomin()'));
-      btngroup.append(btn('zoomout','','glyphicon-zoom-out','ng.zoomout()'));
-        
-      btngroup.append(
-        btn('attractplus','','glyphicon-resize-full','ng.expand()')
-        );
-      btngroup.append(
-        btn('attractmius','','glyphicon-resize-small','ng.shrink()')
-          );
-
-      btngroup.append(
-        btn('rotate','','glyphicon-repeat','ng.rotate(1)')
-        );
-        
-              btngroup.append(
-        btn('rotateleft','','flipped glyphicon-repeat','ng.rotate(-1)')
-        );
-
+     // recenter button
+      // btngroup.append(btn('recenter','recenter','','ng.reset();'));
+      // NUDGE BUTTONS
+      // var a  = ["left", "right","up", "down"];     
+      // for (var i = 0; i < a.length; i++) {
+      //   btngroup.append(btn(`move${a[i]}`,'', `glyphicon-arrow-${a[i]}`,`ng.move${a[i]}()`));
+      // }
+      // btngroup.append(
+   //      btn('attractplus','','glyphicon-resize-full','ng.expand()')
+   //      );
+   //    btngroup.append(
+   //      btn('attractmius','','glyphicon-resize-small','ng.shrink()')
+   //        );
+   //
+   //    btngroup.append(
+   //      btn('rotate','','glyphicon-repeat','ng.rotate(1)')
+   //      );
+   //
+   //    btngroup.append(
+   //      btn('rotateleft','','flipped glyphicon-repeat','ng.rotate(-1)')
+   //      );
 
 
-    d3.select(el).style({"width":w,"height":h});
     // TODO: test if SHINY shinyMode
     // requires this in your shiny app:
-    //session$sendCustomMessage(type='nodevalues',message=newdata )}
-
-
-
+    // session$sendCustomMessage(type='nodevalues',message=newdata )}
     Shiny.addCustomMessageHandler("nodevalues",
       function(message) {
-
         console.log(message);
         ng.values(message); }
     );
@@ -93,7 +88,6 @@ HTMLWidgets.widget({
       }
     );
 
-
     Shiny.addCustomMessageHandler("unsetgroup", function(message){
       // message is the group ID
       // remove all group from all nodes
@@ -106,11 +100,7 @@ HTMLWidgets.widget({
 
           // hook to shiny, update node values
 
-          // ERROR: this is called when ever renderValue/redraw is called
-          // and it can only be called once
-
-
-          // remove ANY svg on this element
+          // first, remove any svg on this element so ng can add one
           // TODO: remove SVG with ID of this type
           // d3.select(el).select("svg").select("#nodegraph").remove();
           // OR let the ng remove itself with some new method ng.clear()
@@ -120,6 +110,7 @@ HTMLWidgets.widget({
           nodedata.links = HTMLWidgets.dataframeToD3(x.links);
           nodedata.nodes = HTMLWidgets.dataframeToD3(x.nodes);
 
+          // add data to window for debugging
           window.nodedata = nodedata;
           // TODO options = x.options
 
@@ -127,6 +118,7 @@ HTMLWidgets.widget({
           d3.select(el).datum(nodedata).call(ng);
 
           ng.render();
+          // add d3 graph object to window for debugging
           window.ng = ng;
       },
 

@@ -4,6 +4,11 @@ dependencies:
     src: "htmlwidgets/lib"
     script: d3.min.js
     stylesheet: cedargraph.css
+  - name: lasso
+    version: 1.0
+    src: "htmlwidgets/lib"
+    script: lasso.min.js
+    stylesheet: cedargraph.css
   - name: nodegraph
     version: 0.1
     src: "htmlwidgets/lib"
