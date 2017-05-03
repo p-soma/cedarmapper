@@ -16,7 +16,7 @@ tags$head(
 
       $(window).resize(function(e) {
       dimension[0] = window.innerWidth;
-      dimension[1] = window.innerHeight;
+... = 
       Shiny.onInputChange("dimension", dimension);
       });
 '))
@@ -101,7 +101,7 @@ dashboardBody(
             box( title="Mapper Parameters", width=NULL, background ="light-blue",
               h3("Data set:", textOutput("dataname",inline=TRUE),color="light-blue"),
               checkboxInput("normalizeOption", "Normalize Data?", value = TRUE, width = NULL),
-              checkboxInput("equalizeOption", "Equalize Data?", value = TRUE, width = NULL),
+              checkboxInput("equalizeOption", "Equalize Data?", value = FALSE, width = NULL),
               sliderInput("binCountSelection", label = "Cluster Bin Count", 
                           min=min(3),max=max(50), value=10,
                           step=1)  
