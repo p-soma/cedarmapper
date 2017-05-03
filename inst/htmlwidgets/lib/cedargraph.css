@@ -1,3 +1,15 @@
+#graphcontainer{
+    height:95vh !important;
+}
+
+#cgplot{
+    height:90vh !important;
+}
+
+#nodegraph {
+     height:90vh !important;
+}
+
 .link {
   stroke: #000;
   /* stroke-width: 1.5px; */
@@ -7,7 +19,7 @@
   cursor: move;
   fill: #ccc;
   stroke: #000;
-  stroke-width: 1.5px;
+  stroke-width: 2px;
 }
 
 .node.fixed {
@@ -45,16 +57,31 @@
 /* node selection colors; this must be below group colors to override them */
 /* dashed so the group can be seen below */
 .selected .node {
-    /* stroke-width: 2px;
-    stroke-dasharray: 5,5;
-    stroke: Gold; */
+     stroke-width: 2px;
+
+    stroke: Gold;
 }
+
+.selected {
+  stroke-width: 2px;
+  stroke: Gold;
+}
+
+.selected circle {
+  stroke-width: 2px;
+  stroke: Gold;
+}
+
 
 .node text {
   pointer-events: none;
   font: 10px sans-serif;
 }
 
+.nodetext {
+  fill:black;
+
+}
 /* .state circle {
     stroke  : gray;
     cursor  : pointer;
@@ -79,4 +106,39 @@
         transform: scaleX(-1);
         filter: FlipH;
         -ms-filter: "FlipH";
+}
+
+.lasso path {
+  stroke: rgb(80,80,80);
+  stroke-width:2px;
+}
+
+.lasso .drawn {
+  fill-opacity:.05 ;
+}
+
+.lasso .loop_close {
+  fill:none;
+  stroke-dasharray: 4,4;
+}
+
+.lasso .origin {
+  fill:#3399FF;
+  fill-opacity:.5;
+}
+
+.not_possible {
+  fill-opacity: 0.3;
+
+}
+
+.possible {
+  fill-opacity: 1.0;
+  stroke: gold;
+}
+
+.nodetext {
+  stroke: none;
+  fill:black;
+  stroke-width: 1px:
 }
