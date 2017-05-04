@@ -63,6 +63,20 @@ is.varname <- function(gm, varname){
   return( Reduce("&", (varname %in% names(gm$d))))
 }
 
+# alias for is.factor, future flexibility
+is.categorical<- function(gm,varname){
+  is.factor(gm$d[,varname])
+}
+
+# use levels as categories, which assumes using factors for character data
+colCategories <- function(gm,varname){
+  if (is.categorical(gm,varname)){
+    return( levels(gm$d[,varname]))
+  } else { 
+    return( list() )
+  }
+}
+
 # this is dangerous practice
 # but returns a variable name in the data set no matter what is sent
 guaranteedVarname <- function(gm,  varname=NULL){
@@ -130,12 +144,11 @@ partitiondata <- function(gm, p, varname = NULL){
 #' returns bar plot
 #' @export 
 #' 
-factorBarPlot <- function(gm, varname, group_id = 1){
+factorBarPlot <- function(gm, varname, nodes){
   x_label = varname
   y_label = "Frequency"
-  d_group = groupdata(gm,group_id,varname)
-  #  return(barplot(table(gm$d[varname]), xlab = x_label, ylab = y_label) )
-  return(barplot(table(d_group), xlab = x_label, ylab = y_label) )
+  d = nodedata(gm, gm$nodes[nodes], varname)
+  return(barplot(table(d), xlab = x_label, ylab = y_label))
 }
 
 #' convert categorical column to binary columns
@@ -152,4 +165,17 @@ column2binary<-function(df, colname){
   binary_columns <- model.matrix(~ factor(df[,colname]) - 1)
   colnames(binary_columns) <- paste(colname, "-",levels(factor(df[,colname])),sep="")
   return(as.data.frame(binary_columns))
+}
+
+#' equalize histogram for cut_function
+#' 
+equalize_hist <- function(d){
+  h <- hist(d, breaks = length(d))#breaks=bin_breaks)
+  cdf <- cumsum(h$counts)
+  slope <- sum(h$counts) / (max(d) - min(d))
+  cdfn <- (cdf / slope) + min(d)
+  eq_hst_vals <- rep(cdfn, h$counts)
+  eq_hst <- hist(eq_hst_vals, breaks=length(d))# breaks=bin_breaks)
+  return(as.vector(eq_hst_vals))
+  #return(eq_hst)
 }

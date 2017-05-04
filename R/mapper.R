@@ -39,7 +39,7 @@ lense <- function(lensefun, lenseparam=NULL, partition_count=4, overlap = 0.5) {
 #' @return mapper object with all params needed for pipeline
 #' @export
 
-mapper <- function(dataset, lenses, cluster_method="single", bin_count=10, normalize_data=TRUE, selected_cols=NULL){
+mapper <- function(dataset, lenses, cluster_method="single", bin_count=10, normalize_data=TRUE, equalize_data=FALSE, selected_cols=NULL){
   # lenses have previous parameters used: lensefun, partition_count=4, overlap = 0.5,lenseparam = NULL
   
   # note: dimensions variable 
@@ -55,6 +55,7 @@ mapper <- function(dataset, lenses, cluster_method="single", bin_count=10, norma
                       "cluster_method"=cluster_method, 
                       "bin_count" = as.numeric(bin_count),
                       "normalize_data" = normalize_data,
+                      "equalize_data" = equalize_data,
                       "selected_cols" = selected_cols
                       ),
                  class="mapper")
@@ -123,7 +124,7 @@ mapper.run <- function(m, progressUpdater = NULL){
 makemapper <- function(dataset, 
               lensefun, partition_count=4, overlap = 0.5, lenseparam = NULL,
               lense2fun = NULL, lense2partition_count=NULL,lense2overlap = 0.0,lense2param = NULL,
-              bin_count=10, cluster_method= 'single', normalize_data=TRUE, 
+              bin_count=10, cluster_method= 'single', normalize_data=TRUE, equalize_data =TRUE,
               progressUpdater=NULL, selected_cols=NULL) {
   
   # create objects with the above params
@@ -149,6 +150,7 @@ makemapper <- function(dataset,
                cluster_method=cluster_method, 
                bin_count=bin_count, 
                normalize_data=normalize_data,
+               equalize_data=equalize_data,
                selected_cols=selected_cols
                )
   m <- mapper.run(m)
@@ -190,7 +192,13 @@ mapper.lense.calculate <- function(m,dimension=1){
   # fill up L member variables and return it
   # L$values is 1D vector of values from the filter/lense function with same length as mapper data
   L$values <- L$lensefun(m$d[mapper.numeric_cols(m)], L$lenseparam, m$distance)
+  
+  if (m$equalize_data){
+    L$values <- equalize_hist(L$values)
+  }
+  
   names(L$values) <- rownames(m$d)
+
   
   # calc and store aspects of resulting vector; could be expensive
   L$p0 <- min(L$values)  
@@ -369,7 +377,7 @@ clusters.mapper<- function(m, shinyProgressFunction = NULL) {
     # check for special case of only one datapoint, so no clustering necessary, break out of loop
     if(length(m$partitions[[i]]) < 2 ){
       gmClusts[[i]] = c(1)
-      names(gmClusts[[i]]) = rownames(m$partitions[[i]])
+      names(gmClusts[[i]]) = m$partitions[[i]]
       next
     }
     
@@ -406,51 +414,6 @@ clusters.mapper<- function(m, shinyProgressFunction = NULL) {
 }
 
 
-clusters2d.mapper<- function(gm, cluster_method = "single", scaling=FALSE, shinyProgressFunction = NULL) {
-  
-  gmClusts = list() 
-  npartition = length(gm$partitions)
-  # loop through each partition
-  for ( i in 1:npartition) {
-    print(paste0("analyzing partition ", i))
-    
-    # check for special case of only one datapoint, so no clustering necessary, break out of loop
-    if(length(gm$partitions[[i]][,1]) < 2 ){
-      gmClusts[[i]] = c(1)
-      names(gmClusts[[i]]) = rownames(gm$partitions[[i]])
-      next
-    }
-    
-    
-    # SHINY STUFF for displaying progress bar when this is run; remove when parallelizing
-    # If we were passed a shiny progress update function, call update each iteration
-    if (is.function(shinyProgressFunction)) {
-      text <- paste0("clustering partition ", i)
-      shinyProgressFunction(value = (i/npartition), detail = text)
-    }
-    # end shiny stuff
-    
-    # debug 
-    # print(gm$partitions[[i]])
-    rowset = gm$d[rownames(gm$partitions[[i]]), gm$selected_cols] 
-    
-    # calculate distance matrix for this partition
-    # TODO: check if whole data set partition is present, and extract subset from that
-    partition_dist =  dist(rowset,method="euclidean")
-    
-    # if(DEBUG) {print(max(partition_dist))}
-    # do standard clustering and cut 
-    partition_cluster <- hclust(partition_dist, method="single") 
-    cluster_cutheight <- cut_function(partition_cluster$height,  max( partition_dist), gm$bin_count)
-    gmClusts[[i]] <- cutree(partition_cluster, h=cluster_cutheight )
-    
-    # note rowIDs are propagated in cluster$labels, so cutree returns groups labeled correctly
-  }
-  return(gmClusts)
-}
-
-
-
 #' histogram based cut function for single-linkage clusters
 #' @export
 #' @param cluster_heights heights of each cluster, height element from hclust output
@@ -478,6 +441,7 @@ cut_function  <-  function(cluster_heights, maxdist, bin_count) {
   #print(bin_breaks)
   
   height_hist <- hist(c(cluster_heights,maxdist), breaks=bin_breaks, plot=FALSE)
+  
   
   z <- ( height_hist$counts == 0 )
   if (sum(z) != 0) {

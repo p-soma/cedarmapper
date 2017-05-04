@@ -1,5 +1,9 @@
 /* custom CSS for shiny dashboard */
 
+.user-panel p {
+  padding-left: 12px; 
+}
+
 #grp1set {
   background-color: #4d4dff;
   color:white;

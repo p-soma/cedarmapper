@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta http-equiv="Content-type" content="text/html; charset=utf-8">
+        <title>nodegraph test</title>
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+        <link rel="stylesheet" href="../htmlwidgets/lib/cedargraph.css" type="text/css" media="screen">
+        <!-- <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.17/d3.min.js"></script> -->
+        <script src="https://code.jquery.com/jquery-1.10.2.js"></script>
+        <script src="../htmlwidgets/lib/d3.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="https://axc.net/code_libraries/lasso/lasso.min.js"></script>
+        <script type="text/javascript" src="zoomandlasso.js">
+
+
+
+        </script>
+        <script>
+        var ng;
+        var setAGroup = function(groupId){
+              ns = ng.selected();
+              ng.group(groupId,ns );
+              ng.unSelectAll();
+            }
+
+        var reset_ng = function(){
+                ng.reset();
+            }
+
+
+        </script>
+
+    </head>
+    <body id="nodegraphwindow" onload="">
+        <h3>Demonstrate NodeGraph D3 Javascript</h3>
+        <div  id="graphcontainer"></div>
+        <!-- <input id = "btn" type="button" value="Show values" />
+        <input id = "grp1btn" type="button" value="group 1" onclick="setAGroup(1);"/>
+        <input id = "grp2btn" type="button" value="group 2" onclick="setAGroup(2);"/>
+        <input id = "resetbtn" type="button" value="reset" onclick="ng.reset();"/> -->
+        <!-- TO DO : test api for removing groups -->
+
+
+        <script type="text/javascript">
+            // create nodegraph
+            // nodegraph = cedar.NodeGraph().height(500).width(600).data
+        var graphJSON = {};
+        var el ="#graphcontainer"
+
+        $( document ).ready( function() {
+            h = $(window).height()-100; // $(window).height() - 150;
+            w = $(window).width();
+
+                // .css("overflow:scroll;");
+           selectableForceDirectedGraph(el,w,h);
+        //     // ng = cedar.NodeGraph().h(h).w(window.innerWidth);
+        //    // btn.text("reset");
+        //    // btn.attr("class","btn");
+        //    //                 btn.attr("onclick","this.resetzoom();")
+        //
+        //
+        //     // $.getJSON( "diabetesmapper.json", function( json ) {
+        //     //     g = d3.select("#graphcontainer")
+        //     //         .datum(json).call(ng);
+        //     //     ng.render();
+        //     //
+        //     //  });
+        //
+        //      //
+        //      // var g = d3.select("#graph");
+        //      // ng1(g).svg.datum(graphJSON.data)
+        //     $("#btn").click(function() {
+        //          alert(selectedNodes);
+        //     })
+
+    //   function btn(btnname,text, icon,action){
+    //     b = `<button type="button" id = "${btnname}" class="btn btn-info btn-sm" onclick="${action};"><span class="glyphicon ${icon}"></span>${text}</button>`;
+    //     return(b);
+    //   }
+     //
+     //
+    //   btngroup =  $( "<div class='btn-group' id='graph-btns'></div>" );
+     //
+     //
+    //   $(el).before(btngroup);
+    //  //  btngroup.addClass("btn-group");
+    //   btngroup.append(btn('recenter','recenter','','ng.reset();'));
+    //   var a  = ["left", "right","up", "down"];
+    //   for (var i = 0; i < a.length; i++) {
+    //     btngroup.append(btn(`move${a[i]}`,'', `glyphicon-arrow-${a[i]}`,`ng.move${a[i]}()`));
+    //   }
+    //   btngroup.append(btn('zoomin','','glyphicon-zoom-in','ng.zoomin()'));
+    //   btngroup.append(btn('zoomout','','glyphicon-zoom-out','ng.zoomout()'));
+    //
+    //   btngroup.append(
+    //     btn('attractplus','','glyphicon-resize-full','ng.expand()')
+    //     );
+    //   btngroup.append(
+    //     btn('attractmius','','glyphicon-resize-small','ng.shrink()')
+    //       );
+     //
+    //   btngroup.append(
+    //     btn('rotate','','glyphicon-repeat','ng.rotate(1)')
+    //     );
+    //
+    //           btngroup.append(
+    //     btn('rotateleft','','flipped glyphicon-repeat','ng.rotate(-1)')
+    //     );
+     //
+
+
+
+
+
+         });
+
+
+
+
+
+
+        </script>
+
+    </body>
+</html>

@@ -3,17 +3,15 @@
 # data and processing
 
 #' @import htmlwidgets
-#' @import cedargraph
 #' @import shiny
 #' @import plyr
 #' @import ggplot2
 
 
-library(htmlwidgets)
-library(cedargraph)
-library(cedar)
-library(shiny)
-library(plyr)
+#library(htmlwidgets)
+#library(cedar)
+#library(shiny)
+#library(plyr)
 
 # change file size limit to 50mb
 options(shiny.maxRequestSize = 50*1024^2)
@@ -90,7 +88,7 @@ shinyServer(function(input, output, session) {
   # of the selected variable to Shiny via the session object
   
   # selectedVar ==> color and data exploration variable 
-  selectedVar <- reactive({ 
+  selectedVariable <- reactive({ 
     if(is.null(input$selectedVar)){ v = colnames(selectedDataSet())[1]}
     else{ v = input$selectedVar}
     return(v)
@@ -104,43 +102,53 @@ shinyServer(function(input, output, session) {
   observe({
     input$selectedVar
     # DEBUG
-    # print(selectedVar() %in% c(colnames(gm$d),lenseChoices))
-    if (selectedVar() %in% c(colnames(gm$d),lenseChoices)) {
-      vals = nodePrep(gm,selectedVar())$values
+    # print(selectedVariable() %in% c(colnames(gm$d),lenseChoices))
+    if (selectedVariable() %in% c(colnames(gm$d),lenseChoices)) {
+      vals = nodePrep(gm,selectedVariable())$values
       session$sendCustomMessage(type='nodevalues',message = vals)
     } 
   })
   
   ####TODO error obj varname not found
   histVals <- reactive({
-      input$showHist
-      if(!is.null(input$nodelist)){
-        varname = selectedVar()
-        nodedata(gm, as.numeric(input$nodelist),varname)
-      } else {
-        c(0)
-      }
-      b1 <- factorBarPlot(gm, selectedVar(), group_id = 1)
-      # below is for plotting bar plot of node group 2, not functional
-    #  b2 <- factorBarPlot(gm, selectedVar(), group_id = 2)
-     # barPlotList <- list(b1,b2)
-    #  return(barPlotList)
-      return(b1)
+       input$showHist
+       if(!is.null(input$nodelist)){
+         varname = selectedVariable()
+         nodedata(gm, as.numeric(input$nodelist),varname)
+       } else {
+         c(0)
+       }
+           
+       varname = selectedVariable()
+       nodes <- input$nodelist
+       if (is.numeric(gm$d[,varname])){       
+         varplot <- hist(
+           # nodePrep(gm,selectedVariable())$values,
+           nodedata(gm, gm$nodes[nodes], varname),
+           main="Data from Selected Nodes",
+           ylab="Frequency",
+           xlab=paste0("data for ",varname )
+         )
+       } else {
+         varplot <- factorBarPlot(gm, varname, input$nodelist)
+       }
+       return(varplot)
+      
     
-    })
+     })
     
   output$nodeHist1 <- renderPlot({histVals()[1]})
   #showBarPlot <- eventReactive(input$showHist,{ 
 
      #barplot, compatible with factors
-      #return(factorBarPlot(gm, selectedVar()))
-  #    factorBarPlot(gm, selectedVar(), group_id = 1)
+      #return(factorBarPlot(gm, selectedVariable()))
+  #    factorBarPlot(gm, selectedVariable(), group_id = 1)
 
          # hist(
-        #       nodePrep(gm,selectedVar())$values, 
+        #       nodePrep(gm,selectedVariable())$values, 
        #       main="Data from Selected Nodes",
        #       ylab="Frequency",
-       #       xlab=paste0("data for ",selectedVar() )
+       #       xlab=paste0("data for ",selectedVariable() )
          #     )
 
  #   })
@@ -148,14 +156,14 @@ shinyServer(function(input, output, session) {
     #showBarPlot <- eventReactive(input$showHist,{ 
     
     #barplot, compatible with factors
-    #return(factorBarPlot(gm, selectedVar()))
-  #  factorBarPlot(gm, selectedVar(), group_id = 2)
+    #return(factorBarPlot(gm, selectedVariable()))
+  #  factorBarPlot(gm, selectedVariable(), group_id = 2)
     
     # hist(
-    #       nodePrep(gm,selectedVar())$values, 
+    #       nodePrep(gm,selectedVariable())$values, 
     #       main="Data from Selected Nodes",
     #       ylab="Frequency",
-    #       xlab=paste0("data for ",selectedVar() )
+    #       xlab=paste0("data for ",selectedVariable() )
     #     )
     
 #  })
@@ -223,13 +231,19 @@ shinyServer(function(input, output, session) {
   })
   
   group1Length <- reactive({
+    input$runMapper
     input$grp1set
     input$grp1remove
+    input$grp1clear
+    
     length(unlist(gm$groups[["1"]]))
   })
   
   group2Length <- reactive({
+    input$runMapper
     input$grp2set
+    input$grp2remove
+    input$grp2clear
     length(unlist(gm$groups[["2"]]))
   })
   
@@ -249,7 +263,7 @@ shinyServer(function(input, output, session) {
   observeEvent(input$runMapper, {
     updateTabItems(session, "tabs", selected = "graph")
     
-    #factor categorical data and save for later
+   # convert categorical data to factor
 
     #factorVars <- convertColsToFactors(gm$d)
     factorCols <- list()
@@ -267,7 +281,7 @@ shinyServer(function(input, output, session) {
       choices = c(choices, input$lense2FunctionSelection)
     }
     
-    updateSelectInput(session, inputId = "selectedVar", choices) 
+    updateSelectInput(session, inputId = "selectedVar",  label = "Color by", choices) 
     
     progress <- shiny::Progress$new()
     progress$set(message = "Calculating Clustering", value = 0)
@@ -324,6 +338,7 @@ shinyServer(function(input, output, session) {
                   cluster_method="single",
                   bin_count = as.numeric(input$binCountSelection),
                   normalize_data = input$normalizeOption,
+                  equalize_data = input$equalizeOption,
                   selected_cols = selected_cols)
     gm <<- mapper.run(gm)
     
@@ -378,26 +393,27 @@ shinyServer(function(input, output, session) {
   # collect all the parameters into single HTML string for display and mapper is run
   output$gmParameters  <- renderTable({
     input$runMapper
-    data.frame( "P" = c(gm$lenses[[1]]$n, 
+    ptable<-data.frame( "D1" = c(gm$lenses[[1]]$n, 
          gm$lenses[[1]]$o,
          gm$bin_count,
          input$lenseFunctionSelection,
-         gm$lenses[[1]]$lenseparam,
+         paste(gm$lenses[[1]]$lenseparam," "),
          length(gm$nodes)),
          row.names = c("partitions","overlap","bin count","filter","param","nodes")
-    )},include.colnames = FALSE)
-  
-  output$gmParameters2  <- renderTable({ 
-    input$runMapper 
-    data.frame( "P" = c(gm$lenses[[2]]$n,  
-        gm$lenses[[2]]$o, 
-        gm$bin_count, 
-        input$lense2FunctionSelection, 
-        gm$lenses[[2]]$lenseparam, 
-        length(gm$nodes)), 
-        row.names = c("partitions","overlap","bin count","filter","param","nodes") 
-    )},include.colnames = FALSE)
-            
+    )
+    if(length(gm$lenses)>1) {
+      ptable = data.frame(ptable,
+                          "D2" = c(gm$lenses[[2]]$n,  
+                                  gm$lenses[[2]]$o, 
+                                  gm$bin_count, 
+                                  input$lense2FunctionSelection, 
+                                  paste(gm$lenses[[2]]$lenseparam," "), 
+                                  length(gm$nodes)), 
+                          row.names = c("partitions","overlap","bin count","filter","param","nodes") )
+      }
+    ptable
+    })
+                          
   output$gmOverlap   <- renderText({
               input$runMapper
               gm$lenses[[1]]$o})
