@@ -65,13 +65,13 @@ is.varname <- function(gm, varname){
 
 # alias for is.factor, future flexibility
 is.categorical<- function(gm,varname){
-  is.factor(`$`(gm$d,varname))
+  is.factor(gm$d[,varname])
 }
 
 # use levels as categories, which assumes using factors for character data
 colCategories <- function(gm,varname){
   if (is.categorical(gm,varname)){
-    return( levels(`$`(d,varname)))
+    return( levels(gm$d[,varname]))
   } else { 
     return( list() )
   }

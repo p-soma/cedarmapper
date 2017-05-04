@@ -30,10 +30,18 @@ nodePrep = function(gm, selectedVariable=NULL, selectedCategory=NULL){
     val = 0
     nd = nodedata(gm, node,selectedVariable)
     
-    if(is.categorical(gm,selectedVariable) && !is.null(selectedCategory) ){
-      # if a category was sent, send proporation of node matching that category
-        val = length(nd[nd == selectedCategory])/length(nd)
+    if(is.categorical(gm,selectedVariable)) {
+      print(selectedVariable)
+      print("is categorical")
+      # if no category sent, use the first one as default
+      if (is.null(selectedCategory) ){ selectedCategory = colCategories(gm,selectedVariable)[1]}
+      # categorical value is proportion of rows in this node with this category
+      val = length(nd[nd == selectedCategory])/length(nd)
+      
     } else {
+      print(selectedVariable)
+      print("is numeric")
+      # numeric value, take simple mean
         val = mean(nd)    
     }
     return(val)  
