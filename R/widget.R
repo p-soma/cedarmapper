@@ -31,8 +31,6 @@ nodePrep = function(gm, selectedVariable=NULL, selectedCategory=NULL){
     nd = nodedata(gm, node,selectedVariable)
     
     if(is.categorical(gm,selectedVariable)) {
-      print(selectedVariable)
-      print("is categorical")
       # if no category sent, use the first one as default
       if (is.null(selectedCategory) ){ selectedCategory = colCategories(gm,selectedVariable)[1]}
       # categorical value is proportion of rows in this node with this category

@@ -39,7 +39,7 @@ lense <- function(lensefun, lenseparam=NULL, partition_count=4, overlap = 0.5) {
 #' @return mapper object with all params needed for pipeline
 #' @export
 
-mapper <- function(dataset, lenses, cluster_method="single", bin_count=10, normalize_data=TRUE, equalize_data=TRUE, selected_cols=NULL){
+mapper <- function(dataset, lenses, cluster_method="single", bin_count=10, normalize_data=TRUE, equalize_data=FALSE, selected_cols=NULL){
   # lenses have previous parameters used: lensefun, partition_count=4, overlap = 0.5,lenseparam = NULL
   
   # note: dimensions variable 
