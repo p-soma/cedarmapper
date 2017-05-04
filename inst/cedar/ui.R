@@ -30,7 +30,7 @@ dashboardHeader(title = "CEDAR"),
   
 ################
 dashboardSidebar( 
-    sidebarMenu(
+  sidebarMenu(
       id = "tabs",
       menuItem("Data",       tabName = "data",       icon = icon("table")),
       menuItem("Parameters", tabName = "params",     icon = icon("sliders")),
@@ -38,28 +38,33 @@ dashboardSidebar(
       # menuItem("Results",    tabName=  "resulttable",    icon = icon("bar-chart")),
       menuItem("Console",    tabName = "console",    icon = icon("terminal"))
     ),
-    tags$div(align="center", style="position: absolute; bottom: 10%;
-    left:50%; margin-left:-25px;",
-      tags$img(src="http://cabs.msu.edu/toolkit/images/helmet/gif/Spartan-helmet-White-150-pxls.gif", height=50)
+    tags$div(align="center", style="position: absolute; bottom: 10%; left:50%; margin-left:-25px;",
+    tags$img(src="http://cabs.msu.edu/toolkit/images/helmet/gif/Spartan-helmet-White-150-pxls.gif", height=50)
     ),
-    tags$hr()
-    ,
+    tags$hr() ,
+    
     tags$div(class="user-panel",
-             actionButton("grp1set",   "Grp 1"),
-             actionButton("grp1remove","Remove"),
-             actionButton("grp1clear", "Clear"),
-             p(textOutput("group1Count", inline = TRUE), " nodes"),
-             actionButton("grp2set",   "Grp 2"),
-             actionButton("grp2remove","Remove"),
-             actionButton("grp2clear", "Clear"),
-             p(textOutput("group2Count", inline = TRUE), " nodes"),
-             actionButton("runTest", "Compare Groups"),
-             actionButton("resetZoom", "Reset Zoom")
-
-    )
-    
-    
-  ),
+        p(
+          actionButton("grp1set",   "Grp 1"),
+          actionButton("grp1remove","Rm"),
+          actionButton("grp1clear", "Clear")
+        ),
+        p(textOutput("group1Count", inline = TRUE), " nodes"),
+        p(
+          actionButton("grp2set",   "Grp 2"),
+          actionButton("grp2remove","Rm"),
+          actionButton("grp2clear", "Clear")
+        ),
+        textOutput("group2Count", inline = TRUE), " nodes"),
+        p(class="shiny-input-container",
+               actionButton("runTest", "Compare Groups")),
+        p(class="shiny-input-container", 
+               actionButton("showHist", "Show selected")),
+        selectInput("selectedVar", label = "Color by:", 
+                         choices =  initVariableChoices)
+            
+             
+    ),
   
 #############
 dashboardBody(
@@ -95,7 +100,6 @@ dashboardBody(
       ),
       # First tab content
       tabItem(tabName = "params",
-              
           fluidRow( # all mapper params
             column(width=4,
             box( title="Mapper Parameters", width=NULL, background ="light-blue",
@@ -111,8 +115,6 @@ dashboardBody(
               box(width=NULL, title="Mapper", 
                   actionButton("runMapper", "Calculate Mapper"))
             )
-              
-          
           ),
           
           fluidRow(
@@ -135,7 +137,6 @@ dashboardBody(
                              step=1),  
                  selectInput("overlapSelection", label = "Partition Overlap (percent)", 
                              choices = c(0:13) * 5  + 10, selected = 50)
-                 
               )
             ),
             
@@ -167,7 +168,6 @@ dashboardBody(
       ),
       
 
-      
       tabItem(tabName = "graph",
          fluidRow(
            column(width=10,
@@ -186,17 +186,7 @@ dashboardBody(
               #    subtitle="Nodes", icon = icon("circle-o"),
               #    width=NULL, color="light-blue"),
               
-              box(width=NULL,background="light-blue",
-                  selectInput("selectedVar", label = "Color by:", 
-                              choices =  initVariableChoices)
-                  
-              ),
-              
-              box(uiOutput("selectedNodeCount"),
-                  actionButton("showHist", "Show selected"),
-                  title= "Selected Nodes",
-                  width=NULL, color="light-blue"),
-              
+            
               bsModal("hypothesisTest", "Hypothesis Testing of data in nodes by Group", "runTest",size = "large",
                       tableOutput("hypTestTable"),
                       tableOutput("varianceTable")
