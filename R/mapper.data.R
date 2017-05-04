@@ -73,7 +73,7 @@ is.categorical<- function(gm,varname){
 }
 
 # use levels as categories, which assumes using factors for character data
-colCategories < function(gm,varname){
+colCategories <- function(gm,varname){
   if (is.categorical(gm,varname)){
     return( levels(`$`(d,varname)))
   } else { 
