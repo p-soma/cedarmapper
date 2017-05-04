@@ -1,54 +1,39 @@
 Cedar WorkList
 
-Graph
----
-Size nodes by number of rows per node
 
-Understand Clustering
----
+fix: first mapper has correct edge widths, next runMappers don't (Shiny)
+fix: remove nodes from group removes all (Shiny)
+fix: provide default values or proper error messages for lenses (Shiny)
 
-add clustering visualizations to application
-    
-Lense Functions
----
+fix: review equalization (Mapper)
 
-Eccentrity(data) - for every point variance of the distance (eg. euclidean) to all other points
-see notes on density function
-    
-for point p
-    d = set of distances from all other non-p vars)
-    eccentrity of p =  sqrt(avg(d . ^ 2))
-    
-See notes on density
+fix: node selection; click selected node, unselects all the others unless shift (HTMLWidget)
+fix: when zoomed out, graph canvas is small and can't be clicked on to move graph
+fix: when removing group, glow filter stays on (remove glow filter with group selection and rely on edge color)  (HTMLWidget)
+fix: nodes that don't appear selected (after group select, clear, etc) still move together as if selected sometimes  (HTMLWidget)
+but not always
 
-Normalization functions required
+feature: color nodes by categorical var (Shiny)
+        ability to select categorical variable for coloring
 
+feature: use glow filter to indicate 'stuck' (increase glow) (HTMLWidget)
+feature: sparkline/histograms for selected nodes for selectedVar (Shiny)
+feature: save Mapper button (Shiny)
 
-Hypothesis Testing
-
-Create table for KS test
-columns = each column in dataset (variable) including categoricals/factors
-rows = p values and statistic
-order with lowest p value at the left
-
-harder to sort horizontally
-
-Or variables vertical list
-Given two groupings, use sparkline/histograms
-
-columns : VarName, Pvalue, KS statistic, G1Hist  G2Hist? 
-
-could make varnames a button that opens window to ... date? other graph?
+future: add clustering visualizations to application
+future: better data vis on front page: scatter plot an x/y selection (but restrict so x<>y)
+    optional data table for searching
 
 
 
 
-how to include categorical variables 
-    coloring via percentage of the factor in that node
-    ability to select categorical variable for coloring
 
 
-Save/Load data
+
+
+
+
+
 
 look into this application for code to steal: http://vnijs.github.io/radiant/  and https://github.com/Robinlovelace/R-for-Big-Data
 
