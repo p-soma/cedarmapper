@@ -63,13 +63,9 @@ is.varname <- function(gm, varname){
   return( Reduce("&", (varname %in% names(gm$d))))
 }
 
-is.factor <- function(gm,varname){
-  is.factor(`$`(gm$d,varname))
-}
-
 # alias for is.factor, future flexibility
 is.categorical<- function(gm,varname){
-  is.factor(gm,varname)
+  is.factor(`$`(gm$d,varname))
 }
 
 # use levels as categories, which assumes using factors for character data
@@ -80,6 +76,7 @@ colCategories <- function(gm,varname){
     return( list() )
   }
 }
+
 # this is dangerous practice
 # but returns a variable name in the data set no matter what is sent
 guaranteedVarname <- function(gm,  varname=NULL){
