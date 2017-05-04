@@ -16,7 +16,6 @@ tags$head(
 
       $(window).resize(function(e) {
       dimension[0] = window.innerWidth;
-... = 
       Shiny.onInputChange("dimension", dimension);
       });
 '))
@@ -44,6 +43,9 @@ dashboardSidebar(
     tags$hr() ,
     
     tags$div(class="user-panel",
+        conditionalPanel("input.runMapper",             
+        selectInput("selectedVar", label = "Color by:", choices =  initVariableChoices),
+             
         p(
           actionButton("grp1set",   "Grp 1"),
           actionButton("grp1remove","Rm"),
@@ -55,16 +57,15 @@ dashboardSidebar(
           actionButton("grp2remove","Rm"),
           actionButton("grp2clear", "Clear")
         ),
-        textOutput("group2Count", inline = TRUE), " nodes"),
+        p(textOutput("group2Count", inline = TRUE), " nodes"),
         p(class="shiny-input-container",
                actionButton("runTest", "Compare Groups")),
         p(class="shiny-input-container", 
-               actionButton("showHist", "Show selected")),
-        selectInput("selectedVar", label = "Color by:", 
-                         choices =  initVariableChoices)
+               actionButton("showHist", "Show selected"))
             
-             
-    ),
+       )   
+    )
+  ),
   
 #############
 dashboardBody(
@@ -198,32 +199,6 @@ dashboardBody(
  
           )
          ) # end of row1
-         
-         
-        # , fluidRow(
-           # #column(width=4,
-           #     box(width=NULL,background="light-blue",
-           #         actionButton("grp1set",   "Set Group 1"),
-           #         actionButton("grp1remove","Remove Nodes"),
-           #         actionButton("grp1clear", "Reset"),
-           #         p(textOutput("group1Count", inline = TRUE), " nodes")
-           #     )
-           # ),
-           # column(width=4,
-           #        box(width=NULL,background="light-blue",
-           #            div(style="display:inline-block",actionButton("grp2set",   "Set Group 2")),
-           #            div(style="display:inline-block",actionButton("grp2remove","Remove Nodes")),
-           #            div(style="display:inline-block",actionButton("grp2clear", "Reset")),
-           #            p(textOutput("group2Count", inline = TRUE), " nodes")
-           #       )
-           # ),
-           # column(width=2,
-           #   box(width=NULL,background="black",
-           #       actionButton("runTest", "Compare Groups"),
-           #       actionButton("resetZoom", "Reset Zoom")
-           #       )
-           #  )
-         #) # end row2
       ),
       
       tabItem(tabName="console",
@@ -238,17 +213,6 @@ dashboardBody(
               )
       )
       
-
-      #,
-      #tabItem(tabName="resulttable",
-      #        p("")
-              #fluidRow(
-              #  box(title="Hypothesis test",width=6,
-              #      tableOutput("hypTestTable")),
-              #  box(title="Group Data",width=6,
-              #      tableOutput("varianceTable"))
-              #)
-      #)
       
     ) # end of tabitems
     
