@@ -17,16 +17,32 @@ source("R/mapper.R")
 # creates data frame of graph nodes suitable for conversion to JSON for cedargraph HTML widget
 # includes internal functions for creating the 'value' of each node
 #'@export
-nodePrep = function(gm, selectedVariable=NULL){
+nodePrep = function(gm, selectedVariable=NULL, selectedCategory=NULL){
   ## get node data ready for js widget
 
   # check that what's sent is a variable name
   # be nice and use a default variable name while developing Shiny
   selectedVariable = guaranteedVarname(gm, selectedVariable)
   
+  # get the mean of the variable for a node, or proportion of a category
   meanVariable <- function(node) {
-    mean(nodedata(gm, node,selectedVariable))
-    # mean(gm$d[node,selectedVariable])
+    # default is zero
+    val = 0
+    nd = nodedata(gm, node,selectedVariable)
+    
+    if(is.categorical(gm,selectedVariable)) {
+      # if no category sent, use the first one as default
+      if (is.null(selectedCategory) ){ selectedCategory = colCategories(gm,selectedVariable)[1]}
+      # categorical value is proportion of rows in this node with this category
+      val = length(nd[nd == selectedCategory])/length(nd)
+      
+    } else {
+      print(selectedVariable)
+      print("is numeric")
+      # numeric value, take simple mean
+        val = mean(nd)    
+    }
+    return(val)  
   }
   
   meanFilter <- function(node) {
