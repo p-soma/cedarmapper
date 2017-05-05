@@ -8,44 +8,6 @@ HTMLWidgets.widget({
     ng = cedar.NodeGraph(el);
     ng.w(w);
     ng.h(h);
-    // change element to have same size as parameters
-
-
-
-    // function buttons
-      // function btn(btnname,text, icon,action){
- //        b = `<button type="button" id = "${btnname}" class="btn btn-info btn-sm" onclick="${action};"><span class="glyphicon ${icon}"></span>${text}</button>`;
- //        return(b);
- //      }
- //
- //
- //      btngroup =  $( "<div class='btn-group' id='graph-btns'></div>" );
- //
- //
- //      $(el).before(btngroup);
-     //  btngroup.addClass("btn-group");
-     // recenter button
-      // btngroup.append(btn('recenter','recenter','','ng.reset();'));
-      // NUDGE BUTTONS
-      // var a  = ["left", "right","up", "down"];     
-      // for (var i = 0; i < a.length; i++) {
-      //   btngroup.append(btn(`move${a[i]}`,'', `glyphicon-arrow-${a[i]}`,`ng.move${a[i]}()`));
-      // }
-      // btngroup.append(
-   //      btn('attractplus','','glyphicon-resize-full','ng.expand()')
-   //      );
-   //    btngroup.append(
-   //      btn('attractmius','','glyphicon-resize-small','ng.shrink()')
-   //        );
-   //
-   //    btngroup.append(
-   //      btn('rotate','','glyphicon-repeat','ng.rotate(1)')
-   //      );
-   //
-   //    btngroup.append(
-   //      btn('rotateleft','','flipped glyphicon-repeat','ng.rotate(-1)')
-   //      );
-
 
     // TODO: test if SHINY shinyMode
     // requires this in your shiny app:
