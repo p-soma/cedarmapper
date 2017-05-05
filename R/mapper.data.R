@@ -60,12 +60,16 @@ is.mapper <- function(o){
 }
 
 is.varname <- function(gm, varname){
+  if(!is.mapper(gm)) {return(NULL)}
   return( Reduce("&", (varname %in% names(gm$d))))
 }
 
 # alias for is.factor, future flexibility
-is.categorical<- function(gm,varname){
-  is.factor(gm$d[,varname])
+is.categorical <- function(gm,varname=NULL){
+  if(is.null(varname))         {return(NULL)}
+  if(!is.mapper(gm))           {return(NULL)}
+  if(!is.varname(gm, varname)) {return(FALSE)}
+     return(is.factor(gm$d[,varname]))
 }
 
 # use levels as categories, which assumes using factors for character data

@@ -125,9 +125,9 @@ shinyServer(function(input, output, session) {
   observe({
     input$selectedVar
     
-    # DEBUG
+    # formerly, when allowing for lense values to be used
     # print(selectedVariable() %in% c(colnames(gm$d),lenseChoices))
-    if (selectedVariable() %in% c(colnames(gm$d),lenseChoices)) {
+    if (selectedVariable() %in% c(colnames(gm$d))) {      
       vals = nodePrep(gm,selectedVariable(), selectedCategory())$values
       session$sendCustomMessage(type='nodevalues',message = vals)
     } 
@@ -299,12 +299,14 @@ shinyServer(function(input, output, session) {
     selected_cols <- input$selectedColumns
 
     # add selected lense function(s) to choices of coloring variable
-    choices = c(names(d),input$lenseFunctionSelection)
+    # temporarily disabled
+    # choices = c(names(d),input$lenseFunctionSelection)
+    #if(!is.null(input$lense2FunctionSelection) && input$lense2FunctionSelection != "none"){
+    #  choices = c(choices, input$lense2FunctionSelection)
+    #}
     
-    if(!is.null(input$lense2FunctionSelection) && input$lense2FunctionSelection != "none"){
-      choices = c(choices, input$lense2FunctionSelection)
-    }
-    
+    # stick with dataset column names
+    choices = c(names(d))    
     updateSelectInput(session, inputId = "selectedVar",  label = "Color by", choices) 
     
     progress <- shiny::Progress$new()
