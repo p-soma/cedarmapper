@@ -60,7 +60,6 @@ shinyServer(function(input, output, session) {
     dataName = input$newDataName
     newData <- read.csv(inFile$datapath, header = input$header,
              sep = input$sep, quote = input$quote, stringsAsFactors = FALSE)
-    
 
     
     datasets[[dataName]] <<- newData
@@ -94,6 +93,30 @@ shinyServer(function(input, output, session) {
     return(v)
   })
   
+  
+  # when a var is selected, save if it's continuos or categorical
+  # future: change this to return the class of variable vs binary categorical yes/no
+  output$selectedIsCategorical <- reactive({ 
+    input$runMapper
+    input$selectedVar
+    if(is.null(input$selectedVar)){ return(FALSE)}
+    else {return(is.categorical(gm,selectedVariable())) }
+  }) 
+
+  outputOptions(output, "selectedIsCategorical", suspendWhenHidden = FALSE)
+  
+  selectedCategory <- reactive({
+    if( is.categorical(gm,selectedVariable()) ){ input$categoricalVar }
+    else{ NULL }
+  })
+  
+  observe({
+    selectedVariable
+    if (is.categorical(gm,selectedVariable())){
+      updateSelectInput(session, inputId = "categoricalVar",  label = "Category", colCategories(gm,selectedVariable()))  
+    }
+  })
+  
   # Server->Javascript
   # when a new variable is selected in the selectVar select box input,
   # collects mean values of that variable from all nodes, and sends those values
@@ -101,10 +124,11 @@ shinyServer(function(input, output, session) {
   # there and the (D3.js) nodes are updated and recolored, etc
   observe({
     input$selectedVar
+    
     # DEBUG
     # print(selectedVariable() %in% c(colnames(gm$d),lenseChoices))
     if (selectedVariable() %in% c(colnames(gm$d),lenseChoices)) {
-      vals = nodePrep(gm,selectedVariable())$values
+      vals = nodePrep(gm,selectedVariable(), selectedCategory())$values
       session$sendCustomMessage(type='nodevalues',message = vals)
     } 
   })

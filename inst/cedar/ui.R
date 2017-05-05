@@ -45,7 +45,10 @@ dashboardSidebar(
     tags$div(class="user-panel",
         conditionalPanel("input.runMapper",             
         selectInput("selectedVar", label = "Color by:", choices =  initVariableChoices),
-             
+        
+        conditionalPanel("output.selectedIsCategorical",
+          selectInput("categoricalVar", label = "Category:", choices =  list('a','b','c'))
+        ),
         p(
           actionButton("grp1set",   "Grp 1"),
           actionButton("grp1remove","Rm"),
