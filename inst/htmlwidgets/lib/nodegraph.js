@@ -3,9 +3,11 @@ var selectedNodes;
 
 cedar.NodeGraph = function module() {
     // starting values, overridden when plot is created
+    var w = $(window).width()-margin,
+        h = $(window).height()-margin;
+    
+    /////////////////// PRE-SET OPTIONS
     var margin = 10,
-        w = $(window).width()-margin,
-        h = $(window).height()-margin,
         opacity_percent = 0.98,
         node_area_percent = 0.3,
         maxLinkWidth = 8,
@@ -16,11 +18,13 @@ cedar.NodeGraph = function module() {
         linkdistanceFactor = 1,
         nudgefactor = 10,
         scaleFactor = 1,
-        translation = [0,0];
+        translation = [0,0],
+        nodesize_threshold = 12,
         option_textvisible = true;
+        
 
     // functions called by API
-    var resetzoom, manualzoom, force, graph, svg, nodeSizeScale, setFillColor,
+    var render, resetzoom, manualzoom, force, graph, svg, nodeSizescale, setFillColor,
         getSelected, clearSelected, getValues, setValues, forceresize, nodevalues,
         nudge, rotate, setTransform, setGroupID, clearGroupID, removeGroupID, 
         nodes,nodegroup, lasso;
@@ -30,7 +34,7 @@ cedar.NodeGraph = function module() {
      _selection.each(function(graphdata) { 
          // this structure allows d3.select(el).datum(nodedata).call(ng);
          
-            // initial values
+        /////////// CURRENT STATE initial values
         var shiftKey;
         var tx = 0,ty = 0,scale = 1,rotation=0;
         
@@ -44,7 +48,6 @@ cedar.NodeGraph = function module() {
                 .attr("id", "nodegraph")
                 .attr("height", h)
                 .attr("width", w);
-
 
         //////// graph holds lasso, zoom, nodes and links
         var graph = svg.append('g')
@@ -300,54 +303,52 @@ cedar.NodeGraph = function module() {
             .on("draw", lasso_draw) // lasso draw function
             .on("end", lasso_end); // lasso end function
 
-            // NODE INFORMATIONAL FUNCTIONS
-            var nodeSizes = graphdata.nodes.map(
-                function(node, i) {
-                    return (node.size+1);
-                }
-            );
-
-            var linkWeights = graphdata.links.map(
-                function(link, i) {
-                    return (link.weight);
-                });
-
-            var linkWeightScale = d3.scale.linear()
-                .domain(d3.extent(linkWeights))
-                .range([minLinkWidth, maxLinkWidth]);
-
         ///////// END LASSO
+            
+            // NODE INFORMATIONAL FUNCTIONS
+            
+
 
         ////// **** NODE SIZE CALCULATIONS
-        getWindowArea  = function(){
+         getWindowArea  = function(){
              return((h -margin) * (w - margin));
          };
-                
+
+         // replaced by d3.extent
+         // function nodeSizes(){
+         //     var ns  = graphdata.nodes.map(
+         //         function(node, i) {
+         //             console.log(node.size);
+         //             return (node.size+1);}
+         //     );
+         //     return(ns);
+         // }
+         //
+         // var linkWeights = function(){
+         //     graphdata.links.map(
+         //         function(link, i) {return (link.weight);}
+         //     );
+         // }
+         
+        
         // determine the largest node size based on n nodes and window area
         maxNodeSize = function(){
           var ncount = graphdata.nodes.length;
           var A = getWindowArea();
           // node_area_percent constant set above
           ns = Math.sqrt(( A * node_area_percent)/(ncount * Math.PI ) );
-          console.log("maxnodesize="+ns );
           return(  ns  );
         };
 
         minNodeSize = function(){
             var t =0.3; // coefficient determining node size variation
-            noderange = d3.extent(nodeSizes);
+            nodeSizeRange = d3.extent(graphdata.nodes, function(n) { return n.size; })
             m = (
-                  ((1-t) * noderange[0] + t * noderange[1])
-                          / noderange[1]
+                  ((1-t) * nodeSizeRange[0] + t * nodeSizeRange[1])
+                          / nodeSizeRange[1]
                );
-
-          console.log("minnodesize = " + (m * maxNodeSize()));
           return(maxNodeSize() *m);
         };
-
-        nodeSizeScale = d3.scale.log().base(10)
-            .domain(d3.extent(nodeSizes))
-            .range([minNodeSize(), maxNodeSize()]);
 
         maxLinkWidth = function(){
             return(10);
@@ -357,6 +358,27 @@ cedar.NodeGraph = function module() {
             return(maxLinkWidth() * 0.1);
         };
 
+        var nodeSizeScale, linkWeightScale;
+        
+        // this is really crude but gets it done
+        // sets scale functions based on current graphdata
+        
+        var setScales = function(){
+            nodeSizeScale = d3.scale.log().base(10)
+                .domain(
+                    d3.extent(graphdata.nodes, function(n) { return n.size; })
+                )
+                .range([minNodeSize(), maxNodeSize()]);
+
+            linkWeightScale = d3.scale.linear()
+                .domain(
+                    d3.extent(graphdata.links, function(l) { return l.weight;})
+                )
+                .range([minLinkWidth(), maxLinkWidth()]);
+        }
+
+        setScales();
+        
         ///////// SELECTION EVENT MANAGEMENT
         // dispatch is D3's event model, this function is wired to any functions
         // that alter node selection (click, brush, etc)
@@ -465,14 +487,15 @@ cedar.NodeGraph = function module() {
 
         }
 
-
-           nudge= function(dx, dy) {
-                //. nudgefactor global config var
-                // tx = tx + dx * nudgefactor;
-                // ty = ty + dy * nudgefactor;
-                // setTransform();
-                // d3.event.preventDefault();
-            };
+       nudge= function(dx, dy) {
+           //TODO use d3's zoom functions to manually move via zoombehavior
+           // disable for now
+            //. nudgefactor global config var
+            tx = tx + dx * nudgefactor;
+            ty = ty + dy * nudgefactor;
+            setTransform();
+            d3.event.preventDefault();
+        };
 
 
            function do_tick() {
@@ -662,14 +685,14 @@ cedar.NodeGraph = function module() {
             });
 
        // now that nodes are defined, can tell lasso to include them
-       lasso.items(nodegroup);
+       //lasso.items(nodegroup);
             
        
         
         ////////////// NODE LABELS/TEXT
         // can be toggled as text in nodegroups requiring manual counter-rotation
         // is expensive
-        var nodesize_threshold = 12;
+        
         
         function addNodeText(){
             nodetexts = nodegroup
@@ -826,7 +849,26 @@ cedar.NodeGraph = function module() {
             dispatch.nodeselected();
         };
 
-
+//////////////////////////////////////////////
+//      RENDER VISUALIZATION, INITIAL SETTINGS
+//////////////////////////////////////////////
+        
+        render_ng = function(){
+            tx = 0,ty = 0,scale = 1,rotation=0;
+            x_scale = d3.scale.linear().domain([0, w ]).range([0, w]);
+            y_scale = d3.scale.linear().domain([0, h ]).range([0, h]);
+            setTransform();
+            addNodeText();
+            setScales();
+            setFillColor(); 
+            drag_enable();
+            lasso.items(nodegroup);
+            force.start()
+        }
+        
+        // code transition to intentional render, for now just call function here
+        // TODO stop all automatic runnign code not in a render function
+        render_ng();
     }); /////// end of inner function
   
     } // end of main nodegraph function
@@ -834,8 +876,10 @@ cedar.NodeGraph = function module() {
 
     ///////////// API available to HTMLWidget, buttons, etc
     nodegraph.render = function() {
-        setFillColor(); 
-        force.start(); 
+        // previously was only, but now calls inner render_ng()
+         // setFillColor(); 
+         // force.start();
+         render_ng();
     };
 
     nodegraph.w = function(_x) {
