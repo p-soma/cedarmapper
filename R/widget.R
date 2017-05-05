@@ -37,8 +37,6 @@ nodePrep = function(gm, selectedVariable=NULL, selectedCategory=NULL){
       val = length(nd[nd == selectedCategory])/length(nd)
       
     } else {
-      print(selectedVariable)
-      print("is numeric")
       # numeric value, take simple mean
         val = mean(nd)    
     }
