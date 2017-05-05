@@ -60,7 +60,6 @@ shinyServer(function(input, output, session) {
     dataName = input$newDataName
     newData <- read.csv(inFile$datapath, header = input$header,
              sep = input$sep, quote = input$quote, stringsAsFactors = FALSE)
-    
 
     
     datasets[[dataName]] <<- newData
@@ -88,10 +87,34 @@ shinyServer(function(input, output, session) {
   # of the selected variable to Shiny via the session object
   
   # selectedVar ==> color and data exploration variable 
-  selectedVar <- reactive({ 
+  selectedVariable <- reactive({ 
     if(is.null(input$selectedVar)){ v = colnames(selectedDataSet())[1]}
     else{ v = input$selectedVar}
     return(v)
+  })
+  
+  
+  # when a var is selected, save if it's continuos or categorical
+  # future: change this to return the class of variable vs binary categorical yes/no
+  output$selectedIsCategorical <- reactive({ 
+    input$runMapper
+    input$selectedVar
+    if(is.null(input$selectedVar)){ return(FALSE)}
+    else {return(is.categorical(gm,selectedVariable())) }
+  }) 
+
+  outputOptions(output, "selectedIsCategorical", suspendWhenHidden = FALSE)
+  
+  selectedCategory <- reactive({
+    if( is.categorical(gm,selectedVariable()) ){ input$categoricalVar }
+    else{ NULL }
+  })
+  
+  observe({
+    selectedVariable
+    if (is.categorical(gm,selectedVariable())){
+      updateSelectInput(session, inputId = "categoricalVar",  label = "Category", colCategories(gm,selectedVariable()))  
+    }
   })
   
   # Server->Javascript
@@ -101,10 +124,11 @@ shinyServer(function(input, output, session) {
   # there and the (D3.js) nodes are updated and recolored, etc
   observe({
     input$selectedVar
+    
     # DEBUG
-    # print(selectedVar() %in% c(colnames(gm$d),lenseChoices))
-    if (selectedVar() %in% c(colnames(gm$d),lenseChoices)) {
-      vals = nodePrep(gm,selectedVar())$values
+    # print(selectedVariable() %in% c(colnames(gm$d),lenseChoices))
+    if (selectedVariable() %in% c(colnames(gm$d),lenseChoices)) {
+      vals = nodePrep(gm,selectedVariable(), selectedCategory())$values
       session$sendCustomMessage(type='nodevalues',message = vals)
     } 
   })
@@ -113,17 +137,17 @@ shinyServer(function(input, output, session) {
   histVals <- reactive({
        input$showHist
        if(!is.null(input$nodelist)){
-         varname = selectedVar()
+         varname = selectedVariable()
          nodedata(gm, as.numeric(input$nodelist),varname)
        } else {
          c(0)
        }
            
-       varname = selectedVar()
+       varname = selectedVariable()
        nodes <- input$nodelist
        if (is.numeric(gm$d[,varname])){       
          varplot <- hist(
-           # nodePrep(gm,selectedVar())$values,
+           # nodePrep(gm,selectedVariable())$values,
            nodedata(gm, gm$nodes[nodes], varname),
            main="Data from Selected Nodes",
            ylab="Frequency",
@@ -141,14 +165,14 @@ shinyServer(function(input, output, session) {
   #showBarPlot <- eventReactive(input$showHist,{ 
 
      #barplot, compatible with factors
-      #return(factorBarPlot(gm, selectedVar()))
-  #    factorBarPlot(gm, selectedVar(), group_id = 1)
+      #return(factorBarPlot(gm, selectedVariable()))
+  #    factorBarPlot(gm, selectedVariable(), group_id = 1)
 
          # hist(
-        #       nodePrep(gm,selectedVar())$values, 
+        #       nodePrep(gm,selectedVariable())$values, 
        #       main="Data from Selected Nodes",
        #       ylab="Frequency",
-       #       xlab=paste0("data for ",selectedVar() )
+       #       xlab=paste0("data for ",selectedVariable() )
          #     )
 
  #   })
@@ -156,14 +180,14 @@ shinyServer(function(input, output, session) {
     #showBarPlot <- eventReactive(input$showHist,{ 
     
     #barplot, compatible with factors
-    #return(factorBarPlot(gm, selectedVar()))
-  #  factorBarPlot(gm, selectedVar(), group_id = 2)
+    #return(factorBarPlot(gm, selectedVariable()))
+  #  factorBarPlot(gm, selectedVariable(), group_id = 2)
     
     # hist(
-    #       nodePrep(gm,selectedVar())$values, 
+    #       nodePrep(gm,selectedVariable())$values, 
     #       main="Data from Selected Nodes",
     #       ylab="Frequency",
-    #       xlab=paste0("data for ",selectedVar() )
+    #       xlab=paste0("data for ",selectedVariable() )
     #     )
     
 #  })
@@ -281,7 +305,7 @@ shinyServer(function(input, output, session) {
       choices = c(choices, input$lense2FunctionSelection)
     }
     
-    updateSelectInput(session, inputId = "selectedVar", choices) 
+    updateSelectInput(session, inputId = "selectedVar",  label = "Color by", choices) 
     
     progress <- shiny::Progress$new()
     progress$set(message = "Calculating Clustering", value = 0)

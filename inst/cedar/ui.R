@@ -16,7 +16,6 @@ tags$head(
 
       $(window).resize(function(e) {
       dimension[0] = window.innerWidth;
-      dimension[1] = window.innerHeight;
       Shiny.onInputChange("dimension", dimension);
       });
 '))
@@ -30,7 +29,7 @@ dashboardHeader(title = "CEDAR"),
   
 ################
 dashboardSidebar( 
-    sidebarMenu(
+  sidebarMenu(
       id = "tabs",
       menuItem("Data",       tabName = "data",       icon = icon("table")),
       menuItem("Parameters", tabName = "params",     icon = icon("sliders")),
@@ -38,27 +37,37 @@ dashboardSidebar(
       # menuItem("Results",    tabName=  "resulttable",    icon = icon("bar-chart")),
       menuItem("Console",    tabName = "console",    icon = icon("terminal"))
     ),
-    tags$div(align="center", style="position: absolute; bottom: 10%;
-    left:50%; margin-left:-25px;",
-      tags$img(src="http://cabs.msu.edu/toolkit/images/helmet/gif/Spartan-helmet-White-150-pxls.gif", height=50)
+    tags$div(align="center", style="position: absolute; bottom: 10%; left:50%; margin-left:-25px;",
+    tags$img(src="http://cabs.msu.edu/toolkit/images/helmet/gif/Spartan-helmet-White-150-pxls.gif", height=50)
     ),
-    tags$hr()
-    ,
+    tags$hr() ,
+    
     tags$div(class="user-panel",
-             actionButton("grp1set",   "Grp 1"),
-             actionButton("grp1remove","Remove"),
-             actionButton("grp1clear", "Clear"),
-             p(textOutput("group1Count", inline = TRUE), " nodes"),
-             actionButton("grp2set",   "Grp 2"),
-             actionButton("grp2remove","Remove"),
-             actionButton("grp2clear", "Clear"),
-             p(textOutput("group2Count", inline = TRUE), " nodes"),
-             actionButton("runTest", "Compare Groups"),
-             actionButton("resetZoom", "Reset Zoom")
-
+        conditionalPanel("input.runMapper",             
+        selectInput("selectedVar", label = "Color by:", choices =  initVariableChoices),
+        
+        conditionalPanel("output.selectedIsCategorical",
+          selectInput("categoricalVar", label = "Category:", choices =  list('a','b','c'))
+        ),
+        p(
+          actionButton("grp1set",   "Grp 1"),
+          actionButton("grp1remove","Rm"),
+          actionButton("grp1clear", "Clear")
+        ),
+        p(textOutput("group1Count", inline = TRUE), " nodes"),
+        p(
+          actionButton("grp2set",   "Grp 2"),
+          actionButton("grp2remove","Rm"),
+          actionButton("grp2clear", "Clear")
+        ),
+        p(textOutput("group2Count", inline = TRUE), " nodes"),
+        p(class="shiny-input-container",
+               actionButton("runTest", "Compare Groups")),
+        p(class="shiny-input-container", 
+               actionButton("showHist", "Show selected"))
+            
+       )   
     )
-    
-    
   ),
   
 #############
@@ -95,13 +104,12 @@ dashboardBody(
       ),
       # First tab content
       tabItem(tabName = "params",
-              
           fluidRow( # all mapper params
             column(width=4,
             box( title="Mapper Parameters", width=NULL, background ="light-blue",
               h3("Data set:", textOutput("dataname",inline=TRUE),color="light-blue"),
               checkboxInput("normalizeOption", "Normalize Data?", value = TRUE, width = NULL),
-              checkboxInput("equalizeOption", "Equalize Data?", value = TRUE, width = NULL),
+              checkboxInput("equalizeOption", "Equalize Data?", value = FALSE, width = NULL),
               sliderInput("binCountSelection", label = "Cluster Bin Count", 
                           min=min(3),max=max(50), value=10,
                           step=1)  
@@ -111,8 +119,6 @@ dashboardBody(
               box(width=NULL, title="Mapper", 
                   actionButton("runMapper", "Calculate Mapper"))
             )
-              
-          
           ),
           
           fluidRow(
@@ -135,7 +141,6 @@ dashboardBody(
                              step=1),  
                  selectInput("overlapSelection", label = "Partition Overlap (percent)", 
                              choices = c(0:13) * 5  + 10, selected = 50)
-                 
               )
             ),
             
@@ -167,7 +172,6 @@ dashboardBody(
       ),
       
 
-      
       tabItem(tabName = "graph",
          fluidRow(
            column(width=10,
@@ -186,17 +190,7 @@ dashboardBody(
               #    subtitle="Nodes", icon = icon("circle-o"),
               #    width=NULL, color="light-blue"),
               
-              box(width=NULL,background="light-blue",
-                  selectInput("selectedVar", label = "Color by:", 
-                              choices =  initVariableChoices)
-                  
-              ),
-              
-              box(uiOutput("selectedNodeCount"),
-                  actionButton("showHist", "Show selected"),
-                  title= "Selected Nodes",
-                  width=NULL, color="light-blue"),
-              
+            
               bsModal("hypothesisTest", "Hypothesis Testing of data in nodes by Group", "runTest",size = "large",
                       tableOutput("hypTestTable"),
                       tableOutput("varianceTable")
@@ -208,32 +202,6 @@ dashboardBody(
  
           )
          ) # end of row1
-         
-         
-        # , fluidRow(
-           # #column(width=4,
-           #     box(width=NULL,background="light-blue",
-           #         actionButton("grp1set",   "Set Group 1"),
-           #         actionButton("grp1remove","Remove Nodes"),
-           #         actionButton("grp1clear", "Reset"),
-           #         p(textOutput("group1Count", inline = TRUE), " nodes")
-           #     )
-           # ),
-           # column(width=4,
-           #        box(width=NULL,background="light-blue",
-           #            div(style="display:inline-block",actionButton("grp2set",   "Set Group 2")),
-           #            div(style="display:inline-block",actionButton("grp2remove","Remove Nodes")),
-           #            div(style="display:inline-block",actionButton("grp2clear", "Reset")),
-           #            p(textOutput("group2Count", inline = TRUE), " nodes")
-           #       )
-           # ),
-           # column(width=2,
-           #   box(width=NULL,background="black",
-           #       actionButton("runTest", "Compare Groups"),
-           #       actionButton("resetZoom", "Reset Zoom")
-           #       )
-           #  )
-         #) # end row2
       ),
       
       tabItem(tabName="console",
@@ -248,17 +216,6 @@ dashboardBody(
               )
       )
       
-
-      #,
-      #tabItem(tabName="resulttable",
-      #        p("")
-              #fluidRow(
-              #  box(title="Hypothesis test",width=6,
-              #      tableOutput("hypTestTable")),
-              #  box(title="Group Data",width=6,
-              #      tableOutput("varianceTable"))
-              #)
-      #)
       
     ) # end of tabitems
     

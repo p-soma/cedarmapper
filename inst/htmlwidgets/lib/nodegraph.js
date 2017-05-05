@@ -132,23 +132,15 @@ cedar.NodeGraph = function module() {
             }
             
             resetzoom = function(){
-                tx = ty = 0 
-                scale = 1
-                zoombehavior.scale(1).translate([0, 0])
-                zoombehavior.event(graph)
-                setTransform()
-            }
+                tx = ty = 0 ;
+                scale = 1;
+                zoombehavior.scale(1).translate([0, 0]);
+                zoombehavior.event(graph);
+                setTransform();
+            };
             
-
-        function dblclick(d) {
-          d3.event.stopPropagation();
-          d3.select(this)
-              .classed("fixed",   d.fixed    = false )
-              .classed("selected",d.selected = false );
-        }
-
-
-         var drag  = d3.behavior.drag()
+            
+         var drag  = d3.behavior.drag();
 
          function drag_enable(){
             drag.on("dragstart", dragstarted)
@@ -235,6 +227,7 @@ cedar.NodeGraph = function module() {
         var graph = svg.append('g')
             .attr("class", "canvas")
             .attr("id","graph")
+            .style('cursor', 'crosshair')
             .call(zoombehavior);
 
 
@@ -528,15 +521,6 @@ cedar.NodeGraph = function module() {
             };
 
 
-            // fixed nodes don't move when layout is redrawn
-            function setFixed(d) {
-                d3.select(this).classed("fixed", d.fixed = true);
-            }
-
-            function releaseFixed(d) {
-                d3.select(this).classed("fixed", d.fixed = false);
-            }
-
            function do_tick() {
                 link.attr("x1", function (d) {
                         return translation[0] + scaleFactor*d.source.x;
@@ -612,8 +596,15 @@ cedar.NodeGraph = function module() {
 
             var glowFilter = defs.append("filter").attr("id","colorglow");
             glowFilter.append("feGaussianBlur")
-                  .attr("stdDeviation","3.5")
+                  .attr("stdDeviation","5")
 	                .attr("result","coloredBlur");
+	          var feOffset = glowFilter.append("feOffset");
+	          glowFilter.append("feBlend")
+	             .attr("in","SourceGraphic" )
+	             .attr("in2","offOut")
+	             .attr("mode","normal" );
+	          feOffset.attr("result","offOut").attr("in","SourceGraphic").attr("dx","10").attr("dy","10");
+            
             var feMerge = glowFilter.append("feMerge");
             feMerge.append("feMergeNode")
                       .attr("in","coloredBlur");
@@ -669,17 +660,28 @@ cedar.NodeGraph = function module() {
                     return d.y;
                 })
                 .classed('nodegroup', true)
-                .on("dblclick",dblclick)
+                .on("dblclick",function(d) {
+                    d3.event.stopPropagation();
+                    d.fixed = false;
+                    d3.select(this)
+                      .classed("selected",d.selected = false )
+                      .classed("fixed",false)
+                      .style("filter", "");
+                  })
                 .on("click", function(d) {
-                    if (d3.event.defaultPrevented) return;
-
+                    if (d3.event.defaultPrevented) {return(false)};
                     if (!shiftKey) {
                         //if the shift key isn't down, unselect everything
-                        d3.select(this).classed("selected", function(p) { return p.selected =  p.previouslySelected = false; })
+                        d3.select(this).classed("selected", function(p) { 
+                          return p.selected =  p.previouslySelected = false; });
                     }
 
                     // always select this node
-                    d3.select(this).classed("selected", d.selected = !d.previouslySelected);
+                    d.fixed = true;
+                    d3.select(this)
+                      .classed("selected", d.selected = !d.previouslySelected)
+                      .classed("fixed",true)
+                      .style("filter", "url(#colorglow)");
                 })
                 .call(drag);
                 // .on("click", function() {
@@ -734,12 +736,10 @@ cedar.NodeGraph = function module() {
                     do_tick();
             }
                 
+            // when building viz, add text but don't tick
+            addNodeText();
 
-                
-                // when building viz, add text but don't tick
-                addNodeText();
-
-           lasso.items(nodegroup);
+            lasso.items(nodegroup);
            
           // DISABLE BRUSH
            
@@ -834,8 +834,6 @@ cedar.NodeGraph = function module() {
             setGroupAppearance = function(n,groupId){
                 var className = groupClass(groupId);
                 n.classed(className, true);
-                n.style("filter", "url(#colorglow)");
-                // n.attr('filter',"url(#colorglow)");
             };
 
             removeGroupAppearance = function(n,groupID){
@@ -845,9 +843,9 @@ cedar.NodeGraph = function module() {
               // loop through n (node list) and remove filter
               var otherClassname =  groupClass(otherGroup(groupId));
 
-              n.style("filter",function(d,i){
-                return ( this.classed(otherClassname) ? "" : this.style("filter"));
-              });
+              //n.style("filter",function(d,i){
+              //  return ( this.classed(otherClassname) ? "" : this.style("filter"));
+              //});
 
             };
 
