@@ -13,7 +13,7 @@ cedar.NodeGraph = function module() {
         maxLinkWidth = 8,
         minLinkWidth = 1,
         nodecolors = ['white', 'darkgreen'],
-        ForceCharge = -1000,
+        ForceCharge = -1800,
         LinkDistance = 100,
         linkdistanceFactor = 1,
         nudgefactor = 10,
@@ -21,6 +21,7 @@ cedar.NodeGraph = function module() {
         translation = [0,0],
         nodesize_threshold = 12,
         option_textvisible = true;
+        gravity_value = 0.01;
         
 
     // functions called by API
@@ -69,7 +70,7 @@ cedar.NodeGraph = function module() {
           // this is expensive, so only do when text is showing
           if(option_textvisible){
               nodegroup.each(function(d,i) {
-                  thisnode = d3.select(this)
+                  thisnode = d3.select(this);
                   bbox = thisnode.node().getBBox();
                        //bounding box of rotated nodegroup, to find center x,y
                   thisnode.attr('transform', `rotate(${-1*rotation}  ${bbox.x+ bbox.width/2} ${bbox.y + bbox.height/2} )`);
@@ -90,7 +91,7 @@ cedar.NodeGraph = function module() {
         var y_scale = d3.scale.linear().domain([0, h ]).range([0, h]);
 
         var zoombehavior = d3.behavior.zoom()
-            .scaleExtent([0.1,10]) //allow 10 times zoom in or out
+            .scaleExtent([0.4,10]) //allow 10 times zoom in or out
             .x(x_scale)
             .y(y_scale)
             .on('zoom', semanticzoom);
@@ -398,7 +399,7 @@ cedar.NodeGraph = function module() {
         // TODO  make link distance a function of number of nodes and size
         force = d3.layout.force()
             .linkDistance(maxNodeSize()*2.5)
-            .gravity(0.1)
+            .gravity(gravity_value)
             .charge(ForceCharge)
             .size([w, h])
             .on("tick", do_tick)
@@ -860,9 +861,11 @@ cedar.NodeGraph = function module() {
             setTransform();
             addNodeText();
             setScales();
-            setFillColor(); 
+            setFillColor();
+            resetzoom();
             drag_enable();
             lasso.items(nodegroup);
+            
             force.start()
         }
         
