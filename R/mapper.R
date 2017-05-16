@@ -39,13 +39,14 @@ lense <- function(lensefun, lenseparam=NULL, partition_count=4, overlap = 0.5) {
 #' @return mapper object with all params needed for pipeline
 #' @export
 
-mapper <- function(dataset, lenses, cluster_method="single", bin_count=10, normalize_data=TRUE, equalize_data=FALSE, selected_cols=NULL){
+mapper <- function(dataset, lenses, cluster_method="single", bin_count=10, normalize_data=TRUE, selected_cols=NULL, 
+                   equalize_lenses = list(), equalize_bins = list()){
   # lenses have previous parameters used: lensefun, partition_count=4, overlap = 0.5,lenseparam = NULL
   
   # note: dimensions variable 
   # note: using as.numeric to convert arguments becuase Shiny inputs return strings
     
-  if(is.null(selected_cols)){ 
+  if(is.null(selected_cols)){
     selected_cols = names(dataset)[sapply(dataset,is.numeric)]
   }
   
@@ -55,8 +56,9 @@ mapper <- function(dataset, lenses, cluster_method="single", bin_count=10, norma
                       "cluster_method"=cluster_method, 
                       "bin_count" = as.numeric(bin_count),
                       "normalize_data" = normalize_data,
-                      "equalize_data" = equalize_data,
-                      "selected_cols" = selected_cols
+                      "selected_cols" = selected_cols,
+                      "equalize_lenses" = equalize_lenses,
+                      "equalize_bins" = equalize_bins
                       ),
                  class="mapper")
   
@@ -122,15 +124,15 @@ mapper.run <- function(m, progressUpdater = NULL){
 #' structure of old mapper object, but this mushes it into a 1D mapper 
 #' @export
 makemapper <- function(dataset, 
-              lensefun, partition_count=4, overlap = 0.5, lenseparam = NULL,
+              lensefun, partition_count=4, overlap = 0.5, lenseparam = NULL, 
               lense2fun = NULL, lense2partition_count=NULL,lense2overlap = 0.0,lense2param = NULL,
-              bin_count=10, cluster_method= 'single', normalize_data=TRUE, equalize_data =TRUE,
+              bin_count=10, cluster_method= 'single', normalize_data=TRUE, equalize_lenses = list(), equalize_bins = list(),
               progressUpdater=NULL, selected_cols=NULL) {
   
   # create objects with the above params
   # if selected_cols is not sent (is NULL) then limit pipeline only numeric columns
   #   -- otherwise calculations will error (distance matrix, etc)
-  if(is.null(selected_cols)){ 
+  if(is.null(selected_cols)){
     selected_cols = names(dataset)[sapply(dataset,is.numeric)]
     }
 
@@ -150,8 +152,9 @@ makemapper <- function(dataset,
                cluster_method=cluster_method, 
                bin_count=bin_count, 
                normalize_data=normalize_data,
-               equalize_data=equalize_data,
-               selected_cols=selected_cols
+               selected_cols=selected_cols,
+               equalize_lenses=equalize_lenses,
+               equalize_bins=equalize_bins
                )
   m <- mapper.run(m)
 
@@ -193,11 +196,17 @@ mapper.lense.calculate <- function(m,dimension=1){
   # L$values is 1D vector of values from the filter/lense function with same length as mapper data
   L$values <- L$lensefun(m$d[mapper.numeric_cols(m)], L$lenseparam, m$distance)
   
-  if (m$equalize_data){
-    L$values <- equalize_hist(L$values)
+  # apply histogram equalization to lens values 
+  print("equalize?")
+  print(m$equalize_lenses[[dimension]])
+  nbreaks <- ceiling(m$equalize_bins[[dimension]] * length(L$values))
+  print(nbreaks)
+  if (m$equalize_lenses[[dimension]]){
+    L$values <- equalize_hist(L$values, nbreaks)
   }
   
   names(L$values) <- rownames(m$d)
+  hist(L$values, breaks = nbreaks)
 
   
   # calc and store aspects of resulting vector; could be expensive

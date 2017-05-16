@@ -46,12 +46,12 @@ shinyServer(function(input, output, session) {
     
   })
   
-  observe({
-    input$factorTextData
-    if( input$factorTextData){
-      updateCheckboxGroupInput(session, inputId = "selectedColumns", choices = names(d), selected = names(d[, sapply(d, is.numeric)]), inline=TRUE)
-    }
-   })
+  # observe({
+  #   input$factorTextData
+  #   if( input$factorTextData){
+  #     updateCheckboxGroupInput(session, inputId = "selectedColumns", choices = names(d), selected = names(d[, sapply(d, is.numeric)]), inline=TRUE)
+  #   }
+  #  })
   
   newData <- observeEvent(input$uploadDataAction,{
     inFile <- input$file1
@@ -293,8 +293,9 @@ shinyServer(function(input, output, session) {
     factorCols <- list()
     factorCols <- names(d[, ! sapply(d, is.numeric)])
     d[factorCols] <- lapply(d[factorCols], factor)
+    
  #   factorCols <- c(names(d[, sapply(d, is.factor)]), names(d[, ! sapply(d, is.numeric)]))
-    factorCols <- names(d[, sapply(d, is.factor)])
+  #  factorCols <- names(d[, sapply(d, is.factor)])
 
     selected_cols <- input$selectedColumns
 
@@ -319,7 +320,10 @@ shinyServer(function(input, output, session) {
       progress$set(value = value, detail = detail)
     }
     
+    # store bin counts for equalization
+    equalize_bins = c(input$binCountEqualize1, input$binCountEqualize2)
     lenselist = list()  # lenses varname currently used for lense table 
+    equalizeLenses = list() # list of booleans indicating whether to equalize the lense values for each lense
     lense_fun <- lense.projection
     if(! is.null(input$lenseFunctionSelection)) {
       # selected the string of function name, and 'get' the actual function identifier
@@ -328,11 +332,12 @@ shinyServer(function(input, output, session) {
       if (is.function(f)){ 
           lense_fun <- f
           lenseParam <- as.numeric(input$lenseParam)
+          equalizeLenses[[1]] <- input$equalizeLens1
           if(input$lenseFunctionSelection == "Projection"){lenseParam <- input$filterVar}
           # test for NA in lenseparam WHEN the lense needs a param
           lenselist[[1]] <- lense(lensefun = lense_fun,  lenseparam = lenseParam,
                      partition_count=as.numeric(input$partitionCountSelection),
-                     overlap = as.numeric(input$overlapSelection)/100.0 )
+                     overlap = as.numeric(input$overlapSelection)/100.0)
       }
       else {
         # pop-up warning message; function doesn't exis
@@ -349,10 +354,11 @@ shinyServer(function(input, output, session) {
         # test for NA in lenseparam WHEN the lense needs a param
         lense2_fun <- f
         lense2Param <- as.numeric(input$lense2Param)
+        equalizeLenses[[2]] <- input$equalizeLens2
         if(input$lense2FunctionSelection == "Projection"){lense2Param <- input$lense2filterVar}
         lenselist[[2]] <- lense(lensefun = lense2_fun,  lenseparam = lense2Param,
                              partition_count=as.numeric(input$lense2partitionCountSelection),
-                             overlap = as.numeric(input$lense2overlapSelection)/100.0 )
+                             overlap = as.numeric(input$lense2overlapSelection)/100.0)
       }
       else {
         # pop-up warning message; function doesn't exist
@@ -364,8 +370,9 @@ shinyServer(function(input, output, session) {
                   cluster_method="single",
                   bin_count = as.numeric(input$binCountSelection),
                   normalize_data = input$normalizeOption,
-                  equalize_data = input$equalizeOption,
-                  selected_cols = selected_cols)
+                  equalize_lenses = equalizeLenses,
+                  selected_cols = selected_cols,
+                  equalize_bins = equalize_bins)
     gm <<- mapper.run(gm)
     
 #    gm<<- makemapper(dataset = as.data.frame(d), 

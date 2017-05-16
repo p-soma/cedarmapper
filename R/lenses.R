@@ -62,7 +62,7 @@ lense.projection <- function(d,lenseparam=NULL,distmat=NULL ){
 #  if (! coordinate %in% colnames(d)){
 #    return(NULL)
 #  }
-  
+
   # get single column
   L <- d[,coordinate]
   # assign rownames
@@ -72,6 +72,9 @@ lense.projection <- function(d,lenseparam=NULL,distmat=NULL ){
   } else {
     # multidimension vector use rownames
     rownames(L) <- rownames(d)  
+  }
+  if (is.factor(L)){
+    L <- as.numeric(L)
   }
   return(L)
 }

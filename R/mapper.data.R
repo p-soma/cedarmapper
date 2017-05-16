@@ -173,15 +173,32 @@ column2binary<-function(df, colname){
 
 #' equalize histogram for cut_function
 #' 
-equalize_hist <- function(d){
-  h <- hist(d, breaks = length(d))#breaks=bin_breaks)
+
+equalize_hist <- function(d,nbreaks){
+  orig_breaks <- seq(from = min(d), to = max(d), by = (max(d) - min(d))/nbreaks)
+  h <- hist(d, breaks = orig_breaks, plot = FALSE)
   cdf <- cumsum(h$counts)
-  slope <- sum(h$counts) / (max(d) - min(d))
+  cdf_len <- length(cdf)
+  slope <- cdf[cdf_len] / (max(d) - min(d))
   cdfn <- (cdf / slope) + min(d)
-  eq_hst_vals <- rep(cdfn, h$counts)
-  eq_hst <- hist(eq_hst_vals, breaks=length(d))# breaks=bin_breaks)
-  return(as.vector(eq_hst_vals))
-  #return(eq_hst)
+  
+  breaks <- c(orig_breaks[1], cdfn[-cdf_len], orig_breaks[nbreaks+1])
+  
+  breaks_df <- data.frame(orig_breaks,breaks)
+  
+  # map old data to new values
+  d_eq <- d
+  i = 1
+  m = (breaks_df[i,2] - breaks_df[i+1,2]) / (breaks_df[i,1] - breaks_df[i+1,1])
+  b = breaks_df[i,2] - (m * breaks_df[i,1])
+  d_eq[d >= breaks_df[i,1] & d <= breaks_df[i+1,1]] <- d[d >= breaks_df[i,1] & d <= breaks_df[i+1,1]]*m + b
+  
+  for (i in 2:(nrow(breaks_df)-1)){
+    m = (breaks_df[i,2] - breaks_df[i+1,2]) / (breaks_df[i,1] - breaks_df[i+1,1])
+    b = breaks_df[i,2] - (m * breaks_df[i,1])
+    d_eq[d > breaks_df[i,1] & d <= breaks_df[i+1,1]] <- d[d > breaks_df[i,1] & d <= breaks_df[i+1,1]]*m + b
+  }
+  return(d_eq)
 }
 
 # returns vector of the sizes of the nodes in node order
