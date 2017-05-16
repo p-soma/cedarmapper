@@ -85,7 +85,53 @@ test_that("eccentricity with empty partitions doesn't crash mapper",{
                 cluster_method="single", bin_count=10, normalize_data=FALSE)
   m$distance   <- distance.mapper(m,method="euclidean") # dist(scale(gm$d),method="euclidean", upper=FALSE)
   m$partitions <- partition.mapper(m)
+  # previous this would crash! 
   
-  # crash! 
+  expect_true(TRUE, "mapper crashed") # if we get here, mapper didn't crash
   
 })
+
+test_that("Grid data with 2d mapper,nodes have all have same size", {
+  sizes = grid_2d_mapper(10,4) %>% mapper.run() %>% node_sizes
+  # if nodes are same size, variance is zero
+  expect_equal(var(sizes),0)
+  
+})
+
+test_that("sequence 1-10 partitions are correct",{
+  # create mapper on X=1..10, 5 partitions, 50% overlap
+  m <- integer_mapper(10,5)
+  m$partitions <- partition.mapper(m)
+  expect_equal(m$partitions[[1]],c("1", "2", "3"))
+  expect_equal(m$partitions[[2]],c("3", "4", "5"))
+  expect_equal(m$partitions[[3]],c("4", "5", "6"))
+  expect_equal(m$partitions[[4]],c("6", "7", "8"))
+  expect_equal(m$partitions[[5]],c("7", "8", "9","10"))
+
+})
+test_that("mapper on integer sequence nodes have certain sizes ",{
+  m <-  integer_mapper(10,5) 
+  m$partitions <- partition.mapper(m) 
+  sizes <- unlist(lapply(m$partitions,length))
+  expect_equal(as.vector(sizes),c(3,3,3,3,4))
+})
+
+test_that("circle with 2 dims with 3 partitions has ",{
+  d = circle_data(r=1, n=1000, randomize=FALSE)
+  l1 = lense(lense.projection, "X", partition_count=3, overlap = 0.5) 
+  l2 = lense(lense.projection, "Y", partition_count=3, overlap = 0.5) 
+  m <- mapper(dataset = d, 
+              lenses=list(l1,l2), 
+              cluster_method="single", bin_count=10, normalize_data=TRUE)
+  m <- mapper.run(m)
+  for(nodeset in m$nodes) { expect_gt(length(nodeset),0)}
+  expect_equal(length(m$nodes),8)
+  
+  # test of degree requires igraph library
+  # degree of every node is 2
+  gm = graph.mapper(m)
+  expect_identical(as.vector(degree(gm)),rep(2,length(m$nodes)))
+  
+  
+})  
+

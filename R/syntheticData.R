@@ -66,3 +66,12 @@ square_data <- function(n=1000, seed = "1"){
   return(d)
 }
 
+#' Synthetic uniform grid data, which 
+#' @export
+grid_data <- function(n=100){
+  # expand.grid creates all comb of list members, using member names. 
+  d <- expand.grid(list("X"=seq(1:n),"Y"=seq(1:n)))
+  rownames(d) = 1:nrow(d)
+  return(d)
+}
+

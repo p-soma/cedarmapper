@@ -12,8 +12,14 @@ cedar.NodeGraph = function module() {
         node_area_percent = 0.3,
         maxLinkWidth = 8,
         minLinkWidth = 1,
-        nodecolors = ['white', 'darkgreen'],
-        ForceCharge = -1000,
+        nodecolors_rainbow = ["#2c7bb6", "#00a6ca","#00ccbc","#90eb9d","#ffff8c","#f9d057","#f29e2e","#e76818","#d7191c"],
+      nodecolors_rainbow2 = 
+      ["#2c7bb6", "#00a6ca","#00ccbc","#9c9c9c","#f6a21b","#e76818","#CC333F"],
+        nodecolors_bluegreen = ["#FFFFDD", "#3E9583", "#1F2D86"],
+        nodecolors_matte = ["#C4C4C4","#EDC951","#CC333F","#00A0B0"],
+        nodecolors_greenwhite = ['white', 'darkgreen'],
+        nodecolors = nodecolors_rainbow2,
+        ForceCharge = -1500,
         LinkDistance = 100,
         linkdistanceFactor = 1,
         nudgefactor = 10,
@@ -21,6 +27,7 @@ cedar.NodeGraph = function module() {
         translation = [0,0],
         nodesize_threshold = 12,
         option_textvisible = true;
+        gravity_value = 0.03;
         
 
     // functions called by API
@@ -34,9 +41,12 @@ cedar.NodeGraph = function module() {
      _selection.each(function(graphdata) { 
          // this structure allows d3.select(el).datum(nodedata).call(ng);
          
+
         /////////// CURRENT STATE initial values
         var shiftKey;
         var tx = 0,ty = 0,scale = 1,rotation=0;
+        
+        
         
         // *** MAIN SVG ELEMENT ADDED TO _selection
         svg = d3.select(this)  // or _selection ?
@@ -69,7 +79,7 @@ cedar.NodeGraph = function module() {
           // this is expensive, so only do when text is showing
           if(option_textvisible){
               nodegroup.each(function(d,i) {
-                  thisnode = d3.select(this)
+                  thisnode = d3.select(this);
                   bbox = thisnode.node().getBBox();
                        //bounding box of rotated nodegroup, to find center x,y
                   thisnode.attr('transform', `rotate(${-1*rotation}  ${bbox.x+ bbox.width/2} ${bbox.y + bbox.height/2} )`);
@@ -90,7 +100,7 @@ cedar.NodeGraph = function module() {
         var y_scale = d3.scale.linear().domain([0, h ]).range([0, h]);
 
         var zoombehavior = d3.behavior.zoom()
-            .scaleExtent([0.1,10]) //allow 10 times zoom in or out
+            .scaleExtent([0.4,10]) //allow 10 times zoom in or out
             .x(x_scale)
             .y(y_scale)
             .on('zoom', semanticzoom);
@@ -398,7 +408,7 @@ cedar.NodeGraph = function module() {
         // TODO  make link distance a function of number of nodes and size
         force = d3.layout.force()
             .linkDistance(maxNodeSize()*2.5)
-            .gravity(0.1)
+            .gravity(gravity_value)
             .charge(ForceCharge)
             .size([w, h])
             .on("tick", do_tick)
@@ -442,9 +452,9 @@ cedar.NodeGraph = function module() {
                     option_textvisible = false;
                     removeNodeText();
                 } else {
-                    option_textvisible = true
+                    option_textvisible = true;
                     showNodeText();
-                };
+                }
                 break;
             case 88: // x
               resetzoom();
@@ -645,7 +655,7 @@ cedar.NodeGraph = function module() {
                   .style("filter", "");
               })
             .on("click", function(d) {
-                if (d3.event.defaultPrevented) {return(false)};
+                if (d3.event.defaultPrevented) {return(false)}
                 if (!shiftKey) {
                     //if the shift key isn't down, unselect everything
                     d3.select(this).classed("selected", function(p) { 
@@ -672,7 +682,7 @@ cedar.NodeGraph = function module() {
             .append("circle")
             .attr("class", "node")
             .attr("id", function(d) {
-                return "node_" + d.name;
+                return ("node_" + d.name);
             })
             .attr("r", function(d) {                    
                 return nodeSizeScale(d.size);
@@ -816,18 +826,39 @@ cedar.NodeGraph = function module() {
 
 
         setFillColor = function() {
+          
+      
+        var colorRange = d3.range(0, 1, 1.0 / (nodecolors.length - 1));
+        colorRange.push(1);
+		   
+//Create color gradient
+    var colorScale = d3.scale.linear()
+	  .domain(colorRange)
+  	.range(nodecolors)
+	  .interpolate(d3.interpolateHcl);
+
+    var v = getValues().map(Number);
+ 
+//Needed to map the values of the dataset to the color scale
+    var colorInterpolate = d3.scale.linear()
+	    .domain(d3.extent(v))
+	    .range([0,1]);
+          
             // set fill color based on value attribute of nodes
             // call this function after setting up the viz, e.g. in render()
-            var v = getValues().map(Number); // gets the array of the values as numbers
-            var vrange = [d3.min(v), d3.max(v)];
-            colorScale = d3.scale.linear()
-                .domain(vrange)
-                .range(nodecolors);
+          // original simplistic color map
+          // var vrange = [d3.min(v), d3.max(v)];
+          //  colorScale = d3.scale.linear()
+          //      .domain(d3.extent(v))
+          //      .range(nodecolors);
 
             nodegroup.each(
                 function(d, i) {
                     n = d3.select(this).select(".node");
-                    n.style('fill', colorScale(n.attr('nodevalue')));
+                    n.style('fill', 
+                    colorScale(colorInterpolate(
+                        n.attr('nodevalue'))));
+                        
                     n.style('opacity',opacity_percent);
                 });
         };
@@ -860,9 +891,11 @@ cedar.NodeGraph = function module() {
             setTransform();
             addNodeText();
             setScales();
-            setFillColor(); 
+            setFillColor();
+            resetzoom();
             drag_enable();
             lasso.items(nodegroup);
+            
             force.start()
         }
         

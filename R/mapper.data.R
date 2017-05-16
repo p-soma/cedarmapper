@@ -183,3 +183,8 @@ equalize_hist <- function(d){
   return(as.vector(eq_hst_vals))
   #return(eq_hst)
 }
+
+# returns vector of the sizes of the nodes in node order
+node_sizes <- function(gm){
+  unlist(lapply(gm$nodes,length))
+}
