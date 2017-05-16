@@ -12,8 +12,14 @@ cedar.NodeGraph = function module() {
         node_area_percent = 0.3,
         maxLinkWidth = 8,
         minLinkWidth = 1,
-        nodecolors = ['white', 'darkgreen'],
-        ForceCharge = -1800,
+        nodecolors_rainbow = ["#2c7bb6", "#00a6ca","#00ccbc","#90eb9d","#ffff8c","#f9d057","#f29e2e","#e76818","#d7191c"],
+      nodecolors_rainbow2 = 
+      ["#2c7bb6", "#00a6ca","#00ccbc","#9c9c9c","#f6a21b","#e76818","#CC333F"],
+        nodecolors_bluegreen = ["#FFFFDD", "#3E9583", "#1F2D86"],
+        nodecolors_matte = ["#C4C4C4","#EDC951","#CC333F","#00A0B0"],
+        nodecolors_greenwhite = ['white', 'darkgreen'],
+        nodecolors = nodecolors_rainbow2,
+        ForceCharge = -1500,
         LinkDistance = 100,
         linkdistanceFactor = 1,
         nudgefactor = 10,
@@ -21,7 +27,7 @@ cedar.NodeGraph = function module() {
         translation = [0,0],
         nodesize_threshold = 12,
         option_textvisible = true;
-        gravity_value = 0.01;
+        gravity_value = 0.03;
         
 
     // functions called by API
@@ -35,9 +41,12 @@ cedar.NodeGraph = function module() {
      _selection.each(function(graphdata) { 
          // this structure allows d3.select(el).datum(nodedata).call(ng);
          
+
         /////////// CURRENT STATE initial values
         var shiftKey;
         var tx = 0,ty = 0,scale = 1,rotation=0;
+        
+        
         
         // *** MAIN SVG ELEMENT ADDED TO _selection
         svg = d3.select(this)  // or _selection ?
@@ -443,9 +452,9 @@ cedar.NodeGraph = function module() {
                     option_textvisible = false;
                     removeNodeText();
                 } else {
-                    option_textvisible = true
+                    option_textvisible = true;
                     showNodeText();
-                };
+                }
                 break;
             case 88: // x
               resetzoom();
@@ -646,7 +655,7 @@ cedar.NodeGraph = function module() {
                   .style("filter", "");
               })
             .on("click", function(d) {
-                if (d3.event.defaultPrevented) {return(false)};
+                if (d3.event.defaultPrevented) {return(false)}
                 if (!shiftKey) {
                     //if the shift key isn't down, unselect everything
                     d3.select(this).classed("selected", function(p) { 
@@ -673,7 +682,7 @@ cedar.NodeGraph = function module() {
             .append("circle")
             .attr("class", "node")
             .attr("id", function(d) {
-                return "node_" + d.name;
+                return ("node_" + d.name);
             })
             .attr("r", function(d) {                    
                 return nodeSizeScale(d.size);
@@ -817,18 +826,39 @@ cedar.NodeGraph = function module() {
 
 
         setFillColor = function() {
+          
+      
+        var colorRange = d3.range(0, 1, 1.0 / (nodecolors.length - 1));
+        colorRange.push(1);
+		   
+//Create color gradient
+    var colorScale = d3.scale.linear()
+	  .domain(colorRange)
+  	.range(nodecolors)
+	  .interpolate(d3.interpolateHcl);
+
+    var v = getValues().map(Number);
+ 
+//Needed to map the values of the dataset to the color scale
+    var colorInterpolate = d3.scale.linear()
+	    .domain(d3.extent(v))
+	    .range([0,1]);
+          
             // set fill color based on value attribute of nodes
             // call this function after setting up the viz, e.g. in render()
-            var v = getValues().map(Number); // gets the array of the values as numbers
-            var vrange = [d3.min(v), d3.max(v)];
-            colorScale = d3.scale.linear()
-                .domain(vrange)
-                .range(nodecolors);
+          // original simplistic color map
+          // var vrange = [d3.min(v), d3.max(v)];
+          //  colorScale = d3.scale.linear()
+          //      .domain(d3.extent(v))
+          //      .range(nodecolors);
 
             nodegroup.each(
                 function(d, i) {
                     n = d3.select(this).select(".node");
-                    n.style('fill', colorScale(n.attr('nodevalue')));
+                    n.style('fill', 
+                    colorScale(colorInterpolate(
+                        n.attr('nodevalue'))));
+                        
                     n.style('opacity',opacity_percent);
                 });
         };
