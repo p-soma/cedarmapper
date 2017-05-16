@@ -53,13 +53,13 @@ grid_2d_mapper <- function(n=10, partition_count=3){
 }
 
 
-integer_data <- function(n){
+integer_data <- function(n,start=1){
   d<- data.frame("X" = 1:n)
   rownames(d) = 1:nrow(d)
   return(d)
 }
 
-integer_mapper <- function(n=10, partition_count=3){
+integer_mapper <- function(n=10, partition_count=3,start=1){
   mapper(dataset = integer_data(n), 
          lenses = list(projlense('X',partition_count)), 
          cluster_method="single", 
@@ -69,3 +69,5 @@ integer_mapper <- function(n=10, partition_count=3){
 decimal_data <- function(n){
   data.frame("X" = sapply(c(0,1:n),FUN=function(i){i/n}))
 }
+
+

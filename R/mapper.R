@@ -239,13 +239,20 @@ get_partition_index <- function(partition_start_value,L){
   # L must have been 'calculated' to load these values
   
   # boundary conditions
+  # outside of values, return NA
   if( partition_start_value < L$p0 || partition_start_value > L$pmax ) { return(NA)}
-  # if( partition_start_value > (L$p0 + (L$pl * L$n))) {return(NA)}
-  
+
+  # equal to beginning of scale, partition 1, put here mainly to make this method explicit
+  if( partition_start_value == L$p0 ) { return (1)}  
+  # end of scale, last partition
+  if( partition_start_value == L$pmax) (  return (L$n) )
+    
   i = (  (( partition_start_value - L$p0 ) / L$pl ) + (1-L$o)) / (1-L$o) 
+  
   # if(i > L$n + 1 ) { i = NA }
   return(i)
 }
+
 
 get_partition_indices <- Vectorize(get_partition_index)
 
@@ -255,11 +262,20 @@ partition_index_for_l_value <- function(l_value,L){
   if (class(L) != "lense") {stop ("partition function requires a lense object")}
   if (is.null(L$p0) || is.na(L$p0)) { stop("error, did not calculate lense") }
   
+  # boundary condition: value at end of Lense must be in last partition only 
+  if(l_value == L$pmax){
+    partindex  <- L$n 
+    names(partindex)= names(l_value)
+    # skip the calculations below and just return this one partition
+    return( partindex )
+  }
+
   # first use the index calculator on this l_value that's greater than the Partition start, so will have fractional part
   index_plus_something  = get_partition_index(l_value,L)
   partindex = floor(index_plus_something)
   
-  # the index is the nearest integer to this calculation
+ 
+  # the index calculated this way will create value higher than N, (e.g. if L value will be in say n+1 overlapped partition)
   if( partindex > L$n ) { 
     partindex  <- L$n 
     names(partindex)= names(l_value)
@@ -272,7 +288,7 @@ partition_index_for_l_value <- function(l_value,L){
      # it's past end of previous partition; assign second value
   
     distance_from_partition_start = index_plus_something - partindex
-    if ( ( partindex > 1) && ( distance_from_partition_start <= L$o ) ) { 
+    if ( ( partindex > 1) && ( distance_from_partition_start <= ( L$o * L$pl) ) ) { 
       partindex =   c(partindex, partindex - 1 )
     }   
   }

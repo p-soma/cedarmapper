@@ -89,34 +89,3 @@ test_that("Square with 2 dims with 3 partitions has 9 nodes",{
     
   })  
 
-test_that("Grid data with 2d mapper,nodes have all have same size", {
-  sizes = grid_2d_mapper(10,4) %>% mapper.run() %>% node_sizes
-  # if nodes are same size, variance is zero
-  expect_equal(var(sizes),0)
-
-})
-
-test_that("mapper on integer sequence nodes have same size ",{
-  sizes = integer_mapper(10,4) %>% mapper.run() %>% node_sizes
-  expect_equal(var(sizes),0)
-})
-
-test_that("circle with 2 dims with 3 partitions has ",{
-  d = circle_data(r=1, n=1000, randomize=FALSE)
-  l1 = lense(lense.projection, "X", partition_count=3, overlap = 0.5) 
-  l2 = lense(lense.projection, "Y", partition_count=3, overlap = 0.5) 
-  m <- mapper(dataset = d, 
-              lenses=list(l1,l2), 
-              cluster_method="single", bin_count=10, normalize_data=TRUE)
-  m <- mapper.run(m)
-  for(nodeset in m$nodes) { expect_gt(length(nodeset),0)}
-  expect_equal(length(m$nodes),8)
-  
-  # test of degree requires igraph library
-  # degree of every node is 2
-  gm = graph.mapper(m)
-  expect_identical(as.vector(degree(gm)),rep(2,length(m$nodes)))
-  
-  
-})  
-  
