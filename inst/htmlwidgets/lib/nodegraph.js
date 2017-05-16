@@ -12,8 +12,11 @@ cedar.NodeGraph = function module() {
         node_area_percent = 0.3,
         maxLinkWidth = 8,
         minLinkWidth = 1,
-        nodecolors = ['white', 'darkgreen'],
-        ForceCharge = -1800,
+        nodecolors_bluegreen = ["#FFFFDD", "#3E9583", "#1F2D86"],
+        nodecolors_matte = ["#C4C4C4","#EDC951","#CC333F","#00A0B0"],
+        nodecolors_greenwhite = ['white', 'darkgreen'],
+        nodecolors = nodecolors_matte,
+        ForceCharge = -1500,
         LinkDistance = 100,
         linkdistanceFactor = 1,
         nudgefactor = 10,
@@ -21,7 +24,7 @@ cedar.NodeGraph = function module() {
         translation = [0,0],
         nodesize_threshold = 12,
         option_textvisible = true;
-        gravity_value = 0.01;
+        gravity_value = 0.03;
         
 
     // functions called by API
@@ -443,9 +446,9 @@ cedar.NodeGraph = function module() {
                     option_textvisible = false;
                     removeNodeText();
                 } else {
-                    option_textvisible = true
+                    option_textvisible = true;
                     showNodeText();
-                };
+                }
                 break;
             case 88: // x
               resetzoom();
@@ -646,7 +649,7 @@ cedar.NodeGraph = function module() {
                   .style("filter", "");
               })
             .on("click", function(d) {
-                if (d3.event.defaultPrevented) {return(false)};
+                if (d3.event.defaultPrevented) {return(false)}
                 if (!shiftKey) {
                     //if the shift key isn't down, unselect everything
                     d3.select(this).classed("selected", function(p) { 
@@ -673,7 +676,7 @@ cedar.NodeGraph = function module() {
             .append("circle")
             .attr("class", "node")
             .attr("id", function(d) {
-                return "node_" + d.name;
+                return ("node_" + d.name);
             })
             .attr("r", function(d) {                    
                 return nodeSizeScale(d.size);

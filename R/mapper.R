@@ -297,7 +297,7 @@ partition_index_for_l_value <- function(l_value,L){
 partition.mapper <- function(m) {
   
   if (class(m) != "mapper") stop("partition: requires input of class mapper class")
-  if (class(m$lense[[1]]) != "lense") stop ("partition function requires a lense object")
+  if (class(m$lenses[[1]]) != "lense") stop ("partition function requires a lense object")
   if (is.null(m$distance)) { m$distance = distance.mapper }  ## TODO this is not saved as pass by value which is inefficient
   
   # calculate lense values and store back in lense objects

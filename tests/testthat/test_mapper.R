@@ -89,6 +89,18 @@ test_that("Square with 2 dims with 3 partitions has 9 nodes",{
     
   })  
 
+test_that("Grid data with 2d mapper,nodes have all have same size", {
+  sizes = grid_2d_mapper(10,4) %>% mapper.run() %>% node_sizes
+  # if nodes are same size, variance is zero
+  expect_equal(var(sizes),0)
+
+})
+
+test_that("mapper on integer sequence nodes have same size ",{
+  sizes = integer_mapper(10,4) %>% mapper.run() %>% node_sizes
+  expect_equal(var(sizes),0)
+})
+
 test_that("circle with 2 dims with 3 partitions has ",{
   d = circle_data(r=1, n=1000, randomize=FALSE)
   l1 = lense(lense.projection, "X", partition_count=3, overlap = 0.5) 

@@ -5,8 +5,15 @@
 #' return a table of the variance for each variable for each group
 #' @export
 circle.mapper<- function(npoints=100, randomize=FALSE) {
-  gm= mapper(circle_data(1, npoints,randomize=randomize), lensefun=lense.projection, lenseparam="X", 
-             partition_count=6, overlap = 0.5,bin_count=10, normalize_data = TRUE)
+  projection_lense  <- function(var="X"){
+    lense(lense.projection, lenseparam=var, partition_count=6, overlap = 0.5)
+  }
+  
+  gm= mapper(circle_data(1, npoints,randomize=randomize),
+             lenses=list(projection_lense("X"),projection_lense("Y")),
+             bin_count=10, 
+             normalize_data = FALSE)
+  
   gm$distance   <- distance.mapper(gm)
   gm$partitions <- partition.mapper(gm)
   print ( gm$partitions)
@@ -19,6 +26,19 @@ circle.mapper<- function(npoints=100, randomize=FALSE) {
   plot(graph.mapper(gm), main = paste0("Circle data, ", nrow(gm$d), " points"))
   
   return(gm)
+}
+
+#'grid mapper test
+#' uses run.mapper to create mapper of uniform grid data and plot it
+#'@export
+grid.mapper.test <- function(npoints = 10){
+  gm <- grid.mapper() %>% mapper.run
+  print ( gm$partitions)
+  plot(graph.mapper(gm), 
+       main = paste0("grid data, ", nrow(gm$d), " points per dimension"),
+       sub=paste0(gm$lenses[[1]]$n, " partitions ", gm$lenses[[1]]$o," overlap")
+       )
+  return( (gm))
 }
 
 #TODO 
