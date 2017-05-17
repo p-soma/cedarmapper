@@ -320,7 +320,7 @@ shinyServer(function(input, output, session) {
       progress$set(value = value, detail = detail)
     }
     
-    # store bin counts for equalization
+    # store n bins for equalization
     equalize_bins = c(input$binCountEqualize1, input$binCountEqualize2)
     lenselist = list()  # lenses varname currently used for lense table 
     equalizeLenses = list() # list of booleans indicating whether to equalize the lense values for each lense

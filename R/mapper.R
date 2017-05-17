@@ -194,7 +194,13 @@ mapper.lense.calculate <- function(m,dimension=1){
 
   # fill up L member variables and return it
   # L$values is 1D vector of values from the filter/lense function with same length as mapper data
-  L$values <- L$lensefun(m$d[mapper.numeric_cols(m)], L$lenseparam, m$distance)
+
+#  L$values <- L$lensefun(m$d, L$lenseparam, m$distance)
+  L$values <- L$lensefun(m, L$lenseparam)
+
+#    L$values <- L$lensefun(m$d[mapper.numeric_cols(m)], L$lenseparam, m$distance)
+
+  
   
   # apply histogram equalization to lens values 
   print("equalize?")

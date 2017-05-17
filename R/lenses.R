@@ -41,7 +41,8 @@ lense.table <- function(){
 #' @param none
 #' @returns constant 0
 #' @export
-lense.constant <- function(d,lenseparam = NULL,distmat=NULL){
+lense.constant <- function(m,lenseparam = NULL){
+  d <- m$d[mapper.numeric_cols(m)]
   c <- 0
   L <- rep(c,times = nrow(d))
   # names(L) <- rownames(d)  # this is done in the partition function
@@ -54,7 +55,8 @@ lense.constant <- function(d,lenseparam = NULL,distmat=NULL){
 #' @param coordinate string name of column, or vector of column names for n-dimensional 
 #' @returns vector of same length as data, with rownames preserved
 #' @export
-lense.projection <- function(d,lenseparam=NULL,distmat=NULL ){
+lense.projection <- function(m,lenseparam = NULL){
+  d <- m$d
   coordinate <- lenseparam
   # returns a vector variable, defaults to the first column
   if (is.null(coordinate)) { coordinate= names(d)[1] }
@@ -84,7 +86,8 @@ lense.projection <- function(d,lenseparam=NULL,distmat=NULL ){
 #' @family lenses
 #' @param none
 #' @export
-lense.pca1 <- function(d,lenseparam=NULL,distmat=NULL) {
+lense.pca1 <- function(m,lenseparam = NULL) {
+  d <- m$d[mapper.numeric_cols(m)]
   pca = prcomp(d, retx=TRUE, center=TRUE, scale. = TRUE)
   L = pca$x[,"PC1"]
   return(L)
@@ -94,7 +97,8 @@ lense.pca1 <- function(d,lenseparam=NULL,distmat=NULL) {
 #' @family lenses
 #' @param none
 #' @export
-lense.pca2 <- function(d,lenseparam=NULL,distmat=NULL) {
+lense.pca2 <- function(m,lenseparam = NULL) {
+  d <- m$d[mapper.numeric_cols(m)]
   pca = prcomp(d, retx=TRUE, center=TRUE, scale. = TRUE)
   L = pca$x[,"PC2"]
   return(L)
@@ -106,7 +110,9 @@ lense.pca2 <- function(d,lenseparam=NULL,distmat=NULL) {
 #' @family lenses
 #' @param n 1 or 2 exponent and divisor
 #' @export
-lense.eccentricity <- function(d, lenseparam=1,distmat=NULL){ # n = 1 or 2
+lense.eccentricity <- function(m,lenseparam = NULL){ # n = 1 or 2
+  distmat <- m$distance 
+  d <- m$d[mapper.numeric_cols(m)]
   n <- lenseparam
   n <- 1
   if(is.null(distmat)) {
@@ -121,7 +127,9 @@ lense.eccentricity <- function(d, lenseparam=1,distmat=NULL){ # n = 1 or 2
 #' Mapper lense using Topological density  of each point
 #' @family lenses
 #' @export
-lense.density <- function(d, lenseparam=1.0,distmat=NULL){
+lense.density <- function(m,lenseparam = NULL){
+  distmat <- m$distance 
+  d <- m$d[mapper.numeric_cols(m)]
   sigma <- lenseparam
   if(is.null(distmat)) {
     distmat <- getdistance(d)

@@ -147,7 +147,7 @@ dashboardBody(
                              choices = c(0:13) * 5  + 10, selected = 50)
 =======
                              choices = c(0:13) * 5  + 10, selected = 50),
-                 checkboxInput("equalizeLens1", "Equalize lens values?", value = TRUE, width = NULL),
+                 checkboxInput("equalizeLens1", "Equalize lens values?", value = FALSE, width = NULL),
                  sliderInput("binCountEqualize1", label = "Equalization Bin Count", 
                              min=min(.01),max=max(1), value=.3,
                              step=.01)  
@@ -176,7 +176,7 @@ dashboardBody(
                               step=1),  
                     selectInput("lense2overlapSelection", label = "Partition Overlap (percent)", 
                               choices = c(0:13) * 5  + 10, selected = 50),
-                    checkboxInput("equalizeLens2", "Equalize lens values?", value = TRUE, width = NULL),
+                    checkboxInput("equalizeLens2", "Equalize lens values?", value = FALSE, width = NULL),
                     sliderInput("binCountEqualize2", label = "Equalization Bin Count", 
                                 min=min(0.01),max=max(1), value=.1,
                                 step=.01)  
