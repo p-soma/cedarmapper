@@ -212,7 +212,6 @@ mapper.lense.calculate <- function(m,dimension=1){
   }
   
   names(L$values) <- rownames(m$d)
-  hist(L$values, breaks = nbreaks)
 
   
   # calc and store aspects of resulting vector; could be expensive

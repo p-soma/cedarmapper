@@ -109,10 +109,6 @@ dashboardBody(
             box( title="Mapper Parameters", width=NULL, background ="light-blue",
               h3("Data set:", textOutput("dataname",inline=TRUE),color="light-blue"),
               checkboxInput("normalizeOption", "Normalize Data?", value = TRUE, width = NULL),
-<<<<<<< HEAD
-              checkboxInput("equalizeOption", "Equalize Data?", value = FALSE, width = NULL),
-=======
->>>>>>> Histogram equalization for lens vals
               sliderInput("binCountSelection", label = "Cluster Bin Count", 
                           min=min(3),max=max(50), value=10,
                           step=1)  
@@ -143,16 +139,11 @@ dashboardBody(
                              min=min(partitionCountChoices),max=max(partitionCountChoices), value=4,
                              step=1),  
                  selectInput("overlapSelection", label = "Partition Overlap (percent)", 
-<<<<<<< HEAD
-                             choices = c(0:13) * 5  + 10, selected = 50)
-=======
                              choices = c(0:13) * 5  + 10, selected = 50),
                  checkboxInput("equalizeLens1", "Equalize lens values?", value = FALSE, width = NULL),
                  sliderInput("binCountEqualize1", label = "Equalization Bin Count", 
                              min=min(.01),max=max(1), value=.3,
                              step=.01)  
-                 
->>>>>>> Histogram equalization for lens vals
               )
             ),
             
